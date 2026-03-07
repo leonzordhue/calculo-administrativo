@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+  <title>LAADV – Cálculo de Progressão</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --verde: #0B4A44;
+      --verde-claro: #e0f0ee;
+      --verde-hover: #0d5a54;
+      --dourado: #C9A93E;
+      --dourado-claro: #f3e7c6;
+      --cinza: #f5f7fa;
+      --texto: #1e2b3c;
+      --borda: #dde0e5;
+      --sombra: 0 4px 12px rgba(0,0,0,0.05);
+      --font-serif: 'Georgia', 'Times New Roman', serif;
+      --font-sans: 'Segoe UI', Roboto, system-ui, sans-serif;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--cinza);
+      color: var(--texto);
+      line-height: 1.5;
+    }
+    .topo {
+      background: var(--verde);
+      color: white;
+      padding: 0.5rem 2rem;
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      letter-spacing: 0.5px;
+    }
+    .topo span:last-child { color: var(--dourado); }
+    .cabecalho {
+      background: var(--verde);
+      border-bottom: 4px solid var(--dourado);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .logo h1 {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 1px;
+    }
+    .logo p {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: var(--dourado);
+      margin-top: -5px;
+    }
+    .badge {
+      background: rgba(201,169,62,0.2);
+      border: 1px solid var(--dourado);
+      color: var(--dourado);
+      padding: 0.4rem 1rem;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--verde) 0%, #0d5a54 100%);
+      padding: 2.5rem 2rem;
+      color: white;
+    }
+    .hero h2 {
+      font-family: var(--font-serif);
+      font-size: 2.2rem;
+      max-width: 800px;
+    }
+    .hero p {
+      opacity: 0.8;
+      margin-top: 0.5rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: var(--sombra);
+      border: 1px solid var(--borda);
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+    .card-header {
+      background: var(--verde-claro);
+      padding: 1rem 1.5rem;
+      border-bottom: 2px solid var(--dourado);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .card-header h3 {
+      font-size: 1.2rem;
+      color: var(--verde);
+    }
+    .card-body { padding: 1.5rem; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.2rem;
+    }
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .campo label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--verde);
+    }
+    .campo input, .campo select {
+      padding: 0.7rem;
+      border: 1.5px solid var(--borda);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .campo input:focus, .campo select:focus {
+      outline: none;
+      border-color: var(--dourado);
+      box-shadow: 0 0 0 3px rgba(201,169,62,0.2);
+    }
+    .btn {
+      background: var(--verde);
+      color: white;
+      border: none;
+      padding: 0.8rem 2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn:hover:not(:disabled) { background: var(--verde-hover); }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-dourado {
+      background: var(--dourado);
+      color: var(--verde);
+    }
+    .btn-dourado:hover:not(:disabled) { background: #b8962b; }
+    .btn-secundario {
+      background: transparent;
+      border: 2px solid var(--verde);
+      color: var(--verde);
+    }
+    .btn-secundario:hover { background: var(--verde-claro); }
+    /* Painel de pré-visualização */
+    .preview-painel {
+      background: var(--verde-claro);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin: 1rem 0;
+      border: 2px dashed var(--dourado);
+    }
+    .preview-painel h4 {
+      color: var(--verde);
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.8rem;
+    }
+    .preview-item {
+      background: white;
+      padding: 0.5rem 0.8rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--dourado);
+    }
+    .preview-item .rotulo {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: var(--verde);
+      font-weight: 600;
+    }
+    .preview-item .valor {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .resultado-resumo {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .cartao-resumo {
+      background: var(--verde-claro);
+      border-radius: 12px;
+      padding: 1.2rem;
+      text-align: center;
+      border: 1px solid var(--borda);
+    }
+    .cartao-resumo .valor {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--verde);
+      line-height: 1.2;
+    }
+    .tabela-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th {
+      background: var(--verde);
+      color: white;
+      padding: 0.8rem;
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.6rem 0.8rem;
+      border-bottom: 1px solid var(--borda);
+      text-align: left;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover { background: var(--verde-claro); }
+    .linha-total {
+      background: var(--verde);
+      color: white;
+      font-weight: 600;
+    }
+    .linha-total td { background: var(--verde); color: white; }
+    .alert {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+    .rodape {
+      background: var(--verde);
+      color: rgba(255,255,255,0.6);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      border-top: 4px solid var(--dourado);
+    }
+    @media (max-width: 700px) {
+      .hero h2 { font-size: 1.6rem; }
+      .resultado-resumo { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topo">
+    <span>LUIS ALBERT ADVOCACIA</span>
+    <span>SISTEMA ATIVO</span>
+  </div>
+  <header class="cabecalho">
+    <div class="logo">
+      <h1>LAADV</h1>
+      <p>Cálculo de Progressão Horizontal</p>
+    </div>
+    <div class="badge">SEDUC | SEMED</div>
+  </header>
+  <section class="hero">
+    <h2>Diferenças salariais por progressão não aplicada</h2>
+    <p>Fundamento: Leis 3.951/2013 · 4.836/2019 · STJ Tema 1075</p>
+  </section>
+  <main class="container">
+    <!-- SELEÇÃO DE ÁREA (com botões desabilitados para Saúde e Segurança) -->
+    <div class="card">
+      <div class="card-header">⚖️ Selecione a área</div>
+      <div class="card-body" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-dourado" onclick="setArea('seduc')">📚 SEDUC (Estadual)</button>
+        <button class="btn btn-dourado" onclick="setArea('semed')">🏫 SEMED (Municipal)</button>
+        <button class="btn" disabled>🏥 Saúde (em breve)</button>
+        <button class="btn" disabled>🛡️ Segurança (em breve)</button>
+      </div>
+    </div>
+
+    <!-- FORMULÁRIO (inicialmente oculto) -->
+    <div id="formContainer" style="display: none;">
+      <div class="card">
+        <div class="card-header">📋 Dados do servidor – <span id="areaNome"></span></div>
+        <div class="card-body">
+          <!-- Painel de pré-visualização dinâmica -->
+          <div class="preview-painel" id="previewPainel">
+            <h4>🔍 Pré‑visualização dos dados</h4>
+            <div class="preview-grid" id="previewGrid"></div>
+          </div>
+
+          <form id="calcForm" onsubmit="event.preventDefault(); calcular();">
+            <div class="grid-2">
+              <div class="campo">
+                <label>Nome completo *</label>
+                <input type="text" id="nome" oninput="atualizarPreview()" required>
+              </div>
+              <div class="campo">
+                <label>Matrícula / CPF *</label>
+                <input type="text" id="matricula" oninput="atualizarPreview()" required>
+              </div>
+              <div class="campo">
+                <label>Data de posse *</label>
+                <input type="date" id="posse" onchange="atualizarPreview()" required>
+              </div>
+              <div class="campo">
+                <label>Classe (apenas SEDUC)</label>
+                <select id="classe" onchange="atualizarPreview()">
+                  <option value="">Selecione</option>
+                  <option value="3ª">3ª Classe</option>
+                  <option value="2ª">2ª Classe</option>
+                  <option value="1ª">1ª Classe</option>
+                  <option value="4ª">4ª Classe</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label>Referência atual *</label>
+                <select id="refAtual" onchange="atualizarPreview()" required>
+                  <option value="">Selecione</option>
+                </select>
+              </div>
+              <div class="campo">
+                <label>Referência de ingresso (opcional)</label>
+                <select id="refIngresso" onchange="atualizarPreview()"></select>
+              </div>
+              <div class="campo">
+                <label>Início do retroativo *</label>
+                <input type="date" id="dataInicio" onchange="atualizarPreview()" required>
+              </div>
+              <div class="campo">
+                <label>Fim do retroativo *</label>
+                <input type="date" id="dataFim" onchange="atualizarPreview()" required>
+              </div>
+              <div class="campo" style="grid-column: span 2;">
+                <label style="display: flex; align-items: center; gap: 1rem;">
+                  <input type="checkbox" id="incluirExtras" onchange="atualizarPreview()" checked> Incluir 13º salário e 1/3 de férias (reflexos)
+                </label>
+              </div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+              <button type="submit" class="btn">⚖️ Calcular</button>
+              <button type="button" class="btn btn-secundario" onclick="resetar()">🗑️ Limpar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ÁREA DE RESULTADOS (inicialmente oculta) -->
+    <div id="resultados" style="display: none;">
+      <div class="card">
+        <div class="card-header">📊 Resultado da análise</div>
+        <div class="card-body">
+          <div class="resultado-resumo" id="resumoNumerico"></div>
+          <div id="fundamentoJuridico" class="alert" style="background: var(--verde-claro); border-left-color: var(--verde);"></div>
+          <div class="tabela-wrap">
+            <table id="tabelaMensal">
+              <thead>
+                <tr>
+                  <th>Competência</th>
+                  <th>Ref. Recebida</th>
+                  <th>Venc. Recebido</th>
+                  <th>Ref. Devida</th>
+                  <th>Venc. Devido</th>
+                  <th>Lei / Reajuste</th>
+                  <th>Diferença</th>
+                  <th>Extras</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="corpoTabela"></tbody>
+            </table>
+          </div>
+          <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+            <button class="btn btn-dourado" onclick="exportarPDF()">📄 Exportar PDF</button>
+            <button class="btn" onclick="salvarNaPlanilha()">💾 Salvar no Google Sheets</button>
+            <span id="statusSalvar"></span>
+            <button class="btn btn-secundario" onclick="novaConsulta()">↩️ Nova consulta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer class="rodape">
+    <p>© 2025 Luis Albert Advocacia – Manaus/AM | Sistema de apoio administrativo</p>
+    <p style="font-size: 0.7rem; margin-top: 0.5rem;">Lei 3.951/2013 · Lei 4.836/2019 · STJ Tema 1075</p>
+  </footer>
+
+  <script>
+    // ============================================================
+    // TABELAS SALARIAIS (baseadas na planilha anexa)
+    // ============================================================
+    const TABELA_SEDUC = [
+      { vigencia: '2020-01-01', classe: '3ª', ref: 'A', salario: 2435.73, lei: 'Lei n.º ...' },
+      { vigencia: '2021-01-01', classe: '3ª', ref: 'A', salario: 2435.73, lei: 'Sem alteração' },
+      { vigencia: '2022-01-01', classe: '3ª', ref: 'A', salario: 2659.57, lei: 'Lei n.º 5.770/2022 (9,19%)' },
+      { vigencia: '2023-03-01', classe: '3ª', ref: 'A', salario: 2872.34, lei: 'Lei n.º 6.261/2023 (8%)' },
+      { vigencia: '2024-03-01', classe: '3ª', ref: 'A', salario: 3001.60, lei: 'Lei n.º 7.014/2024 (4,5%)' },
+      { vigencia: '2025-03-01', classe: '3ª', ref: 'A', salario: 3001.60, lei: 'Lei n.º 7.014/2024' },
+      { vigencia: '2020-01-01', classe: '3ª', ref: 'B', salario: 2484.44, lei: 'Lei n.º ...' },
+      { vigencia: '2021-01-01', classe: '3ª', ref: 'B', salario: 2484.44, lei: 'Sem alteração' },
+      { vigencia: '2022-01-01', classe: '3ª', ref: 'B', salario: 2712.73, lei: 'Lei n.º 5.770/2022' },
+      { vigencia: '2023-03-01', classe: '3ª', ref: 'B', salario: 2929.75, lei: 'Lei n.º 6.261/2023' },
+      { vigencia: '2024-03-01', classe: '3ª', ref: 'B', salario: 3061.59, lei: 'Lei n.º 7.014/2024' },
+      { vigencia: '2025-03-01', classe: '3ª', ref: 'B', salario: 3061.59, lei: 'Lei n.º 7.014/2024' },
+    ];
+
+    const TABELA_SEMED = [];
+
+    const REFS_SEDUC = ['A','B','C1','C2','D','E','F','G','H1'];
+    const REFS_SEMED = ['A1','A2','B1','B2','C1','C2','D1','D2'];
+
+    const MARCO_2019 = new Date('2019-03-01');
+    const INTERSTICIO_ANTIGO = 48;
+    const INTERSTICIO_NOVO   = 36;
+
+    let areaSelecionada = null;
+    let resultadoAtual = null;
+
+    // ===== UTILITÁRIOS =====
+    function fmtMoeda(valor) {
+      return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+    function fmtData(data) {
+      return data.toLocaleDateString('pt-BR');
+    }
+    function addMeses(date, meses) {
+      let d = new Date(date);
+      d.setMonth(d.getMonth() + meses);
+      return d;
+    }
+
+    // ===== PRÉ-VISUALIZAÇÃO DINÂMICA =====
+    function atualizarPreview() {
+      const nome = document.getElementById('nome').value || '—';
+      const matricula = document.getElementById('matricula').value || '—';
+      const posse = document.getElementById('posse').value || '—';
+      const classe = document.getElementById('classe').value || '—';
+      const refAtual = document.getElementById('refAtual').value || '—';
+      const refIngresso = document.getElementById('refIngresso').value || '—';
+      const inicio = document.getElementById('dataInicio').value || '—';
+      const fim = document.getElementById('dataFim').value || '—';
+      const extras = document.getElementById('incluirExtras').checked ? 'Sim' : 'Não';
+
+      const previewGrid = document.getElementById('previewGrid');
+      previewGrid.innerHTML = `
+        <div class="preview-item"><span class="rotulo">Nome</span><div class="valor">${nome}</div></div>
+        <div class="preview-item"><span class="rotulo">Matrícula</span><div class="valor">${matricula}</div></div>
+        <div class="preview-item"><span class="rotulo">Posse</span><div class="valor">${posse}</div></div>
+        <div class="preview-item"><span class="rotulo">Classe</span><div class="valor">${classe}</div></div>
+        <div class="preview-item"><span class="rotulo">Ref. Atual</span><div class="valor">${refAtual}</div></div>
+        <div class="preview-item"><span class="rotulo">Ref. Ingresso</span><div class="valor">${refIngresso}</div></div>
+        <div class="preview-item"><span class="rotulo">Início</span><div class="valor">${inicio}</div></div>
+        <div class="preview-item"><span class="rotulo">Fim</span><div class="valor">${fim}</div></div>
+        <div class="preview-item"><span class="rotulo">Reflexos</span><div class="valor">${extras}</div></div>
+      `;
+    }
+
+    // ===== LÓGICA DE PROGRESSÃO =====
+    function calcularProgressoes(posse, ate) {
+      let count = 0;
+      let cursor = new Date(posse);
+      while (true) {
+        let intersticio = cursor < MARCO_2019 ? INTERSTICIO_ANTIGO : INTERSTICIO_NOVO;
+        let proximo = addMeses(cursor, intersticio);
+        if (proximo > ate) break;
+        count++;
+        cursor = proximo;
+      }
+      return count;
+    }
+
+    function obterSalario(tabela, classe, ref, data) {
+      const dataStr = data.toISOString().slice(0,10);
+      let candidatos = tabela.filter(item => {
+        if (classe && item.classe !== classe) return false;
+        return item.ref === ref && item.vigencia <= dataStr;
+      });
+      candidatos.sort((a,b) => b.vigencia.localeCompare(a.vigencia));
+      return candidatos.length ? candidatos[0] : null;
+    }
+
+    function calcular() {
+      const nome = document.getElementById('nome').value.trim();
+      const matricula = document.getElementById('matricula').value.trim();
+      const posseStr = document.getElementById('posse').value;
+      const classe = document.getElementById('classe').value;
+      const refAtual = document.getElementById('refAtual').value;
+      const refIngresso = document.getElementById('refIngresso').value || refAtual;
+      const inicioStr = document.getElementById('dataInicio').value;
+      const fimStr = document.getElementById('dataFim').value;
+      const incluirExtras = document.getElementById('incluirExtras').checked;
+
+      if (!nome || !matricula || !posseStr || !refAtual || !inicioStr || !fimStr) {
+        alert('Preencha todos os campos obrigatórios.');
+        return;
+      }
+
+      const posse = new Date(posseStr + 'T12:00:00');
+      const inicio = new Date(inicioStr + 'T12:00:00');
+      const fim = new Date(fimStr + 'T12:00:00');
+
+      if (inicio > fim) { alert('Data de início deve ser anterior ao fim.'); return; }
+      if (posse > fim) { alert('Data de posse deve ser anterior ao fim do período.'); return; }
+
+      const tabela = areaSelecionada === 'seduc' ? TABELA_SEDUC : TABELA_SEMED;
+      const refList = areaSelecionada === 'seduc' ? REFS_SEDUC : REFS_SEMED;
+
+      const idxIngresso = refList.indexOf(refIngresso);
+      const idxAtual = refList.indexOf(refAtual);
+      if (idxIngresso === -1 || idxAtual === -1) {
+        alert('Referência inválida para a área selecionada.');
+        return;
+      }
+
+      const progressoesAteFim = calcularProgressoes(posse, fim);
+      const idxDevida = Math.min(idxIngresso + progressoesAteFim, refList.length - 1);
+      const refDevida = refList[idxDevida];
+
+      const linhas = [];
+      let totalGeral = 0;
+      const extrasAnuais = {};
+
+      for (let d = new Date(inicio); d <= fim; d.setMonth(d.getMonth() + 1)) {
+        const mesAtual = new Date(d);
+        const progressoesAteMes = calcularProgressoes(posse, mesAtual);
+        const idxDevidaMes = Math.min(idxIngresso + progressoesAteMes, refList.length - 1);
+        const refDevidaMes = refList[idxDevidaMes];
+
+        if (refDevidaMes === refIngresso) continue;
+
+        const salarioRecebido = obterSalario(tabela, classe, refIngresso, mesAtual);
+        const salarioDevido = obterSalario(tabela, classe, refDevidaMes, mesAtual);
+
+        if (!salarioRecebido || !salarioDevido) continue;
+
+        const diff = salarioDevido.salario - salarioRecebido.salario;
+        if (diff <= 0) continue;
+
+        const ano = mesAtual.getFullYear();
+        extrasAnuais[ano] = (extrasAnuais[ano] || 0) + diff;
+
+        linhas.push({
+          competencia: mesAtual.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }).replace(/\//g,'/'),
+          refRecebida: refIngresso,
+          vencRecebido: salarioRecebido.salario,
+          refDevida: refDevidaMes,
+          vencDevido: salarioDevido.salario,
+          lei: salarioDevido.lei,
+          diffMensal: diff,
+          extras: 0,
+          total: diff
+        });
+        totalGeral += diff;
+      }
+
+      if (incluirExtras) {
+        Object.entries(extrasAnuais).forEach(([ano, somaAnual]) => {
+          const mediaMensal = somaAnual / 12;
+          linhas.push({
+            competencia: `13º/${ano}`,
+            refRecebida: '',
+            vencRecebido: 0,
+            refDevida: '',
+            vencDevido: 0,
+            lei: 'Reflexo',
+            diffMensal: 0,
+            extras: mediaMensal,
+            total: mediaMensal
+          });
+          linhas.push({
+            competencia: `1/3 Férias/${ano}`,
+            refRecebida: '',
+            vencRecebido: 0,
+            refDevida: '',
+            vencDevido: 0,
+            lei: 'Reflexo',
+            diffMensal: 0,
+            extras: mediaMensal / 3,
+            total: mediaMensal / 3
+          });
+          totalGeral += mediaMensal + (mediaMensal / 3);
+        });
+      }
+
+      linhas.sort((a,b) => a.competencia.localeCompare(b.competencia));
+
+      resultadoAtual = {
+        nome, matricula, classe: classe || '—',
+        refIngresso, refDevida,
+        progressoes: progressoesAteFim,
+        periodoInicio: inicioStr, periodoFim: fimStr,
+        totalGeral,
+        linhas
+      };
+
+      renderResultados();
+    }
+
+    function renderResultados() {
+      if (!resultadoAtual) return;
+      const r = resultadoAtual;
+      document.getElementById('resumoNumerico').innerHTML = `
+        <div class="cartao-resumo">
+          <div class="valor">${r.progressoes}</div>
+          <div>Progressões devidas</div>
+        </div>
+        <div class="cartao-resumo">
+          <div class="valor">${r.refIngresso} → ${r.refDevida}</div>
+          <div>Referência</div>
+        </div>
+        <div class="cartao-resumo">
+          <div class="valor">${fmtMoeda(r.totalGeral)}</div>
+          <div>Total a receber</div>
+        </div>
+        <div class="cartao-resumo">
+          <div class="valor">${r.linhas.filter(l => !l.competencia.includes('/')).length}</div>
+          <div>Meses com diferença</div>
+        </div>
+      `;
+
+      document.getElementById('fundamentoJuridico').innerHTML = `
+        <strong>${areaSelecionada === 'seduc' ? 'SEDUC/AM' : 'SEMED/AM'}</strong> · 
+        Servidor: ${r.nome} (${r.matricula})<br>
+        Período analisado: ${fmtData(new Date(r.periodoInicio))} a ${fmtData(new Date(r.periodoFim))}<br>
+        <small>Lei 3.951/2013 (4 anos) → Lei 4.836/2019 (3 anos) · STJ Tema 1075 · Prescrição quinquenal</small>
+      `;
+
+      let tbody = '';
+      r.linhas.forEach(l => {
+        tbody += `<tr>
+          <td>${l.competencia}</td>
+          <td>${l.refRecebida}</td>
+          <td>${l.vencRecebido ? fmtMoeda(l.vencRecebido) : '—'}</td>
+          <td>${l.refDevida}</td>
+          <td>${l.vencDevido ? fmtMoeda(l.vencDevido) : '—'}</td>
+          <td style="max-width:200px;">${l.lei}</td>
+          <td>${l.diffMensal ? fmtMoeda(l.diffMensal) : '—'}</td>
+          <td>${l.extras ? fmtMoeda(l.extras) : '—'}</td>
+          <td>${fmtMoeda(l.total)}</td>
+        </tr>`;
+      });
+      tbody += `<tr class="linha-total">
+        <td colspan="8"><strong>TOTAL GERAL</strong></td>
+        <td><strong>${fmtMoeda(r.totalGeral)}</strong></td>
+      </tr>`;
+      document.getElementById('corpoTabela').innerHTML = tbody;
+
+      document.getElementById('resultados').style.display = 'block';
+    }
+
+    // ===== INTERAÇÃO COM INTERFACE =====
+    function setArea(area) {
+      areaSelecionada = area;
+      document.getElementById('areaNome').innerText = area === 'seduc' ? 'SEDUC' : 'SEMED';
+      const refs = area === 'seduc' ? REFS_SEDUC : REFS_SEMED;
+      const selectAtual = document.getElementById('refAtual');
+      const selectIngresso = document.getElementById('refIngresso');
+      selectAtual.innerHTML = '<option value="">Selecione</option>';
+      selectIngresso.innerHTML = '<option value="">Igual à atual</option>';
+      refs.forEach(r => {
+        selectAtual.innerHTML += `<option value="${r}">${r}</option>`;
+        selectIngresso.innerHTML += `<option value="${r}">${r}</option>`;
+      });
+      document.getElementById('formContainer').style.display = 'block';
+      window.scrollTo({ top: document.getElementById('formContainer').offsetTop, behavior: 'smooth' });
+      atualizarPreview();
+    }
+
+    function resetar() {
+      document.getElementById('calcForm').reset();
+      atualizarPreview();
+      document.getElementById('resultados').style.display = 'none';
+    }
+
+    function novaConsulta() {
+      document.getElementById('resultados').style.display = 'none';
+      document.getElementById('formContainer').style.display = 'none';
+      areaSelecionada = null;
+    }
+
+    function exportarPDF() {
+      window.print();
+    }
+
+    // ===== INTEGRAÇÃO GOOGLE SHEETS =====
+    async function salvarNaPlanilha() {
+      if (!resultadoAtual) return;
+      const url = localStorage.getItem('laadv_script_url') || prompt('Cole a URL do Apps Script (configurada nas instruções):');
+      if (!url) return;
+
+      const payload = {
+        area: areaSelecionada,
+        ...resultadoAtual,
+        dataEnvio: new Date().toISOString()
+      };
+
+      document.getElementById('statusSalvar').innerText = '⏳ Salvando...';
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        document.getElementById('statusSalvar').innerHTML = '✅ Salvo com sucesso!';
+      } catch (err) {
+        document.getElementById('statusSalvar').innerHTML = '❌ Erro ao salvar';
+        console.error(err);
+      }
+    }
+
+    // ===== INICIALIZAÇÃO =====
+    window.onload = function() {
+      const hoje = new Date().toISOString().slice(0,10);
+      document.getElementById('dataFim').value = hoje;
+      const cincoAnosAtras = new Date();
+      cincoAnosAtras.setFullYear(cincoAnosAtras.getFullYear() - 5);
+      document.getElementById('dataInicio').value = cincoAnosAtras.toISOString().slice(0,10);
+      document.getElementById('posse').value = '2020-02-03';
+      atualizarPreview();
+    }
+  </script>
+</body>
+</html>
