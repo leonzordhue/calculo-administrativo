@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
   <title>LAADV – Cálculo de Progressão</title>
   <style>
+    /* Estilos idênticos à versão anterior - mantidos por brevidade */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --verde: #0B4A44;
@@ -163,7 +164,6 @@
       color: var(--verde);
     }
     .btn-secundario:hover { background: var(--verde-claro); }
-    /* Painel de pré-visualização */
     .preview-painel {
       background: var(--verde-claro);
       border-radius: 12px;
@@ -280,7 +280,7 @@
     <p>Fundamento: Leis 3.951/2013 · 4.836/2019 · STJ Tema 1075</p>
   </section>
   <main class="container">
-    <!-- SELEÇÃO DE ÁREA (com botões desabilitados para Saúde e Segurança) -->
+    <!-- SELEÇÃO DE ÁREA -->
     <div class="card">
       <div class="card-header">⚖️ Selecione a área</div>
       <div class="card-body" style="display: flex; gap: 1rem; flex-wrap: wrap;">
@@ -291,12 +291,11 @@
       </div>
     </div>
 
-    <!-- FORMULÁRIO (inicialmente oculto) -->
+    <!-- FORMULÁRIO -->
     <div id="formContainer" style="display: none;">
       <div class="card">
         <div class="card-header">📋 Dados do servidor – <span id="areaNome"></span></div>
         <div class="card-body">
-          <!-- Painel de pré-visualização dinâmica -->
           <div class="preview-painel" id="previewPainel">
             <h4>🔍 Pré‑visualização dos dados</h4>
             <div class="preview-grid" id="previewGrid"></div>
@@ -359,7 +358,7 @@
       </div>
     </div>
 
-    <!-- ÁREA DE RESULTADOS (inicialmente oculta) -->
+    <!-- ÁREA DE RESULTADOS -->
     <div id="resultados" style="display: none;">
       <div class="card">
         <div class="card-header">📊 Resultado da análise</div>
@@ -401,7 +400,12 @@
 
   <script>
     // ============================================================
-    // TABELAS SALARIAIS (baseadas na planilha anexa)
+    // CONFIGURAÇÃO DA URL DO APPS SCRIPT (já preenchida)
+    // ============================================================
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6nrHLu8LqXOWEIcV30kmXIX9euSghak7buBu8Y6OM6J8C0-M8ROxmh_OARbXsEfPQ/exec';
+
+    // ============================================================
+    // TABELAS SALARIAIS
     // ============================================================
     const TABELA_SEDUC = [
       { vigencia: '2020-01-01', classe: '3ª', ref: 'A', salario: 2435.73, lei: 'Lei n.º ...' },
@@ -443,7 +447,7 @@
       return d;
     }
 
-    // ===== PRÉ-VISUALIZAÇÃO DINÂMICA =====
+    // ===== PRÉ-VISUALIZAÇÃO =====
     function atualizarPreview() {
       const nome = document.getElementById('nome').value || '—';
       const matricula = document.getElementById('matricula').value || '—';
@@ -604,6 +608,7 @@
         progressoes: progressoesAteFim,
         periodoInicio: inicioStr, periodoFim: fimStr,
         totalGeral,
+        incluirExtras,
         linhas
       };
 
@@ -662,7 +667,7 @@
       document.getElementById('resultados').style.display = 'block';
     }
 
-    // ===== INTERAÇÃO COM INTERFACE =====
+    // ===== INTERAÇÃO =====
     function setArea(area) {
       areaSelecionada = area;
       document.getElementById('areaNome').innerText = area === 'seduc' ? 'SEDUC' : 'SEMED';
@@ -696,11 +701,15 @@
       window.print();
     }
 
-    // ===== INTEGRAÇÃO GOOGLE SHEETS =====
+    // ===== INTEGRAÇÃO GOOGLE SHEETS (URL já configurada) =====
     async function salvarNaPlanilha() {
-      if (!resultadoAtual) return;
-      const url = localStorage.getItem('laadv_script_url') || prompt('Cole a URL do Apps Script (configurada nas instruções):');
-      if (!url) return;
+      if (!resultadoAtual) {
+        alert('Nenhum resultado para salvar. Calcule primeiro.');
+        return;
+      }
+
+      const statusEl = document.getElementById('statusSalvar');
+      statusEl.innerText = '⏳ Salvando...';
 
       const payload = {
         area: areaSelecionada,
@@ -708,18 +717,20 @@
         dataEnvio: new Date().toISOString()
       };
 
-      document.getElementById('statusSalvar').innerText = '⏳ Salvando...';
       try {
-        const response = await fetch(url, {
+        const response = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors',
+          mode: 'no-cors', // necessário para Apps Script
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        document.getElementById('statusSalvar').innerHTML = '✅ Salvo com sucesso!';
+        // Como no-cors não retorna conteúdo, assumimos sucesso
+        statusEl.innerHTML = '✅ Salvo com sucesso!';
+        setTimeout(() => statusEl.innerHTML = '', 3000);
       } catch (err) {
-        document.getElementById('statusSalvar').innerHTML = '❌ Erro ao salvar';
+        statusEl.innerHTML = '❌ Erro ao salvar';
         console.error(err);
+        setTimeout(() => statusEl.innerHTML = '', 3000);
       }
     }
 
