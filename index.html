@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-  <title>LAADV – Cálculo de Progressão</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0B4A44" />
+  <title>LAADV — Cálculo de Diferenças Salariais</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* Estilos idênticos à versão anterior - mantidos por brevidade */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
       --verde: #0B4A44;
@@ -25,35 +31,40 @@
       background: var(--cinza);
       color: var(--texto);
       line-height: 1.5;
+      overflow-x: hidden;
+      width: 100%;
     }
     .topo {
       background: var(--verde);
       color: white;
-      padding: 0.5rem 2rem;
-      font-size: 0.8rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.7rem;
       display: flex;
       justify-content: space-between;
       letter-spacing: 0.5px;
+      width: 100%;
     }
     .topo span:last-child { color: var(--dourado); }
     .cabecalho {
       background: var(--verde);
       border-bottom: 4px solid var(--dourado);
-      padding: 1rem 2rem;
+      padding: 0.8rem 1rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
+      gap: 0.5rem;
+      width: 100%;
     }
     .logo h1 {
       font-family: var(--font-serif);
-      font-size: 1.8rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: white;
       letter-spacing: 1px;
     }
     .logo p {
-      font-size: 0.7rem;
+      font-size: 0.6rem;
       text-transform: uppercase;
       color: var(--dourado);
       margin-top: -5px;
@@ -62,63 +73,73 @@
       background: rgba(201,169,62,0.2);
       border: 1px solid var(--dourado);
       color: var(--dourado);
-      padding: 0.4rem 1rem;
+      padding: 0.3rem 0.8rem;
       border-radius: 30px;
-      font-size: 0.7rem;
+      font-size: 0.6rem;
       font-weight: 600;
+      white-space: nowrap;
     }
     .hero {
       background: linear-gradient(135deg, var(--verde) 0%, #0d5a54 100%);
-      padding: 2.5rem 2rem;
+      padding: 1.5rem 1rem;
       color: white;
+      width: 100%;
     }
     .hero h2 {
       font-family: var(--font-serif);
-      font-size: 2.2rem;
+      font-size: 1.6rem;
       max-width: 800px;
     }
     .hero p {
       opacity: 0.8;
       margin-top: 0.5rem;
+      font-size: 0.85rem;
     }
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 1rem;
+      width: 100%;
     }
     .card {
       background: white;
       border-radius: 16px;
       box-shadow: var(--sombra);
       border: 1px solid var(--borda);
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
       overflow: hidden;
+      width: 100%;
     }
     .card-header {
       background: var(--verde-claro);
-      padding: 1rem 1.5rem;
+      padding: 0.8rem 1rem;
       border-bottom: 2px solid var(--dourado);
       display: flex;
       align-items: center;
       gap: 0.8rem;
     }
-    .card-header h3 {
-      font-size: 1.2rem;
-      color: var(--verde);
+    .card-header h3 { font-size: 1rem; color: var(--verde); }
+    .card-body { padding: 1rem; }
+    .area-botoes {
+      display: flex;
+      gap: 0.8rem;
+      flex-wrap: wrap;
     }
-    .card-body { padding: 1.5rem; }
+    .area-botoes .btn { flex: 1 1 auto; min-width: 140px; }
     .grid-2 {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.2rem;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
     }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
     .campo {
       display: flex;
       flex-direction: column;
       gap: 0.3rem;
+      width: 100%;
     }
     .campo label {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
       color: var(--verde);
@@ -129,47 +150,23 @@
       border-radius: 8px;
       font-size: 0.9rem;
       transition: 0.2s;
+      width: 100%;
     }
     .campo input:focus, .campo select:focus {
       outline: none;
       border-color: var(--dourado);
       box-shadow: 0 0 0 3px rgba(201,169,62,0.2);
     }
-    .btn {
-      background: var(--verde);
-      color: white;
-      border: none;
-      padding: 0.8rem 2rem;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .btn:hover:not(:disabled) { background: var(--verde-hover); }
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .btn-dourado {
-      background: var(--dourado);
-      color: var(--verde);
-    }
-    .btn-dourado:hover:not(:disabled) { background: #b8962b; }
-    .btn-secundario {
-      background: transparent;
-      border: 2px solid var(--verde);
-      color: var(--verde);
-    }
-    .btn-secundario:hover { background: var(--verde-claro); }
+    /* Painel de pré-visualização */
     .preview-painel {
       background: var(--verde-claro);
       border-radius: 12px;
-      padding: 1rem 1.5rem;
-      margin: 1rem 0;
+      padding: 1rem;
+      margin: 0 0 1rem 0;
       border: 2px dashed var(--dourado);
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .preview-painel h4 {
       color: var(--verde);
@@ -177,12 +174,14 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      font-size: 1rem;
     }
     .preview-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 0.8rem;
     }
+    @media (max-width: 500px) { .preview-grid { grid-template-columns: 1fr; } }
     .preview-item {
       background: white;
       padding: 0.5rem 0.8rem;
@@ -190,53 +189,88 @@
       border-left: 3px solid var(--dourado);
     }
     .preview-item .rotulo {
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       text-transform: uppercase;
       color: var(--verde);
       font-weight: 600;
     }
     .preview-item .valor {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 500;
+      word-break: break-word;
     }
+    .btn {
+      background: var(--verde);
+      color: white;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+    .btn:hover:not(:disabled) { background: var(--verde-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-dourado { background: var(--dourado); color: var(--verde); }
+    .btn-dourado:hover:not(:disabled) { background: #b8962b; }
+    .btn-secundario {
+      background: transparent;
+      border: 2px solid var(--verde);
+      color: var(--verde);
+    }
+    .btn-secundario:hover { background: var(--verde-claro); }
     .resultado-resumo {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin: 2rem 0;
+      gap: 0.8rem;
+      margin: 1.5rem 0;
     }
+    @media (max-width: 600px) { .resultado-resumo { grid-template-columns: 1fr 1fr; } }
     .cartao-resumo {
       background: var(--verde-claro);
       border-radius: 12px;
-      padding: 1.2rem;
+      padding: 0.8rem;
       text-align: center;
       border: 1px solid var(--borda);
     }
     .cartao-resumo .valor {
-      font-size: 1.8rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--verde);
       line-height: 1.2;
     }
-    .tabela-wrap { overflow-x: auto; }
+    .cartao-resumo .rotulo { font-size: 0.65rem; }
+    .tabela-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 1rem 0;
+      border-radius: 8px;
+      border: 1px solid var(--borda);
+      width: 100%;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      min-width: 600px;
     }
     th {
       background: var(--verde);
       color: white;
-      padding: 0.8rem;
+      padding: 0.6rem;
       white-space: nowrap;
     }
     td {
-      padding: 0.6rem 0.8rem;
+      padding: 0.5rem;
       border-bottom: 1px solid var(--borda);
       text-align: left;
     }
-    tr:last-child td { border-bottom: none; }
-    tr:hover { background: var(--verde-claro); }
     .linha-total {
       background: var(--verde);
       color: white;
@@ -246,21 +280,38 @@
     .alert {
       background: #fff3cd;
       border-left: 4px solid #ffc107;
-      padding: 1rem;
+      padding: 0.8rem;
       border-radius: 8px;
       margin: 1rem 0;
+      font-size: 0.85rem;
     }
     .rodape {
       background: var(--verde);
       color: rgba(255,255,255,0.6);
-      padding: 1.5rem 2rem;
+      padding: 1.2rem 1rem;
       text-align: center;
       border-top: 4px solid var(--dourado);
+      width: 100%;
     }
-    @media (max-width: 700px) {
-      .hero h2 { font-size: 1.6rem; }
-      .resultado-resumo { grid-template-columns: 1fr 1fr; }
+    .hidden { display: none !important; }
+    .text-center { text-align: center; }
+    .mb-1 { margin-bottom: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+    .w-100 { width: 100%; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.63rem;
+      font-weight: 700;
+      padding: 0.2em 0.7em;
+      border-radius: 100px;
     }
+    .tag-teal { background: var(--verde-claro); border: 1px solid var(--borda); color: var(--verde); }
+    .tag-gold { background: var(--dourado-claro); border: 1px solid var(--dourado); color: var(--verde); }
+    .save-status { font-size:0.75rem; font-weight:600; padding:0.3em 0.8em; border-radius:100px; display:inline-flex; align-items:center; gap:0.3rem; }
+    .save-status.ok { background: #E8F5EE; color: #1A6B48; }
+    .save-status.fail { background: #FEF2F2; color: #B02020; }
   </style>
 </head>
 <body>
@@ -277,79 +328,98 @@
   </header>
   <section class="hero">
     <h2>Diferenças salariais por progressão não aplicada</h2>
-    <p>Fundamento: Leis 3.951/2013 · 4.836/2019 · STJ Tema 1075</p>
+    <p>Leis 3.951/2013 · 4.836/2019 · STJ Tema 1075</p>
   </section>
   <main class="container">
     <!-- SELEÇÃO DE ÁREA -->
     <div class="card">
       <div class="card-header">⚖️ Selecione a área</div>
-      <div class="card-body" style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <button class="btn btn-dourado" onclick="setArea('seduc')">📚 SEDUC (Estadual)</button>
-        <button class="btn btn-dourado" onclick="setArea('semed')">🏫 SEMED (Municipal)</button>
-        <button class="btn" disabled>🏥 Saúde (em breve)</button>
-        <button class="btn" disabled>🛡️ Segurança (em breve)</button>
+      <div class="card-body">
+        <div class="area-botoes">
+          <button class="btn btn-dourado" onclick="setArea('seduc')">📚 SEDUC (Estadual)</button>
+          <button class="btn btn-dourado" onclick="setArea('semed')">🏫 SEMED (Municipal)</button>
+          <button class="btn" disabled>🏥 Saúde (em breve)</button>
+          <button class="btn" disabled>🛡️ Segurança (em breve)</button>
+        </div>
       </div>
     </div>
 
-    <!-- FORMULÁRIO -->
-    <div id="formContainer" style="display: none;">
+    <!-- FORMULÁRIO (inicialmente oculto) -->
+    <div id="formContainer" class="hidden">
       <div class="card">
         <div class="card-header">📋 Dados do servidor – <span id="areaNome"></span></div>
         <div class="card-body">
-          <div class="preview-painel" id="previewPainel">
-            <h4>🔍 Pré‑visualização dos dados</h4>
+          <!-- Painel de pré-visualização dinâmica -->
+          <div class="preview-painel" id="previewPainel" style="display:none;">
+            <h4>🔍 Pré‑visualização</h4>
             <div class="preview-grid" id="previewGrid"></div>
           </div>
 
           <form id="calcForm" onsubmit="event.preventDefault(); calcular();">
             <div class="grid-2">
-              <div class="campo">
+              <!-- Campos comuns -->
+              <div class="campo full">
                 <label>Nome completo *</label>
-                <input type="text" id="nome" oninput="atualizarPreview()" required>
+                <input type="text" id="nome" placeholder="Ex: João Silva" required>
               </div>
               <div class="campo">
                 <label>Matrícula / CPF *</label>
-                <input type="text" id="matricula" oninput="atualizarPreview()" required>
+                <input type="text" id="matricula" placeholder="Ex: 252.534-8A" required>
               </div>
               <div class="campo">
                 <label>Data de posse *</label>
-                <input type="date" id="posse" onchange="atualizarPreview()" required>
+                <input type="date" id="posse" required>
               </div>
-              <div class="campo">
-                <label>Classe (apenas SEDUC)</label>
-                <select id="classe" onchange="atualizarPreview()">
+              <!-- Campo Classe (SEDUC) e Referências serão preenchidos via JS conforme área -->
+              <div class="campo" id="classeField" style="display:none;">
+                <label>Classe (SEDUC) *</label>
+                <select id="classe">
                   <option value="">Selecione</option>
-                  <option value="3ª">3ª Classe</option>
-                  <option value="2ª">2ª Classe</option>
                   <option value="1ª">1ª Classe</option>
+                  <option value="2ª">2ª Classe</option>
+                  <option value="3ª">3ª Classe</option>
                   <option value="4ª">4ª Classe</option>
                 </select>
               </div>
               <div class="campo">
                 <label>Referência atual *</label>
-                <select id="refAtual" onchange="atualizarPreview()" required>
+                <select id="refAtual" required>
                   <option value="">Selecione</option>
                 </select>
               </div>
               <div class="campo">
-                <label>Referência de ingresso (opcional)</label>
-                <select id="refIngresso" onchange="atualizarPreview()"></select>
+                <label>Ref. ingresso (opcional)</label>
+                <select id="refIngresso"></select>
               </div>
               <div class="campo">
-                <label>Início do retroativo *</label>
-                <input type="date" id="dataInicio" onchange="atualizarPreview()" required>
+                <label>Início retroativo *</label>
+                <input type="date" id="dataInicio" required>
               </div>
               <div class="campo">
-                <label>Fim do retroativo *</label>
-                <input type="date" id="dataFim" onchange="atualizarPreview()" required>
+                <label>Fim retroativo *</label>
+                <input type="date" id="dataFim" required>
+              </div>
+              <!-- Campos específicos SEDUC -->
+              <div class="campo full" id="municipioField" style="display:none;">
+                <label>Município de lotação *</label>
+                <select id="municipio">
+                  <option value="">Selecione o município...</option>
+                </select>
+              </div>
+              <div class="campo" id="regenciaField" style="display:none;">
+                <label>Regência de classe</label>
+                <select id="regencia">
+                  <option value="nao">Não</option>
+                  <option value="sim">Sim (+25%)</option>
+                </select>
               </div>
               <div class="campo" style="grid-column: span 2;">
-                <label style="display: flex; align-items: center; gap: 1rem;">
-                  <input type="checkbox" id="incluirExtras" onchange="atualizarPreview()" checked> Incluir 13º salário e 1/3 de férias (reflexos)
+                <label style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                  <input type="checkbox" id="incluirExtras" checked> Incluir 13º e 1/3 de férias
                 </label>
               </div>
             </div>
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <div class="acoes" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
               <button type="submit" class="btn">⚖️ Calcular</button>
               <button type="button" class="btn btn-secundario" onclick="resetar()">🗑️ Limpar</button>
             </div>
@@ -358,8 +428,8 @@
       </div>
     </div>
 
-    <!-- ÁREA DE RESULTADOS -->
-    <div id="resultados" style="display: none;">
+    <!-- ÁREA DE RESULTADOS (inicialmente oculta) -->
+    <div id="resultados" class="hidden">
       <div class="card">
         <div class="card-header">📊 Resultado da análise</div>
         <div class="card-body">
@@ -374,7 +444,7 @@
                   <th>Venc. Recebido</th>
                   <th>Ref. Devida</th>
                   <th>Venc. Devido</th>
-                  <th>Lei / Reajuste</th>
+                  <th>Lei</th>
                   <th>Diferença</th>
                   <th>Extras</th>
                   <th>Total</th>
@@ -383,56 +453,97 @@
               <tbody id="corpoTabela"></tbody>
             </table>
           </div>
-          <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
-            <button class="btn btn-dourado" onclick="exportarPDF()">📄 Exportar PDF</button>
-            <button class="btn" onclick="salvarNaPlanilha()">💾 Salvar no Google Sheets</button>
-            <span id="statusSalvar"></span>
-            <button class="btn btn-secundario" onclick="novaConsulta()">↩️ Nova consulta</button>
+          <div class="acoes" style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
+            <button class="btn btn-dourado" onclick="exportarPDF()">📄 PDF</button>
+            <button class="btn" onclick="salvarNaPlanilha()">💾 Salvar</button>
+            <span id="statusSalvar" style="font-size:0.8rem; align-self:center;"></span>
+            <button class="btn btn-secundario" onclick="novaConsulta()">↩️ Nova</button>
           </div>
         </div>
       </div>
     </div>
   </main>
   <footer class="rodape">
-    <p>© 2025 Luis Albert Advocacia – Manaus/AM | Sistema de apoio administrativo</p>
-    <p style="font-size: 0.7rem; margin-top: 0.5rem;">Lei 3.951/2013 · Lei 4.836/2019 · STJ Tema 1075</p>
+    <p>© 2026 Luis Albert Advocacia – Manaus/AM</p>
+    <p style="font-size: 0.6rem;">Lei 3.951/2013 · Lei 4.836/2019 · STJ Tema 1075</p>
   </footer>
 
   <script>
     // ============================================================
-    // CONFIGURAÇÃO DA URL DO APPS SCRIPT (já preenchida)
+    // DADOS E REGRAS (baseados no código fornecido)
     // ============================================================
+    const TABELAS_SALARIAIS = {
+      SEDUC: [
+        { vigencia: '2019-01-01', valorBase: 2320.10, lei: 'Lei n.º 3.951/2013' },
+        { vigencia: '2020-01-01', valorBase: 2435.73, lei: 'Reajuste 4,73% (Data-base 2019)' },
+        { vigencia: '2022-01-01', valorBase: 2659.57, lei: 'Lei n.º 5.770/2022 (9,19%)' },
+        { vigencia: '2023-03-01', valorBase: 2872.34, lei: 'Lei n.º 6.261/2023 (8,0%)' },
+        { vigencia: '2024-05-01', valorBase: 2984.07, lei: 'Data-Base 2024 (3,89%)' },
+        { vigencia: '2025-11-11', valorBase: 3058.58, lei: 'Lei n.º 7.836/2025' },
+      ],
+      SEMED: [
+        { vigencia: '2019-01-01', valorBase: 1912.45, lei: 'PCCR — Lei Municipal n.º 1.126/2007' },
+        { vigencia: '2022-04-01', valorBase: 2404.94, lei: 'Lei Municipal n.º 2.871/2022 (12,47%)' },
+        { vigencia: '2023-05-01', valorBase: 2513.16, lei: 'Lei Municipal n.º 3.056/2023 (4,5%)' },
+        { vigencia: '2024-05-01', valorBase: 2605.14, lei: 'Lei Municipal n.º 3.315/2024 (3,66%)' },
+        { vigencia: '2025-06-17', valorBase: 2650.29, lei: 'Data-Base 2025 (5,48%)' },
+      ],
+    };
+
+    const REGRAS = {
+      SEDUC: {
+        classes: { '1ª': 1.25, '2ª': 1.10, '3ª': 1.00, '4ª': 0.90 },
+        referencias: ['A','B','C','D','E','F','G','H'],
+        multRefs: { A:1.000, B:1.020, C:1.040, D:1.060, E:1.080, F:1.100, G:1.120, H:1.140 },
+        intersticioAntigo: 48,
+        intersticioNovo:   36,
+        marco: new Date('2019-03-01'),
+      },
+      SEMED: {
+        referencias: ['A1','A2','B1','B2','C1','C2','D1','D2'],
+        multRefs: {
+          A1:1.000, A2:1.020,
+          B1:1.150, B2:1.173,
+          C1:1.322, C2:1.349,
+          D1:1.520, D2:1.551,
+        },
+        intersticioUnico: 24,
+      },
+    };
+
+    const LOCALIDADES_AM = {
+      'Manaus': 0.00,
+      'Iranduba': 0.10, 'Rio Preto da Eva': 0.10, 'Manacapuru': 0.10,
+      'Itacoatiara': 0.10, 'Careiro da Varzea': 0.10, 'Careiro': 0.10,
+      'Autazes': 0.10, 'Manaquiri': 0.10,
+      'Presidente Figueiredo': 0.15, 'Novo Airao': 0.15,
+      'Sao Sebastiao do Uatuma': 0.15, 'Nova Olinda do Norte': 0.15,
+      'Parintins': 0.20, 'Maues': 0.20, 'Itapiranga': 0.20,
+      'Silves': 0.20, 'Urucurituba': 0.20, 'Boa Vista do Ramos': 0.20,
+      'Barreirinha': 0.20, 'Nhamunda': 0.20, 'Urucara': 0.20,
+      'Coari': 0.25, 'Tefe': 0.25, 'Anori': 0.25, 'Anama': 0.25,
+      'Codajas': 0.25, 'Caapiranga': 0.25, 'Beruri': 0.25,
+      'Uarini': 0.25, 'Alvaraes': 0.25, 'Maraa': 0.25,
+      'Humaita': 0.50, 'Manicore': 0.50, 'Labrea': 0.50,
+      'Boca do Acre': 0.50, 'Canutama': 0.50, 'Tapaua': 0.50,
+      'Tabatinga': 0.50, 'Benjamin Constant': 0.50,
+      'Sao Paulo de Olivenca': 0.50, 'Santo Antonio do Ica': 0.50,
+      'Jurua': 0.50, 'Fonte Boa': 0.50, 'Jutai': 0.50,
+      'Tonantins': 0.50, 'Amatura': 0.50, 'Apui': 0.50,
+      'Borba': 0.50, 'Novo Aripuana': 0.50, 'Pauini': 0.50,
+      'Sao Gabriel da Cachoeira': 0.80, 'Santa Isabel do Rio Negro': 0.80,
+      'Barcelos': 0.80, 'Eirunepe': 0.80,
+      'Envira': 1.00, 'Ipixuna': 1.00, 'Itamarati': 1.00,
+      'Guajara': 1.00, 'Atalaia do Norte': 1.00, 'Japura': 1.00,
+    };
+
+    const REGENCIA_PERCENTUAL = 0.25; // 25%
+
+    let AREA_ATUAL = null;
+    let RESULTADO = null;
+
+    // URL do Apps Script (fornecida pelo usuário)
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6nrHLu8LqXOWEIcV30kmXIX9euSghak7buBu8Y6OM6J8C0-M8ROxmh_OARbXsEfPQ/exec';
-
-    // ============================================================
-    // TABELAS SALARIAIS
-    // ============================================================
-    const TABELA_SEDUC = [
-      { vigencia: '2020-01-01', classe: '3ª', ref: 'A', salario: 2435.73, lei: 'Lei n.º ...' },
-      { vigencia: '2021-01-01', classe: '3ª', ref: 'A', salario: 2435.73, lei: 'Sem alteração' },
-      { vigencia: '2022-01-01', classe: '3ª', ref: 'A', salario: 2659.57, lei: 'Lei n.º 5.770/2022 (9,19%)' },
-      { vigencia: '2023-03-01', classe: '3ª', ref: 'A', salario: 2872.34, lei: 'Lei n.º 6.261/2023 (8%)' },
-      { vigencia: '2024-03-01', classe: '3ª', ref: 'A', salario: 3001.60, lei: 'Lei n.º 7.014/2024 (4,5%)' },
-      { vigencia: '2025-03-01', classe: '3ª', ref: 'A', salario: 3001.60, lei: 'Lei n.º 7.014/2024' },
-      { vigencia: '2020-01-01', classe: '3ª', ref: 'B', salario: 2484.44, lei: 'Lei n.º ...' },
-      { vigencia: '2021-01-01', classe: '3ª', ref: 'B', salario: 2484.44, lei: 'Sem alteração' },
-      { vigencia: '2022-01-01', classe: '3ª', ref: 'B', salario: 2712.73, lei: 'Lei n.º 5.770/2022' },
-      { vigencia: '2023-03-01', classe: '3ª', ref: 'B', salario: 2929.75, lei: 'Lei n.º 6.261/2023' },
-      { vigencia: '2024-03-01', classe: '3ª', ref: 'B', salario: 3061.59, lei: 'Lei n.º 7.014/2024' },
-      { vigencia: '2025-03-01', classe: '3ª', ref: 'B', salario: 3061.59, lei: 'Lei n.º 7.014/2024' },
-    ];
-
-    const TABELA_SEMED = [];
-
-    const REFS_SEDUC = ['A','B','C1','C2','D','E','F','G','H1'];
-    const REFS_SEMED = ['A1','A2','B1','B2','C1','C2','D1','D2'];
-
-    const MARCO_2019 = new Date('2019-03-01');
-    const INTERSTICIO_ANTIGO = 48;
-    const INTERSTICIO_NOVO   = 36;
-
-    let areaSelecionada = null;
-    let resultadoAtual = null;
 
     // ===== UTILITÁRIOS =====
     function fmtMoeda(valor) {
@@ -446,304 +557,379 @@
       d.setMonth(d.getMonth() + meses);
       return d;
     }
-
-    // ===== PRÉ-VISUALIZAÇÃO =====
-    function atualizarPreview() {
-      const nome = document.getElementById('nome').value || '—';
-      const matricula = document.getElementById('matricula').value || '—';
-      const posse = document.getElementById('posse').value || '—';
-      const classe = document.getElementById('classe').value || '—';
-      const refAtual = document.getElementById('refAtual').value || '—';
-      const refIngresso = document.getElementById('refIngresso').value || '—';
-      const inicio = document.getElementById('dataInicio').value || '—';
-      const fim = document.getElementById('dataFim').value || '—';
-      const extras = document.getElementById('incluirExtras').checked ? 'Sim' : 'Não';
-
-      const previewGrid = document.getElementById('previewGrid');
-      previewGrid.innerHTML = `
-        <div class="preview-item"><span class="rotulo">Nome</span><div class="valor">${nome}</div></div>
-        <div class="preview-item"><span class="rotulo">Matrícula</span><div class="valor">${matricula}</div></div>
-        <div class="preview-item"><span class="rotulo">Posse</span><div class="valor">${posse}</div></div>
-        <div class="preview-item"><span class="rotulo">Classe</span><div class="valor">${classe}</div></div>
-        <div class="preview-item"><span class="rotulo">Ref. Atual</span><div class="valor">${refAtual}</div></div>
-        <div class="preview-item"><span class="rotulo">Ref. Ingresso</span><div class="valor">${refIngresso}</div></div>
-        <div class="preview-item"><span class="rotulo">Início</span><div class="valor">${inicio}</div></div>
-        <div class="preview-item"><span class="rotulo">Fim</span><div class="valor">${fim}</div></div>
-        <div class="preview-item"><span class="rotulo">Reflexos</span><div class="valor">${extras}</div></div>
-      `;
+    function parseDate(str) {
+      if (!str) return null;
+      const [y,mo,d] = str.split('-').map(Number);
+      return new Date(y, mo-1, d);
     }
 
-    // ===== LÓGICA DE PROGRESSÃO =====
-    function calcularProgressoes(posse, ate) {
+    // ===== FUNÇÕES DE CÁLCULO =====
+    function getValorBase(area, dataRef) {
+      const tabela = TABELAS_SALARIAIS[area.toUpperCase()];
+      const mesStr = dataRef.getFullYear() + '-' + String(dataRef.getMonth()+1).padStart(2,'0') + '-01';
+      const sorted = [...tabela].sort((a,b) => b.vigencia.localeCompare(a.vigencia));
+      return sorted.find(r => r.vigencia <= mesStr) || null;
+    }
+
+    function calcVencimento(area, classe, ref, dataRef, pctLocalidade = 0, pctRegencia = 0) {
+      const areaCfg = REGRAS[area.toUpperCase()];
+      const baseItem = getValorBase(area, dataRef);
+      if (!baseItem) return null;
+
+      let salBase;
+      if (area.toUpperCase() === 'SEDUC') {
+        const multClasse = areaCfg.classes[classe] ?? 1.00;
+        const multRef    = areaCfg.multRefs[ref]   ?? 1.00;
+        salBase = baseItem.valorBase * multClasse * multRef;
+      } else {
+        const multRef = areaCfg.multRefs[ref] ?? 1.00;
+        salBase = baseItem.valorBase * multRef;
+        pctLocalidade = 0;
+        pctRegencia = 0;
+      }
+      const salLocalidade = salBase * pctLocalidade;
+      const salRegencia   = salBase * pctRegencia;
+      const sal = salBase + salLocalidade + salRegencia;
+      return { sal, salBase, salLocalidade, salRegencia, lei: baseItem.lei };
+    }
+
+    function calcularProgressoes(area, posseDate, ateDate) {
+      const cfg = REGRAS[area.toUpperCase()];
       let count = 0;
-      let cursor = new Date(posse);
+      let cursor = new Date(posseDate);
       while (true) {
-        let intersticio = cursor < MARCO_2019 ? INTERSTICIO_ANTIGO : INTERSTICIO_NOVO;
-        let proximo = addMeses(cursor, intersticio);
-        if (proximo > ate) break;
+        let meses;
+        if (area.toUpperCase() === 'SEDUC') {
+          meses = cursor < cfg.marco ? cfg.intersticioAntigo : cfg.intersticioNovo;
+        } else {
+          meses = cfg.intersticioUnico;
+        }
+        const proxima = addMeses(cursor, meses);
+        if (proxima > ateDate) break;
         count++;
-        cursor = proximo;
+        cursor = proxima;
       }
       return count;
     }
 
-    function obterSalario(tabela, classe, ref, data) {
-      const dataStr = data.toISOString().slice(0,10);
-      let candidatos = tabela.filter(item => {
-        if (classe && item.classe !== classe) return false;
-        return item.ref === ref && item.vigencia <= dataStr;
-      });
-      candidatos.sort((a,b) => b.vigencia.localeCompare(a.vigencia));
-      return candidatos.length ? candidatos[0] : null;
+    function refAposProgressoes(refInicial, refList, n) {
+      const idx = refList.indexOf(refInicial);
+      if (idx < 0) return refInicial;
+      return refList[Math.min(idx + n, refList.length - 1)];
     }
 
-    function calcular() {
-      const nome = document.getElementById('nome').value.trim();
-      const matricula = document.getElementById('matricula').value.trim();
-      const posseStr = document.getElementById('posse').value;
-      const classe = document.getElementById('classe').value;
-      const refAtual = document.getElementById('refAtual').value;
-      const refIngresso = document.getElementById('refIngresso').value || refAtual;
-      const inicioStr = document.getElementById('dataInicio').value;
-      const fimStr = document.getElementById('dataFim').value;
-      const incluirExtras = document.getElementById('incluirExtras').checked;
+    function gerarDemonstrativo(params) {
+      const { area, nome, matricula, cargo, posseDate, classe,
+              refInicial, startDate, endDate, incluirExtras,
+              municipio, pctLocalidade, incluirRegencia } = params;
+      const areaUp  = area.toUpperCase();
+      const refList = REGRAS[areaUp].referencias;
+      const pctReg  = (area === 'seduc' && incluirRegencia) ? REGENCIA_PERCENTUAL : 0;
+      const pctLoc  = (area === 'seduc') ? (pctLocalidade || 0) : 0;
 
-      if (!nome || !matricula || !posseStr || !refAtual || !inicioStr || !fimStr) {
-        alert('Preencha todos os campos obrigatórios.');
-        return;
-      }
+      const progsTotal = calcularProgressoes(area, posseDate, endDate);
+      const refDevida  = refAposProgressoes(refInicial, refList, progsTotal);
+      const numProgressoesAtraso = refList.indexOf(refDevida) - refList.indexOf(refInicial);
 
-      const posse = new Date(posseStr + 'T12:00:00');
-      const inicio = new Date(inicioStr + 'T12:00:00');
-      const fim = new Date(fimStr + 'T12:00:00');
+      const rows = [];
+      const erros = [];
 
-      if (inicio > fim) { alert('Data de início deve ser anterior ao fim.'); return; }
-      if (posse > fim) { alert('Data de posse deve ser anterior ao fim do período.'); return; }
+      let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endM = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
 
-      const tabela = areaSelecionada === 'seduc' ? TABELA_SEDUC : TABELA_SEMED;
-      const refList = areaSelecionada === 'seduc' ? REFS_SEDUC : REFS_SEMED;
+      while (cursor <= endM) {
+        const progsAteMes = calcularProgressoes(area, posseDate, cursor);
+        const refDevidaMes = refAposProgressoes(refInicial, refList, progsAteMes);
+        if (refDevidaMes === refInicial) { cursor = addMeses(cursor, 1); continue; }
 
-      const idxIngresso = refList.indexOf(refIngresso);
-      const idxAtual = refList.indexOf(refAtual);
-      if (idxIngresso === -1 || idxAtual === -1) {
-        alert('Referência inválida para a área selecionada.');
-        return;
-      }
+        const recItem = calcVencimento(area, classe, refInicial, cursor, pctLoc, pctReg);
+        const devItem = calcVencimento(area, classe, refDevidaMes, cursor, pctLoc, pctReg);
+        if (!recItem || !devItem) { cursor = addMeses(cursor, 1); continue; }
 
-      const progressoesAteFim = calcularProgressoes(posse, fim);
-      const idxDevida = Math.min(idxIngresso + progressoesAteFim, refList.length - 1);
-      const refDevida = refList[idxDevida];
+        const diff = devItem.sal - recItem.sal;
+        if (diff <= 0) { cursor = addMeses(cursor, 1); continue; }
 
-      const linhas = [];
-      let totalGeral = 0;
-      const extrasAnuais = {};
-
-      for (let d = new Date(inicio); d <= fim; d.setMonth(d.getMonth() + 1)) {
-        const mesAtual = new Date(d);
-        const progressoesAteMes = calcularProgressoes(posse, mesAtual);
-        const idxDevidaMes = Math.min(idxIngresso + progressoesAteMes, refList.length - 1);
-        const refDevidaMes = refList[idxDevidaMes];
-
-        if (refDevidaMes === refIngresso) continue;
-
-        const salarioRecebido = obterSalario(tabela, classe, refIngresso, mesAtual);
-        const salarioDevido = obterSalario(tabela, classe, refDevidaMes, mesAtual);
-
-        if (!salarioRecebido || !salarioDevido) continue;
-
-        const diff = salarioDevido.salario - salarioRecebido.salario;
-        if (diff <= 0) continue;
-
-        const ano = mesAtual.getFullYear();
-        extrasAnuais[ano] = (extrasAnuais[ano] || 0) + diff;
-
-        linhas.push({
-          competencia: mesAtual.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }).replace(/\//g,'/'),
-          refRecebida: refIngresso,
-          vencRecebido: salarioRecebido.salario,
+        rows.push({
+          competencia: cursor.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' }).replace(/\//g,'/'),
+          refRecebida: refInicial,
+          vencRecebido: recItem.sal,
           refDevida: refDevidaMes,
-          vencDevido: salarioDevido.salario,
-          lei: salarioDevido.lei,
+          vencDevido: devItem.sal,
+          lei: devItem.lei,
           diffMensal: diff,
           extras: 0,
-          total: diff
+          totalLinha: diff,
+          tipo: 'normal',
+          ano: cursor.getFullYear(),
+          mes: cursor.getMonth(),
         });
-        totalGeral += diff;
+        cursor = addMeses(cursor, 1);
       }
 
-      if (incluirExtras) {
-        Object.entries(extrasAnuais).forEach(([ano, somaAnual]) => {
-          const mediaMensal = somaAnual / 12;
-          linhas.push({
-            competencia: `13º/${ano}`,
-            refRecebida: '',
-            vencRecebido: 0,
-            refDevida: '',
-            vencDevido: 0,
-            lei: 'Reflexo',
-            diffMensal: 0,
-            extras: mediaMensal,
-            total: mediaMensal
+      if (incluirExtras && rows.length > 0) {
+        const anos = [...new Set(rows.map(r => r.ano))].sort();
+        const extrasRows = [];
+        anos.forEach(ano => {
+          const decDate = new Date(ano, 11, 1);
+          const progsAteDez = calcularProgressoes(area, posseDate, decDate);
+          const refDevidaDez = refAposProgressoes(refInicial, refList, progsAteDez);
+          if (refDevidaDez === refInicial) return;
+          const recDez = calcVencimento(area, classe, refInicial, decDate, pctLoc, pctReg);
+          const devDez = calcVencimento(area, classe, refDevidaDez, decDate, pctLoc, pctReg);
+          if (!recDez || !devDez) return;
+          const diffDez = devDez.sal - recDez.sal;
+          if (diffDez <= 0) return;
+          extrasRows.push({
+            competencia: '13º SAL. ' + ano,
+            refRecebida: refInicial,
+            vencRecebido: recDez.sal,
+            refDevida: refDevidaDez,
+            vencDevido: devDez.sal,
+            lei: devDez.lei,
+            diffMensal: diffDez,
+            extras: diffDez,
+            totalLinha: diffDez * 2,
+            tipo: '13o',
+            ano, mes: 13,
           });
-          linhas.push({
-            competencia: `1/3 Férias/${ano}`,
-            refRecebida: '',
-            vencRecebido: 0,
-            refDevida: '',
-            vencDevido: 0,
-            lei: 'Reflexo',
-            diffMensal: 0,
-            extras: mediaMensal / 3,
-            total: mediaMensal / 3
+          extrasRows.push({
+            competencia: '1/3 FÉRIAS ' + ano,
+            refRecebida: refInicial,
+            vencRecebido: recDez.sal / 3,
+            refDevida: refDevidaDez,
+            vencDevido: devDez.sal / 3,
+            lei: devDez.lei,
+            diffMensal: diffDez / 3,
+            extras: 0,
+            totalLinha: diffDez / 3,
+            tipo: 'ferias',
+            ano, mes: 14,
           });
-          totalGeral += mediaMensal + (mediaMensal / 3);
+        });
+        extrasRows.forEach(er => {
+          const afterIdx = rows.reduce((best, r, i) => r.ano === er.ano ? i : best, -1);
+          if (afterIdx >= 0) rows.splice(afterIdx + 1, 0, er);
+          else rows.push(er);
         });
       }
 
-      linhas.sort((a,b) => a.competencia.localeCompare(b.competencia));
+      const totalDiff = rows.reduce((s, r) => s + r.diffMensal, 0);
+      const nMeses = rows.filter(r => r.tipo === 'normal').length;
 
-      resultadoAtual = {
-        nome, matricula, classe: classe || '—',
-        refIngresso, refDevida,
-        progressoes: progressoesAteFim,
-        periodoInicio: inicioStr, periodoFim: fimStr,
-        totalGeral,
-        incluirExtras,
-        linhas
-      };
-
-      renderResultados();
+      return { rows, erros, totalDiff, nMeses, numProgressoesAtraso, refInicial, refDevida,
+               area, nome, matricula, cargo, classe, posseDate, startDate, endDate,
+               incluirExtras, municipio, pctLocalidade, incluirRegencia, dataCalculo: new Date() };
     }
 
-    function renderResultados() {
-      if (!resultadoAtual) return;
-      const r = resultadoAtual;
-      document.getElementById('resumoNumerico').innerHTML = `
-        <div class="cartao-resumo">
-          <div class="valor">${r.progressoes}</div>
-          <div>Progressões devidas</div>
-        </div>
-        <div class="cartao-resumo">
-          <div class="valor">${r.refIngresso} → ${r.refDevida}</div>
-          <div>Referência</div>
-        </div>
-        <div class="cartao-resumo">
-          <div class="valor">${fmtMoeda(r.totalGeral)}</div>
-          <div>Total a receber</div>
-        </div>
-        <div class="cartao-resumo">
-          <div class="valor">${r.linhas.filter(l => !l.competencia.includes('/')).length}</div>
-          <div>Meses com diferença</div>
-        </div>
-      `;
+    // ===== INTERFACE =====
+    let AREA_FORM = null;
 
-      document.getElementById('fundamentoJuridico').innerHTML = `
-        <strong>${areaSelecionada === 'seduc' ? 'SEDUC/AM' : 'SEMED/AM'}</strong> · 
-        Servidor: ${r.nome} (${r.matricula})<br>
-        Período analisado: ${fmtData(new Date(r.periodoInicio))} a ${fmtData(new Date(r.periodoFim))}<br>
-        <small>Lei 3.951/2013 (4 anos) → Lei 4.836/2019 (3 anos) · STJ Tema 1075 · Prescrição quinquenal</small>
-      `;
-
-      let tbody = '';
-      r.linhas.forEach(l => {
-        tbody += `<tr>
-          <td>${l.competencia}</td>
-          <td>${l.refRecebida}</td>
-          <td>${l.vencRecebido ? fmtMoeda(l.vencRecebido) : '—'}</td>
-          <td>${l.refDevida}</td>
-          <td>${l.vencDevido ? fmtMoeda(l.vencDevido) : '—'}</td>
-          <td style="max-width:200px;">${l.lei}</td>
-          <td>${l.diffMensal ? fmtMoeda(l.diffMensal) : '—'}</td>
-          <td>${l.extras ? fmtMoeda(l.extras) : '—'}</td>
-          <td>${fmtMoeda(l.total)}</td>
-        </tr>`;
-      });
-      tbody += `<tr class="linha-total">
-        <td colspan="8"><strong>TOTAL GERAL</strong></td>
-        <td><strong>${fmtMoeda(r.totalGeral)}</strong></td>
-      </tr>`;
-      document.getElementById('corpoTabela').innerHTML = tbody;
-
-      document.getElementById('resultados').style.display = 'block';
-    }
-
-    // ===== INTERAÇÃO =====
     function setArea(area) {
-      areaSelecionada = area;
+      AREA_FORM = area;
+      AREA_ATUAL = area;
       document.getElementById('areaNome').innerText = area === 'seduc' ? 'SEDUC' : 'SEMED';
-      const refs = area === 'seduc' ? REFS_SEDUC : REFS_SEMED;
-      const selectAtual = document.getElementById('refAtual');
-      const selectIngresso = document.getElementById('refIngresso');
-      selectAtual.innerHTML = '<option value="">Selecione</option>';
-      selectIngresso.innerHTML = '<option value="">Igual à atual</option>';
+      // Mostrar/esconder campos específicos
+      document.getElementById('classeField').style.display = (area === 'seduc') ? 'block' : 'none';
+      document.getElementById('municipioField').style.display = (area === 'seduc') ? 'block' : 'none';
+      document.getElementById('regenciaField').style.display = (area === 'seduc') ? 'block' : 'none';
+      // Popular selects de referência
+      const refs = area === 'seduc' ? REGRAS.SEDUC.referencias : REGRAS.SEMED.referencias;
+      const refAtual = document.getElementById('refAtual');
+      const refIngresso = document.getElementById('refIngresso');
+      refAtual.innerHTML = '<option value="">Selecione</option>';
+      refIngresso.innerHTML = '<option value="">Igual à atual</option>';
       refs.forEach(r => {
-        selectAtual.innerHTML += `<option value="${r}">${r}</option>`;
-        selectIngresso.innerHTML += `<option value="${r}">${r}</option>`;
+        refAtual.innerHTML += `<option value="${r}">${r}</option>`;
+        refIngresso.innerHTML += `<option value="${r}">${r}</option>`;
       });
-      document.getElementById('formContainer').style.display = 'block';
+      // Popular municípios (SEDUC)
+      if (area === 'seduc') {
+        const munSelect = document.getElementById('municipio');
+        munSelect.innerHTML = '<option value="">Selecione o município...</option>';
+        for (let mun in LOCALIDADES_AM) {
+          munSelect.innerHTML += `<option value="${mun}|${LOCALIDADES_AM[mun]}">${mun} (${(LOCALIDADES_AM[mun]*100).toFixed(0)}%)</option>`;
+        }
+      }
+      document.getElementById('formContainer').classList.remove('hidden');
       window.scrollTo({ top: document.getElementById('formContainer').offsetTop, behavior: 'smooth' });
       atualizarPreview();
     }
 
-    function resetar() {
-      document.getElementById('calcForm').reset();
-      atualizarPreview();
-      document.getElementById('resultados').style.display = 'none';
+    function voltarSelecao() {
+      document.getElementById('formContainer').classList.add('hidden');
+      document.getElementById('step-selector').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function novaConsulta() {
-      document.getElementById('resultados').style.display = 'none';
-      document.getElementById('formContainer').style.display = 'none';
-      areaSelecionada = null;
+      document.getElementById('resultados').classList.add('hidden');
+      document.getElementById('formContainer').classList.add('hidden');
+      AREA_FORM = null;
     }
 
-    function exportarPDF() {
-      window.print();
+    function resetar() {
+      document.getElementById('calcForm').reset();
+      document.getElementById('resultados').classList.add('hidden');
+      const hoje = new Date().toISOString().slice(0,10);
+      document.getElementById('dataFim').value = hoje;
+      document.getElementById('posse').value = '2020-02-03';
+      const cincoAnosAtras = new Date();
+      cincoAnosAtras.setFullYear(cincoAnosAtras.getFullYear() - 5);
+      document.getElementById('dataInicio').value = cincoAnosAtras.toISOString().slice(0,10);
     }
 
-    // ===== INTEGRAÇÃO GOOGLE SHEETS (URL já configurada) =====
-    async function salvarNaPlanilha() {
-      if (!resultadoAtual) {
-        alert('Nenhum resultado para salvar. Calcule primeiro.');
-        return;
+    function atualizarPreview() {
+      // Preview simples (pode ser expandido)
+      const preview = document.getElementById('previewGrid');
+      const nome = document.getElementById('nome').value || '—';
+      const mat = document.getElementById('matricula').value || '—';
+      const posse = document.getElementById('posse').value || '—';
+      const refAtual = document.getElementById('refAtual').value || '—';
+      const inicio = document.getElementById('dataInicio').value || '—';
+      const fim = document.getElementById('dataFim').value || '—';
+      const extras = document.getElementById('incluirExtras').checked ? 'Sim' : 'Não';
+      let html = `
+        <div class="preview-item"><span class="rotulo">Nome</span><div class="valor">${nome}</div></div>
+        <div class="preview-item"><span class="rotulo">Matrícula</span><div class="valor">${mat}</div></div>
+        <div class="preview-item"><span class="rotulo">Posse</span><div class="valor">${posse}</div></div>
+        <div class="preview-item"><span class="rotulo">Ref. Atual</span><div class="valor">${refAtual}</div></div>
+        <div class="preview-item"><span class="rotulo">Início</span><div class="valor">${inicio}</div></div>
+        <div class="preview-item"><span class="rotulo">Fim</span><div class="valor">${fim}</div></div>
+        <div class="preview-item"><span class="rotulo">Reflexos</span><div class="valor">${extras}</div></div>
+      `;
+      if (AREA_FORM === 'seduc') {
+        const classe = document.getElementById('classe').value || '—';
+        const mun = document.getElementById('municipio').value ? document.getElementById('municipio').value.split('|')[0] : '—';
+        const reg = document.getElementById('regencia').value === 'sim' ? 'Sim' : 'Não';
+        html += `<div class="preview-item"><span class="rotulo">Classe</span><div class="valor">${classe}</div></div>`;
+        html += `<div class="preview-item"><span class="rotulo">Município</span><div class="valor">${mun}</div></div>`;
+        html += `<div class="preview-item"><span class="rotulo">Regência</span><div class="valor">${reg}</div></div>`;
+      }
+      preview.innerHTML = html;
+      document.getElementById('previewPainel').style.display = 'block';
+    }
+
+    function coletarParametros() {
+      const area = AREA_FORM;
+      if (!area) throw new Error('Nenhuma área selecionada.');
+
+      const nome = document.getElementById('nome').value.trim();
+      const matricula = document.getElementById('matricula').value.trim();
+      const posseStr = document.getElementById('posse').value;
+      const refAtual = document.getElementById('refAtual').value;
+      const refInicStr = document.getElementById('refIngresso').value;
+      const inicioStr = document.getElementById('dataInicio').value;
+      const fimStr = document.getElementById('dataFim').value;
+      const incluirExtras = document.getElementById('incluirExtras').checked;
+
+      if (!nome || !matricula || !posseStr || !refAtual || !inicioStr || !fimStr)
+        throw new Error('Preencha todos os campos obrigatórios.');
+
+      const posseDate = parseDate(posseStr);
+      const startDate = parseDate(inicioStr);
+      const endDate = parseDate(fimStr);
+      if (startDate >= endDate) throw new Error('Início deve ser anterior ao fim.');
+      if (posseDate >= endDate) throw new Error('Posse deve ser anterior ao fim.');
+
+      const refInicial = refInicStr || refAtual;
+      const refList = area === 'seduc' ? REGRAS.SEDUC.referencias : REGRAS.SEMED.referencias;
+      if (!refList.includes(refInicial)) throw new Error('Referência inválida: ' + refInicial);
+
+      let classe = null, municipio = null, pctLocalidade = 0, incluirRegencia = false;
+      if (area === 'seduc') {
+        classe = document.getElementById('classe').value;
+        if (!classe) throw new Error('Informe a classe.');
+        const munVal = document.getElementById('municipio').value;
+        if (!munVal) throw new Error('Selecione o município.');
+        [municipio, pctLocalidade] = munVal.split('|');
+        pctLocalidade = parseFloat(pctLocalidade) || 0;
+        incluirRegencia = document.getElementById('regencia').value === 'sim';
       }
 
+      return { area, nome, matricula, cargo: '', posseDate, classe, refInicial, startDate, endDate,
+               incluirExtras, municipio, pctLocalidade, incluirRegencia };
+    }
+
+    function calcular() {
+      try {
+        const params = coletarParametros();
+        const resultado = gerarDemonstrativo(params);
+        RESULTADO = resultado;
+        renderizarResultados(resultado);
+        document.getElementById('formContainer').classList.add('hidden');
+        document.getElementById('resultados').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function renderizarResultados(r) {
+      document.getElementById('resumoNumerico').innerHTML = `
+        <div class="cartao-resumo"><div class="valor">${r.numProgressoesAtraso}</div><div class="rotulo">Progressões</div></div>
+        <div class="cartao-resumo"><div class="valor">${r.refInicial} → ${r.refDevida}</div><div class="rotulo">Referência</div></div>
+        <div class="cartao-resumo"><div class="valor">${fmtMoeda(r.totalDiff)}</div><div class="rotulo">Total</div></div>
+        <div class="cartao-resumo"><div class="valor">${r.nMeses}</div><div class="rotulo">Meses</div></div>
+      `;
+      document.getElementById('fundamentoJuridico').innerHTML = `
+        <strong>${r.area.toUpperCase()}</strong> · ${r.nome} (${r.matricula})<br>
+        Período: ${fmtData(r.startDate)} a ${fmtData(r.endDate)}<br>
+        <small>Lei 3.951/2013 → 4.836/2019 · STJ Tema 1075</small>
+      `;
+      let tbody = '';
+      r.rows.forEach(l => {
+        tbody += `<tr>
+          <td>${l.competencia}</td>
+          <td>${l.refRecebida}</td>
+          <td>${fmtMoeda(l.vencRecebido)}</td>
+          <td>${l.refDevida}</td>
+          <td>${fmtMoeda(l.vencDevido)}</td>
+          <td>${l.lei}</td>
+          <td>${fmtMoeda(l.diffMensal)}</td>
+          <td>${l.extras ? fmtMoeda(l.extras) : '—'}</td>
+          <td>${fmtMoeda(l.totalLinha)}</td>
+        </tr>`;
+      });
+      tbody += `<tr class="linha-total"><td colspan="8"><strong>TOTAL GERAL</strong></td><td><strong>${fmtMoeda(r.totalDiff)}</strong></td></tr>`;
+      document.getElementById('corpoTabela').innerHTML = tbody;
+    }
+
+    function exportarPDF() { window.print(); }
+
+    async function salvarNaPlanilha() {
+      if (!RESULTADO) return;
+      const payload = { area: AREA_ATUAL, ...RESULTADO, dataEnvio: new Date().toISOString() };
       const statusEl = document.getElementById('statusSalvar');
       statusEl.innerText = '⏳ Salvando...';
-
-      const payload = {
-        area: areaSelecionada,
-        ...resultadoAtual,
-        dataEnvio: new Date().toISOString()
-      };
-
       try {
-        const response = await fetch(APPS_SCRIPT_URL, {
+        await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors', // necessário para Apps Script
+          mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        // Como no-cors não retorna conteúdo, assumimos sucesso
-        statusEl.innerHTML = '✅ Salvo com sucesso!';
-        setTimeout(() => statusEl.innerHTML = '', 3000);
-      } catch (err) {
-        statusEl.innerHTML = '❌ Erro ao salvar';
-        console.error(err);
-        setTimeout(() => statusEl.innerHTML = '', 3000);
+        statusEl.innerHTML = '<span class="save-status ok">✓ Salvo</span>';
+      } catch {
+        statusEl.innerHTML = '<span class="save-status fail">✕ Erro</span>';
       }
     }
 
-    // ===== INICIALIZAÇÃO =====
-    window.onload = function() {
+    // Inicialização
+    window.onload = () => {
       const hoje = new Date().toISOString().slice(0,10);
       document.getElementById('dataFim').value = hoje;
       const cincoAnosAtras = new Date();
       cincoAnosAtras.setFullYear(cincoAnosAtras.getFullYear() - 5);
       document.getElementById('dataInicio').value = cincoAnosAtras.toISOString().slice(0,10);
       document.getElementById('posse').value = '2020-02-03';
-      atualizarPreview();
-    }
+      document.getElementById('nome').addEventListener('input', atualizarPreview);
+      document.getElementById('matricula').addEventListener('input', atualizarPreview);
+      document.getElementById('posse').addEventListener('change', atualizarPreview);
+      document.getElementById('refAtual').addEventListener('change', atualizarPreview);
+      document.getElementById('dataInicio').addEventListener('change', atualizarPreview);
+      document.getElementById('dataFim').addEventListener('change', atualizarPreview);
+      document.getElementById('incluirExtras').addEventListener('change', atualizarPreview);
+    };
   </script>
 </body>
 </html>
