@@ -107,18 +107,34 @@
     .card-body { padding:1.5rem; }
 
     /* ── AREA SELECTOR ── */
-    .area-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; }
-    .area-btn { border:2px solid var(--gray-brd); border-radius:12px; padding:1.4rem 1.5rem; cursor:pointer; background:var(--white); text-align:left; transition:all 0.18s; display:flex; align-items:flex-start; gap:1rem; }
-    .area-btn:hover:not(:disabled) { border-color:var(--teal-brd); background:var(--teal-bg); transform:translateY(-2px); box-shadow:0 6px 20px rgba(11,74,68,0.12); }
-    .area-btn.selected { border-color:var(--teal); background:var(--teal-bg); box-shadow:0 0 0 3px rgba(11,74,68,0.12); }
-    .area-btn:disabled { opacity:0.4; cursor:not-allowed; }
-    .area-btn-icon { width:44px; height:44px; border-radius:10px; background:var(--teal); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
-    .area-btn.selected .area-btn-icon { background:var(--gold); }
-    .area-btn-title { font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:0.2rem; }
-    .area-btn-desc { font-size:0.73rem; color:var(--gray-mid); line-height:1.5; }
-    .area-btn-badge { display:inline-flex; margin-top:0.5rem; font-size:0.6rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:0.2em 0.7em; border-radius:100px; }
-    .badge-soon { background:var(--gray-light); border:1px solid var(--gray-brd); color:var(--gray-mid); }
-    .badge-ok { background:var(--teal-bg); border:1px solid var(--teal-brd); color:var(--teal); }
+    .area-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--gray-brd); border:1px solid var(--gray-brd); border-radius:14px; overflow:hidden; }
+    .area-btn { border:none; border-radius:0; padding:0; cursor:pointer; background:var(--white); text-align:left; transition:all 0.16s; display:flex; flex-direction:column; position:relative; }
+    .area-btn:hover:not(:disabled) { background:#F0F7F6; z-index:2; }
+    .area-btn.selected { background:var(--teal-bg); z-index:2; }
+    .area-btn.selected .panel-indicator { background:var(--teal); }
+    .area-btn:disabled { opacity:0.42; cursor:not-allowed; background:var(--gray-light); }
+    /* top color bar */
+    .panel-indicator { height:3px; width:100%; background:var(--gray-brd); transition:background 0.16s; }
+    .area-btn.selected .panel-indicator, .area-btn:hover:not(:disabled) .panel-indicator { background:var(--teal); }
+    .area-btn:disabled .panel-indicator { background:var(--gray-brd); }
+    .panel-body { padding:1.1rem 1.25rem 1rem; flex:1; display:flex; flex-direction:column; gap:0.55rem; }
+    .panel-head { display:flex; align-items:center; gap:0.65rem; }
+    .panel-icon { width:36px; height:36px; border-radius:8px; background:var(--teal); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .panel-icon svg { width:18px; height:18px; fill:none; stroke:#fff; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .area-btn.selected .panel-icon, .area-btn:hover:not(:disabled) .panel-icon { background:var(--teal); box-shadow:0 2px 8px rgba(11,74,68,0.25); }
+    .panel-icon-red { background:#8B1A1A !important; }
+    .panel-icon-blue { background:#1A3A5C !important; }
+    .panel-title { font-size:0.88rem; font-weight:700; color:var(--text); letter-spacing:0.01em; line-height:1.2; }
+    .panel-law { font-size:0.68rem; font-weight:600; color:var(--teal); text-transform:uppercase; letter-spacing:0.07em; }
+    .panel-desc { font-size:0.71rem; color:var(--gray-mid); line-height:1.55; }
+    .panel-foot { display:flex; align-items:center; justify-content:space-between; margin-top:auto; padding-top:0.4rem; border-top:1px solid var(--gray-brd); }
+    .panel-status { font-size:0.59rem; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; padding:0.18em 0.65em; border-radius:100px; }
+    .status-ok { background:var(--teal-bg); border:1px solid var(--teal-brd); color:var(--teal); }
+    .status-soon { background:var(--gray-light); border:1px solid var(--gray-brd); color:var(--gray-mid); }
+    .panel-arrow { font-size:0.75rem; color:var(--gray-mid); transition:transform 0.16s, color 0.16s; }
+    .area-btn:hover:not(:disabled) .panel-arrow, .area-btn.selected .panel-arrow { transform:translateX(3px); color:var(--teal); }
+    @media (max-width:780px) { .area-grid { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:520px) { .area-grid { grid-template-columns:1fr; } }
 
     /* ── FORM ── */
     .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
@@ -437,61 +453,127 @@
 
           <!-- EDUCAÇÃO ESTADUAL -->
           <button class="area-btn" onclick="selecionarArea('seduc', this)">
-            <div class="area-btn-icon">📚</div>
-            <div class="area-btn-info">
-              <div class="area-btn-title">Educação Estadual</div>
-              <div class="area-btn-desc">Professores da rede estadual SEDUC/AM. Progressão horizontal — Lei n.º 3.951/2013 e Lei n.º 4.836/2019.</div>
-              <span class="area-btn-badge badge-ok">✓ Disponível</span>
+            <div class="panel-indicator"></div>
+            <div class="panel-body">
+              <div class="panel-head">
+                <div class="panel-icon">
+                  <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Educação Estadual</div>
+                  <div class="panel-law">SEDUC/AM · Lei n.º 3.951/2013</div>
+                </div>
+              </div>
+              <div class="panel-desc">Progressão horizontal — 3 classes, 8 referências (A–H). Interstício 48/36 meses. Gratificação de localidade e regência.</div>
+              <div class="panel-foot">
+                <span class="panel-status status-ok">✓ Disponível</span>
+                <span class="panel-arrow">→</span>
+              </div>
             </div>
           </button>
 
           <!-- EDUCAÇÃO MUNICIPAL -->
           <button class="area-btn" onclick="selecionarArea('semed', this)">
-            <div class="area-btn-icon">🏫</div>
-            <div class="area-btn-info">
-              <div class="area-btn-title">Educação Municipal</div>
-              <div class="area-btn-desc">Professores da rede municipal SEMED/AM. PCCR Lei n.º 4.852/2019 e legislação subsequente.</div>
-              <span class="area-btn-badge badge-ok">✓ Disponível</span>
+            <div class="panel-indicator"></div>
+            <div class="panel-body">
+              <div class="panel-head">
+                <div class="panel-icon">
+                  <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Educação Municipal</div>
+                  <div class="panel-law">SEMED/AM · Lei n.º 1.126/2007</div>
+                </div>
+              </div>
+              <div class="panel-desc">Progressão horizontal — 8 referências (A1–D2). Interstício 24 meses. Sem classe ou localidade.</div>
+              <div class="panel-foot">
+                <span class="panel-status status-ok">✓ Disponível</span>
+                <span class="panel-arrow">→</span>
+              </div>
             </div>
           </button>
 
           <!-- SAÚDE ESTADUAL -->
           <button class="area-btn" onclick="selecionarArea('ses', this)">
-            <div class="area-btn-icon" style="background:var(--blue);">🏥</div>
-            <div class="area-btn-info">
-              <div class="area-btn-title">Saúde Estadual (SES/AM)</div>
-              <div class="area-btn-desc">Servidores da SES/AM. Progressão bienal — Lei n.º 3.469/2009. GTS, GAA e quinquênios.</div>
-              <span class="area-btn-badge badge-ok">✓ Disponível</span>
+            <div class="panel-indicator"></div>
+            <div class="panel-body">
+              <div class="panel-head">
+                <div class="panel-icon panel-icon-blue">
+                  <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Saúde Estadual</div>
+                  <div class="panel-law">SES/AM · Lei n.º 3.469/2009</div>
+                </div>
+              </div>
+              <div class="panel-desc">Progressão bienal — 3 níveis (S/M/A), 8 classes (I–VIII). GTS, GAA e quinquênios (+5%/5 anos).</div>
+              <div class="panel-foot">
+                <span class="panel-status status-ok">✓ Disponível</span>
+                <span class="panel-arrow">→</span>
+              </div>
             </div>
           </button>
 
           <!-- SAÚDE MUNICIPAL -->
           <button class="area-btn" onclick="selecionarArea('semsa', this)">
-            <div class="area-btn-icon" style="background:var(--blue);">🏥</div>
-            <div class="area-btn-info">
-              <div class="area-btn-title">Saúde Municipal (SEMSA)</div>
-              <div class="area-btn-desc">Servidores da SEMSA/Manaus. PCCR Lei n.º 1.222/2008. Progressão bienal horizontal e vertical.</div>
-              <span class="area-btn-badge badge-ok">✓ Disponível</span>
+            <div class="panel-indicator"></div>
+            <div class="panel-body">
+              <div class="panel-head">
+                <div class="panel-icon panel-icon-blue">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Saúde Municipal</div>
+                  <div class="panel-law">SEMSA · Lei n.º 1.222/2008</div>
+                </div>
+              </div>
+              <div class="panel-desc">Progressão bienal — 4 níveis, 10 referências (A1–E2). Interstício 24 meses.</div>
+              <div class="panel-foot">
+                <span class="panel-status status-ok">✓ Disponível</span>
+                <span class="panel-arrow">→</span>
+              </div>
             </div>
           </button>
 
           <!-- POLÍCIA MILITAR -->
           <button class="area-btn" onclick="selecionarArea('pmam', this)">
-            <div class="area-btn-icon" style="background:var(--red);">🛡️</div>
-            <div class="area-btn-info">
-              <div class="area-btn-title">Polícia Militar (PMAM)</div>
-              <div class="area-btn-desc">Militares do PMAM. Escalonamento vertical — Lei n.º 3.725/2012. Gratificação de Tropa e Auxílio Moradia.</div>
-              <span class="area-btn-badge badge-ok">✓ Disponível</span>
+            <div class="panel-indicator"></div>
+            <div class="panel-body">
+              <div class="panel-head">
+                <div class="panel-icon panel-icon-red">
+                  <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Polícia Militar</div>
+                  <div class="panel-law">PMAM · Lei n.º 3.725/2012</div>
+                </div>
+              </div>
+              <div class="panel-desc">Escalonamento vertical — 14 postos/graduações + QOAPM/CHOA. G.T. por posto, Aux. Moradia.</div>
+              <div class="panel-foot">
+                <span class="panel-status status-ok">✓ Disponível</span>
+                <span class="panel-arrow">→</span>
+              </div>
             </div>
           </button>
 
           <!-- POLÍCIA CIVIL -->
           <button class="area-btn" onclick="selecionarArea('pcam', this)">
-            <div class="area-btn-icon" style="background:var(--red);">🚔</div>
-            <div class="area-btn-info">
-              <div class="area-btn-title">Polícia Civil (PCAM)</div>
-              <div class="area-btn-desc">Delegados e agentes da PCAM. Lei n.º 2.875/2004 e Lei n.º 4.059/2014. GEP e progressão por classe.</div>
-              <span class="area-btn-badge badge-ok">✓ Disponível</span>
+            <div class="panel-indicator"></div>
+            <div class="panel-body">
+              <div class="panel-head">
+                <div class="panel-icon panel-icon-red">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div>
+                  <div class="panel-title">Polícia Civil</div>
+                  <div class="panel-law">PCAM · Lei n.º 2.875/2004</div>
+                </div>
+              </div>
+              <div class="panel-desc">Escalonamento vertical — Delegados, Agentes e Peritos. GEP 100% sobre vencimento base.</div>
+              <div class="panel-foot">
+                <span class="panel-status status-ok">✓ Disponível</span>
+                <span class="panel-arrow">→</span>
+              </div>
             </div>
           </button>
 
@@ -521,12 +603,20 @@
               <div class="form-section-title">📋 Identificação do Servidor</div>
               <div class="field full"><label class="field-label">Nome Completo <span class="req">*</span></label><input type="text" id="s-nome" placeholder="Ex: JOÃO SILVA PEREIRA" /></div>
               <div class="field"><label class="field-label">Matrícula / CPF <span class="req">*</span></label><input type="text" id="s-matricula" placeholder="Ex: 252.534-8A" /></div>
-              <div class="field"><label class="field-label">Cargo / Função</label><input type="text" id="s-cargo" placeholder="Ex: Professor" /></div>
+              <div class="field"><label class="field-label">Cargo / Função</label><input type="text" id="s-cargo" placeholder="Ex: Professor / Técnico Administrativo" /></div>
+              <div class="field full">
+                <label class="field-label">Categoria do Servidor <span class="req">*</span></label>
+                <select id="s-categoria" onchange="toggleSEDUCAdmin()">
+                  <option value="docente">🎓 Docente — Lei n.º 3.951/2013 (PCCR Magistério)</option>
+                  <option value="admin">🗂️ Administrativo — Lei n.º 4.058/2014 (PCCR Administrativo)</option>
+                </select>
+                <span class="field-hint">Docente: interstício 36/48m + regência | Administrativo: interstício 24m + GAA 30%</span>
+              </div>
 
               <hr class="form-divider" />
               <div class="form-section-title">📊 Dados Funcionais</div>
               <div class="field"><label class="field-label">Data de Posse / Ingresso <span class="req">*</span></label><input type="date" id="s-posse" /></div>
-              <div class="field"><label class="field-label">Classe Atual <span class="req">*</span></label>
+              <div class="field" id="s-classe-wrap"><label class="field-label">Classe Atual <span class="req">*</span></label>
                 <select id="s-classe"><option value="">Selecione...</option><option value="3ª">3ª Classe</option><option value="2ª">2ª Classe</option><option value="1ª">1ª Classe</option></select>
               </div>
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
@@ -549,10 +639,19 @@
                 <div class="radio-group"><label class="radio-opt"><input type="radio" name="extras" value="sim" checked /><span class="radio-opt-label"><span class="radio-dot"></span>Sim — incluir reflexos</span></label><label class="radio-opt"><input type="radio" name="extras" value="nao" /><span class="radio-opt-label"><span class="radio-dot"></span>Não</span></label></div>
                 <span class="field-hint">STJ Tema 1075</span>
               </div>
-              <div class="field">
+              <div class="field" id="seduc-reg-wrap">
                 <label class="field-label">Regência de Classe <span class="req">*</span></label>
                 <div class="radio-group"><label class="radio-opt"><input type="radio" name="regencia" value="sim" checked /><span class="radio-opt-label"><span class="radio-dot"></span>Sim — +25%</span></label><label class="radio-opt"><input type="radio" name="regencia" value="nao" /><span class="radio-opt-label"><span class="radio-dot"></span>Não</span></label></div>
                 <span class="field-hint">Gratificação de Regência de Classe — 25% sobre o vencimento</span>
+              </div>
+              <div class="field hidden" id="seduc-gaa-wrap">
+                <label class="field-label">GAA — Gratif. Atividade Administrativa</label>
+                <select id="s-gaa-admin">
+                  <option value="0.30" selected>30% — Padrão Lei n.º 4.058/2014</option>
+                  <option value="0.40">40% — Função Gratificada (FG)</option>
+                  <option value="0.50">50% — Cargo em Comissão (CC)</option>
+                </select>
+                <span class="field-hint">Incide sobre o vencimento base. Verificar portaria.</span>
               </div>
               <div class="field full">
                 <label class="field-label">Município de Lotação <span class="req">*</span></label>
@@ -584,16 +683,45 @@
               <div class="form-section-title">📋 Identificação do Servidor</div>
               <div class="field full"><label class="field-label">Nome Completo <span class="req">*</span></label><input type="text" id="m-nome" placeholder="Ex: MARIA SOUZA LIMA" /></div>
               <div class="field"><label class="field-label">Matrícula / CPF <span class="req">*</span></label><input type="text" id="m-matricula" placeholder="Ex: 125.678-3B" /></div>
-              <div class="field"><label class="field-label">Cargo / Função</label><input type="text" id="m-cargo" placeholder="Ex: Professora Municipal" /></div>
+              <div class="field"><label class="field-label">Cargo / Função</label><input type="text" id="m-cargo" placeholder="Ex: Professora Municipal / Auxiliar Administrativo" /></div>
+              <div class="field full">
+                <label class="field-label">Categoria do Servidor <span class="req">*</span></label>
+                <select id="m-categoria" onchange="toggleSEMEDAdmin()">
+                  <option value="docente">🎓 Docente — Lei n.º 1.126/2007 (PCCR Magistério Municipal)</option>
+                  <option value="admin">🗂️ Administrativo — Lei n.º 1.118/2007 (PCCR Administrativo SEMED)</option>
+                </select>
+                <span class="field-hint">Docente: refs A1-D2 | Administrativo: refs A1-L2 (24 níveis)</span>
+              </div>
 
               <hr class="form-divider" />
               <div class="form-section-title">📊 Dados Funcionais</div>
               <div class="field"><label class="field-label">Data de Posse / Ingresso <span class="req">*</span></label><input type="date" id="m-posse" /></div>
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
-                <select id="m-ref"><option value="">Selecione...</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option><option>D2</option></select>
+                <select id="m-ref">
+                  <optgroup label="Docente (A1–D2)">
+                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option><option>D2</option>
+                  </optgroup>
+                  <optgroup label="Administrativo — E1–L2" id="m-ref-admin-opts" style="display:none">
+                    <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
+                    <option>G1</option><option>G2</option><option>H1</option><option>H2</option>
+                    <option>I1</option><option>I2</option><option>J1</option><option>J2</option>
+                    <option>K1</option><option>K2</option><option>L1</option><option>L2</option>
+                  </optgroup>
+                </select>
               </div>
               <div class="field"><label class="field-label">Referência no Ingresso (se diferente)</label>
-                <select id="m-ref-inicial"><option value="">Igual à Referência Atual</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option></select>
+                <select id="m-ref-inicial">
+                  <option value="">Igual à Referência Atual</option>
+                  <optgroup label="Docente (A1–D1)">
+                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option>
+                  </optgroup>
+                  <optgroup label="Administrativo — A1–K2" id="m-refinic-admin-opts" style="display:none">
+                    <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
+                    <option>G1</option><option>G2</option><option>H1</option><option>H2</option>
+                    <option>I1</option><option>I2</option><option>J1</option><option>J2</option>
+                    <option>K1</option><option>K2</option>
+                  </optgroup>
+                </select>
               </div>
               <div class="field"></div>
 
@@ -760,19 +888,24 @@
               <div class="field"><label class="field-label">Graduação / Posto</label><input type="text" id="pm-cargo" placeholder="Ex: Sargento, Cabo, Soldado..." /></div>
 
               <hr class="form-divider" />
-              <div class="form-section-title">📊 Dados Funcionais — PMAM (Lei n.º 3.725/2012)</div>
+              <div class="form-section-title">📊 Dados Funcionais — PMAM (Lei n.º 3.725/2012 | CHOA — QOAPM)</div>
               <div class="field"><label class="field-label">Data de Ingresso na Corporação <span class="req">*</span></label><input type="date" id="pm-posse" /></div>
               <div class="field"><label class="field-label">Posto / Graduação Atual <span class="req">*</span></label>
                 <select id="pm-posto">
                   <option value="">Selecione...</option>
-                  <optgroup label="Oficiais">
+                  <optgroup label="Oficiais — QOPM">
                     <option value="coronel">Coronel</option>
                     <option value="tencoronel">Tenente-Coronel</option>
                     <option value="major">Major</option>
-                    <option value="capitao">Capitão</option>
-                    <option value="tenente1">1.º Tenente</option>
-                    <option value="tenente2">2.º Tenente</option>
+                    <option value="capitao_qopm">Capitão (QOPM)</option>
+                    <option value="tenente1">1.º Tenente (QOPM)</option>
+                    <option value="tenente2">2.º Tenente (QOPM)</option>
                     <option value="aspirante">Aspirante a Oficial</option>
+                  </optgroup>
+                  <optgroup label="Oficiais — QOAPM (CHOA)">
+                    <option value="capitao_qoapm">Capitão (QOAPM)</option>
+                    <option value="tenente1_qoapm">1.º Tenente (QOAPM)</option>
+                    <option value="tenente2_qoapm">2.º Tenente (QOAPM) — Entrada CHOA</option>
                   </optgroup>
                   <optgroup label="Praças">
                     <option value="subtente">Subtenente</option>
@@ -782,6 +915,7 @@
                     <option value="cabo">Cabo</option>
                     <option value="soldado1">Soldado de 1.ª Classe</option>
                     <option value="soldado2">Soldado de 2.ª Classe</option>
+                    <option value="aluno">Aluno-Soldado</option>
                   </optgroup>
                 </select>
                 <span class="field-hint">Posto/Graduação constante na portaria de nomeação atual</span>
@@ -789,15 +923,29 @@
               <div class="field"><label class="field-label">Posto / Graduação no Ingresso</label>
                 <select id="pm-posto-inicial">
                   <option value="">Igual ao atual</option>
+                  <option value="aluno">Aluno-Soldado</option>
                   <option value="soldado2">Soldado de 2.ª Classe</option>
                   <option value="soldado1">Soldado de 1.ª Classe</option>
                   <option value="cabo">Cabo</option>
                   <option value="sgt3">3.º Sargento</option>
                   <option value="sgt2">2.º Sargento</option>
                   <option value="sgt1">1.º Sargento</option>
-                  <option value="subtente">Subtenente</option>
-                  <option value="tenente2">2.º Tenente</option>
+                  <option value="subtente">Subtenente (Pré-CHOA)</option>
+                  <option value="tenente2_qoapm">2.º Tenente QOAPM (CHOA)</option>
+                  <option value="tenente1_qoapm">1.º Tenente QOAPM</option>
                 </select>
+                <span class="field-hint">Se o caso envolver CHOA: selecione "Subtenente" como ingresso</span>
+              </div>
+
+              <hr class="form-divider" />
+              <div class="form-section-title">🎖️ CHOA — Curso de Habilitação de Oficiais Auxiliares</div>
+              <div class="field">
+                <label class="field-label">Incluir tese CHOA no cálculo?</label>
+                <div class="radio-group">
+                  <label class="radio-opt"><input type="radio" name="pm-choa" value="nao" checked /><span class="radio-opt-label"><span class="radio-dot"></span>Não — progressão regular</span></label>
+                  <label class="radio-opt"><input type="radio" name="pm-choa" value="sim" /><span class="radio-opt-label"><span class="radio-dot"></span>Sim — Subtenente concluiu CHOA e aguarda promoção</span></label>
+                </div>
+                <span class="field-hint">CHOA: Subtenente (45%) → 2.º Ten. QOAPM (62%) = diferença de +17% por mês de atraso</span>
               </div>
 
               <hr class="form-divider" />
@@ -808,7 +956,7 @@
                   <label class="radio-opt"><input type="radio" name="pm-gt" value="sim" checked /><span class="radio-opt-label"><span class="radio-dot"></span>Sim — incluir G.T.</span></label>
                   <label class="radio-opt"><input type="radio" name="pm-gt" value="nao" /><span class="radio-opt-label"><span class="radio-dot"></span>Não</span></label>
                 </div>
-                <span class="field-hint">Gratificação de Tropa: percentual variável conforme posto (Soldado ~18%, Sargento ~22%, Oficial ~15%)</span>
+                <span class="field-hint">Gratificação de Tropa: variável por posto (Soldado ~18%, Sargento ~22%, Oficial ~12–16%)</span>
               </div>
               <div class="field">
                 <label class="field-label">Auxílio Moradia</label>
@@ -1050,6 +1198,22 @@
 // 1. BASE DE DADOS SALARIAL COMPLETA
 // ─────────────────────────────────────────
 
+// ─────────────────────────────────────────
+// CONFIG GLOBAL (JSON v5.0 — LAADV 2026)
+// ─────────────────────────────────────────
+const CORE_RULES = {
+  prescricao_meses:     60,              // Dec. Fed. 20.910/1932
+  index_juros:          'SELIC_EC113',   // EC 113/2021
+  step_2026_mensal:     0.005,           // +0,5%/mês — escalonamento 2026
+  marco_temporal_seduc: new Date('2019-03-01'),
+};
+
+const SALARIO_MINIMO = {
+  2019: 998.00, 2020: 1045.00, 2021: 1100.00, 2022: 1212.00,
+  2023: 1320.00, 2024: 1412.00, 2025: 1518.00, 2026: 1624.00,
+};
+function getSalarioMinimo(ano) { return SALARIO_MINIMO[ano] || SALARIO_MINIMO[2026]; }
+
 const TABELAS_SALARIAIS = {
   SEDUC: [
     { vigencia: '2019-01-01', valorBase: 2320.10, lei: 'Lei n.º 3.951/2013' },
@@ -1085,7 +1249,9 @@ const TABELAS_SALARIAIS = {
   ],
   // PMAM: base = Coronel (referência máxima para o escalonamento)
   PMAM: [
-    { vigencia: '2019-05-01', valorBase: 14500.00, lei: 'Lei n.º 4.852/2019 — PMAM' },
+    { vigencia: '2016-01-01', valorBase: 11500.00, lei: 'Data-Base 2016 (+9,27%) — PMAM' },
+    { vigencia: '2018-01-01', valorBase: 12400.00, lei: 'Lei n.º 4.618/2018 — Reestruturação PMAM' },
+    { vigencia: '2019-05-01', valorBase: 14500.00, lei: 'Lei n.º 4.852/2019 — PMAM (+5%)' },
     { vigencia: '2022-01-01', valorBase: 16095.00, lei: 'Lei n.º 5.771/2022 (11,0%) — PMAM' },
     { vigencia: '2023-05-01', valorBase: 16767.45, lei: 'Data-Base 2023 (4,18%) — PMAM' },
     { vigencia: '2024-05-01', valorBase: 17419.71, lei: 'Data-Base 2024 (3,89%) — PMAM' },
@@ -1139,21 +1305,37 @@ const REGRAS = {
     intersticioUnico: 24,
   },
   // PMAM: escalonamento vertical. Índice relativo ao subsídio do Coronel (= 1.00)
+  // Inclui QOAPM (CHOA): 2.º Ten → 1.º Ten → Capitão com índices atualizados
   PMAM: {
     postos: {
-      coronel:    1.000, tencoronel: 0.900, major:      0.810,
-      capitao:    0.750, tenente1:   0.680, tenente2:   0.600,
-      aspirante:  0.550, subtente:   0.480, sgt1:       0.380,
-      sgt2:       0.340, sgt3:       0.310, cabo:       0.270,
-      soldado1:   0.250, soldado2:   0.240,
+      coronel:    1.000, tencoronel: 0.910, major:      0.860,
+      // QOPM Oficiais Intermediários
+      capitao_qopm: 0.750,
+      // QOAPM — Oficiais Auxiliares (acesso via CHOA)
+      capitao_qoapm:  0.750, tenente1_qoapm: 0.680, tenente2_qoapm: 0.620,
+      // QOPM Inferiores
+      tenente1:   0.680, tenente2:   0.600, aspirante:  0.550,
+      // Praças
+      subtente:   0.450, sgt1:       0.400,
+      sgt2:       0.350, sgt3:       0.310, cabo:       0.270,
+      soldado1:   0.250, soldado2:   0.240, aluno:      0.120,
     },
     // Gratificação de Tropa por posto (% sobre subsídio)
     gt: {
-      coronel:0.12, tencoronel:0.12, major:0.14, capitao:0.15, tenente1:0.15, tenente2:0.16,
+      coronel:0.12, tencoronel:0.12, major:0.14,
+      capitao_qopm:0.15, capitao_qoapm:0.15,
+      tenente1_qoapm:0.15, tenente2_qoapm:0.16,
+      tenente1:0.15, tenente2:0.16,
       aspirante:0.16, subtente:0.20, sgt1:0.22, sgt2:0.22, sgt3:0.22,
-      cabo:0.18, soldado1:0.18, soldado2:0.18,
+      cabo:0.18, soldado1:0.18, soldado2:0.18, aluno:0.00,
     },
     intersticioPromo: 36, // mínimo 3 anos entre promoções
+    // CHOA: mapa de progressão Subtenente → QOAPM
+    choa: {
+      subtente:        'tenente2_qoapm',
+      tenente2_qoapm:  'tenente1_qoapm',
+      tenente1_qoapm:  'capitao_qoapm',
+    },
   },
   // PCAM: escalonamento vertical. Delegado Especial = 1.00
   PCAM: {
@@ -1170,10 +1352,62 @@ const REGRAS = {
     intersticioPromo: 36, // 3 anos entre promoções por classe
     gep: 1.00, // 100% sobre vencimento base
   },
+
+  // ─── SEDUC ADMINISTRATIVO (Lei n.º 4.058/2014) ───────────────────────
+  SEDUC_ADMIN: {
+    referencias:    ['A','B','C','D','E','F','G','H'],
+    multRefs:       { A:1.000, B:1.020, C:1.040, D:1.060, E:1.080, F:1.100, G:1.120, H:1.140 },
+    gaa:            0.30,           // Gratificação de Atividade Administrativa (30%)
+    intersticioUnico: 24,           // interstício único bienal
+    lei:            'Lei n.º 4.058/2014 (PCCR Administrativo SEDUC)',
+  },
+  // ─── SEMED ADMINISTRATIVO (Lei Municipal n.º 1.118/2007) ─────────────
+  // Referências A1-L2 (24 níveis) — multiplicadores com padrão +2% na letra,
+  // +15% na mudança de grupo (espelho da Lei 1.126/07 estendida até L2)
+  SEMED_ADMIN: {
+    referencias: ['A1','A2','B1','B2','C1','C2','D1','D2',
+                  'E1','E2','F1','F2','G1','G2','H1','H2',
+                  'I1','I2','J1','J2','K1','K2','L1','L2'],
+    multRefs: {
+      A1:1.000, A2:1.020, B1:1.150, B2:1.173, C1:1.322, C2:1.349,
+      D1:1.520, D2:1.551, E1:1.748, E2:1.783, F1:2.010, F2:2.050,
+      G1:2.312, G2:2.358, H1:2.659, H2:2.712, I1:3.058, I2:3.119,
+      J1:3.517, J2:3.587, K1:4.045, K2:4.126, L1:4.652, L2:4.745,
+    },
+    intersticioUnico: 24,
+    lei:            'Lei Municipal n.º 1.118/2007 (PCCR Administrativo SEMED)',
+  },
 };
 
 // Constante de Regência de Classe
 const REGENCIA_PERCENTUAL = 0.25;
+
+
+// ─────────────────────────────────────────────────────────────
+// TOGGLE CATEGORIA (SEDUC / SEMED)
+// ─────────────────────────────────────────────────────────────
+function toggleSEDUCAdmin() {
+  const cat = document.getElementById('s-categoria')?.value;
+  const isAdmin = cat === 'admin';
+  // Mostrar/ocultar Classe
+  const classeWrap = document.getElementById('s-classe-wrap');
+  if (classeWrap) classeWrap.style.display = isAdmin ? 'none' : '';
+  // Mostrar/ocultar Regência e GAA
+  const regWrap = document.getElementById('seduc-reg-wrap');
+  const gaaWrap = document.getElementById('seduc-gaa-wrap');
+  if (regWrap) regWrap.classList.toggle('hidden', isAdmin);
+  if (gaaWrap) gaaWrap.classList.toggle('hidden', !isAdmin);
+}
+
+function toggleSEMEDAdmin() {
+  const cat = document.getElementById('m-categoria')?.value;
+  const isAdmin = cat === 'admin';
+  // Mostrar/ocultar optgroups de refs admin
+  const adminOpts  = document.getElementById('m-ref-admin-opts');
+  const adminInic  = document.getElementById('m-refinic-admin-opts');
+  if (adminOpts) adminOpts.style.display = isAdmin ? '' : 'none';
+  if (adminInic) adminInic.style.display = isAdmin ? '' : 'none';
+}
 
 // Estado global
 let AREA_ATUAL = null;
@@ -1204,7 +1438,9 @@ function fmtData(d) { return d.toLocaleDateString('pt-BR'); }
 function fmtMoeda(v) { return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
 
 function getValorBase(area, dataRef) {
-  const tabela = TABELAS_SALARIAIS[area.toUpperCase()];
+  // SEDUC_ADMIN e SEMED_ADMIN usam a mesma tabela salarial da área-pai
+  const lookup = area.toUpperCase().replace('_ADMIN', '');
+  const tabela = TABELAS_SALARIAIS[lookup];
   const mesStr = dataRef.getFullYear() + '-' + String(dataRef.getMonth()+1).padStart(2,'0') + '-01';
   const sorted = [...tabela].sort((a,b) => b.vigencia.localeCompare(a.vigencia));
   return sorted.find(r => r.vigencia <= mesStr) || null;
@@ -1214,28 +1450,39 @@ function getValorBase(area, dataRef) {
 // 3. MOTOR DE CÁLCULO — EDUCAÇÃO
 // ─────────────────────────────────────────
 
-function calcVencimentoEduc(area, classe, ref, dataRef, pctLoc, pctReg) {
-  const areaCfg = REGRAS[area.toUpperCase()];
-  const baseItem = getValorBase(area, dataRef);
+function calcVencimentoEduc(area, classe, ref, dataRef, pctLoc, pctReg, pctGAA_extra) {
+  // area pode ser 'seduc', 'semed', 'seduc_admin', 'semed_admin'
+  const areaKey = area.toUpperCase();
+  const areaCfg = REGRAS[areaKey];
+  const baseItem = getValorBase(area, dataRef);  // getValorBase já strip _ADMIN
   if (!baseItem) return null;
   let salBase;
-  if (area.toUpperCase() === 'SEDUC') {
-    salBase = baseItem.valorBase * (areaCfg.classes[classe] ?? 1) * (areaCfg.multRefs[ref] ?? 1);
+  if (areaKey === 'SEDUC' || areaKey === 'SEDUC_ADMIN') {
+    // SEDUC admin: sem multClasse (classe = '' ou ignorada)
+    const multCls = (areaCfg.classes && classe && areaCfg.classes[classe]) ? areaCfg.classes[classe] : 1;
+    salBase = baseItem.valorBase * multCls * (areaCfg.multRefs[ref] ?? 1);
   } else {
     salBase = baseItem.valorBase * (areaCfg.multRefs[ref] ?? 1);
-    pctLoc = 0; pctReg = 0;
+    pctLoc = 0; pctReg = 0;  // SEMED/SEMED_ADMIN: sem localidade/regência
   }
-  const salLoc = parseFloat((salBase * pctLoc).toFixed(2));
-  const salReg = parseFloat((salBase * pctReg).toFixed(2));
+  salBase = parseFloat(salBase.toFixed(2));
+  const salLoc = parseFloat((salBase * (pctLoc  || 0)).toFixed(2));
+  const salReg = parseFloat((salBase * (pctReg  || 0)).toFixed(2));
+  const salGAA = parseFloat((salBase * (pctGAA_extra || 0)).toFixed(2));
   return {
-    sal: parseFloat((salBase + salLoc + salReg).toFixed(2)),
-    salBase: parseFloat(salBase.toFixed(2)),
+    sal: parseFloat((salBase + salLoc + salReg + salGAA).toFixed(2)),
+    salBase, salLoc, salReg, salGAA,
     lei: baseItem.lei
   };
 }
 
 function calcularProgressoesEduc(area, posseDate, ateDate) {
-  const cfg = REGRAS[area.toUpperCase()];
+  const areaKey = area.toUpperCase();
+  // Áreas admin: interstício único de 24 meses
+  if (areaKey === 'SEDUC_ADMIN' || areaKey === 'SEMED_ADMIN') {
+    return Math.floor(diffMonths(posseDate, ateDate) / 24);
+  }
+  const cfg = REGRAS[areaKey];
   const ateMes = new Date(ateDate.getFullYear(), ateDate.getMonth(), 1);
   let progCount = 0;
   let cursor = new Date(posseDate.getFullYear(), posseDate.getMonth(), 1);
@@ -1333,11 +1580,21 @@ function calcProgressoesSeguranca(area, posseDate, postoAtual, postoInicial, ate
 function gerarDemonstrativoEduc(params) {
   const { area, nome, matricula, cargo, posseDate, classe,
           refInicial, startDate, endDate, incluirExtras,
-          municipio, pctLocalidade, incluirRegencia } = params;
-  const areaUp  = area.toUpperCase();
-  const refList = REGRAS[areaUp].referencias;
-  const pctReg  = (area === 'seduc' && incluirRegencia) ? REGENCIA_PERCENTUAL : 0;
+          municipio, pctLocalidade, incluirRegencia,
+          categoria, pctGAA_admin } = params;
+  // ── Determina chave de regras (admin usa sub-tabela própria) ──
+  const isAdmin = (categoria === 'admin');
+  const areaUp  = isAdmin
+                    ? (area === 'seduc' ? 'SEDUC_ADMIN' : 'SEMED_ADMIN')
+                    : area.toUpperCase();
+  const cfg     = REGRAS[areaUp];
+  const refList = cfg.referencias;
+  // Regência: apenas docente SEDUC
+  const pctReg  = (!isAdmin && area === 'seduc' && incluirRegencia) ? REGENCIA_PERCENTUAL : 0;
+  // Localidade: apenas SEDUC (docente e admin)
   const pctLoc  = (area === 'seduc') ? (pctLocalidade || 0) : 0;
+  // GAA Admin: SEDUC admin = 30% fixo; SEMED admin = sem GAA
+  const pctGAA  = (isAdmin && area === 'seduc') ? (pctGAA_admin || REGRAS.SEDUC_ADMIN.gaa) : 0;
 
   const progsTotal = calcularProgressoesEduc(area, posseDate, endDate);
   const refDevida  = refAposProgressoes(refInicial, refList, progsTotal);
@@ -1352,8 +1609,8 @@ function gerarDemonstrativoEduc(params) {
     const refDevidaMes = refAposProgressoes(refInicial, refList, progsAteMes);
     if (refDevidaMes === refInicial) { cursor = addMonths(cursor, 1); continue; }
 
-    const recItem = calcVencimentoEduc(area, classe, refInicial,   cursor, pctLoc, pctReg);
-    const devItem = calcVencimentoEduc(area, classe, refDevidaMes, cursor, pctLoc, pctReg);
+    const recItem = calcVencimentoEduc(areaUp, classe, refInicial,   cursor, pctLoc, pctReg, pctGAA);
+    const devItem = calcVencimentoEduc(areaUp, classe, refDevidaMes, cursor, pctLoc, pctReg, pctGAA);
     if (!recItem || !devItem) { erros.push('Vigência não encontrada: ' + fmtMes(cursor)); cursor = addMonths(cursor,1); continue; }
 
     const diff = parseFloat((devItem.sal - recItem.sal).toFixed(2));
@@ -1373,8 +1630,8 @@ function gerarDemonstrativoEduc(params) {
       const progsAteDez  = calcularProgressoesEduc(area, posseDate, decDate);
       const refDevidaDez = refAposProgressoes(refInicial, refList, progsAteDez);
       if (refDevidaDez === refInicial) return;
-      const recDez = calcVencimentoEduc(area, classe, refInicial,   decDate, pctLoc, pctReg);
-      const devDez = calcVencimentoEduc(area, classe, refDevidaDez, decDate, pctLoc, pctReg);
+      const recDez = calcVencimentoEduc(areaUp, classe, refInicial,   decDate, pctLoc, pctReg, pctGAA);
+      const devDez = calcVencimentoEduc(areaUp, classe, refDevidaDez, decDate, pctLoc, pctReg, pctGAA);
       if (!recDez || !devDez) return;
       const diffDez = parseFloat((devDez.sal - recDez.sal).toFixed(2));
       if (diffDez <= 0) return;
@@ -1499,16 +1756,37 @@ function gerarDemonstrativoSEMSA(params) {
 
 function gerarDemonstrativoSeguranca(params) {
   const { area, nome, matricula, cargo, posseDate, postoAtual, postoInicial,
-          incluirAdicional, startDate, endDate, incluirExtras } = params;
+          incluirAdicional, incluirChoa, startDate, endDate, incluirExtras } = params;
   const cfg = REGRAS[area.toUpperCase()];
   const listaPostos = Object.keys(area === 'pmam' ? cfg.postos : cfg.cargos);
 
-  // Calcula índice de progressões devidas
+  // ── MODO CHOA (PMAM) ──────────────────────────────────────────────────────
+  // Quando CHOA ativo, o post devida segue o mapa cfg.choa em vez da lista linear
+  function postoDevidoCHOA(postoBase, mesesDecorridos) {
+    // Cada promoção no CHOA exige 36 meses no posto atual
+    let atual = postoBase;
+    let mesesRestantes = mesesDecorridos;
+    while (mesesRestantes >= (cfg.intersticioPromo || 36)) {
+      const proximo = cfg.choa && cfg.choa[atual];
+      if (!proximo) break;
+      atual = proximo;
+      mesesRestantes -= (cfg.intersticioPromo || 36);
+    }
+    return atual;
+  }
+
+  // Calcula índice de progressões devidas (modo geral)
   const idxAtual   = listaPostos.indexOf(postoAtual);
   const idxInicial = listaPostos.indexOf(postoInicial);
   const mesesTotal = diffMonths(posseDate, endDate);
-  const progsDevidas = Math.floor(mesesTotal / (cfg.intersticioPromo || 36));
-  const postoDevido  = listaPostos[Math.min(idxInicial + progsDevidas, listaPostos.length-1)];
+
+  let postoDevido;
+  if (area === 'pmam' && incluirChoa) {
+    postoDevido = postoDevidoCHOA(postoInicial, mesesTotal);
+  } else {
+    const progsDevidas = Math.floor(mesesTotal / (cfg.intersticioPromo || 36));
+    postoDevido = listaPostos[Math.min(idxInicial + progsDevidas, listaPostos.length-1)];
+  }
   // Progressões em atraso = servidor está em postoAtual mas devia estar em postoDevido
   const numProgressoesAtraso = Math.max(0, listaPostos.indexOf(postoDevido) - idxAtual);
 
@@ -1518,8 +1796,13 @@ function gerarDemonstrativoSeguranca(params) {
 
   while (cursor <= endM) {
     const mesesAteAgora = diffMonths(posseDate, cursor);
-    const progsAteMes   = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
-    const postoDevidoMes = listaPostos[Math.min(idxInicial + progsAteMes, listaPostos.length-1)];
+    let postoDevidoMes;
+    if (area === 'pmam' && incluirChoa) {
+      postoDevidoMes = postoDevidoCHOA(postoInicial, mesesAteAgora);
+    } else {
+      const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
+      postoDevidoMes = listaPostos[Math.min(idxInicial + progsAteMes, listaPostos.length-1)];
+    }
     if (postoDevidoMes === postoAtual) { cursor = addMonths(cursor,1); continue; }
 
     const recItem = calcVencimentoSeguranca(area, postoAtual,    cursor, incluirAdicional);
@@ -1541,8 +1824,13 @@ function gerarDemonstrativoSeguranca(params) {
     anos.forEach(ano => {
       const decDate = new Date(ano, 11, 1);
       const mesesDez = diffMonths(posseDate, decDate);
-      const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
-      const postoDez = listaPostos[Math.min(idxInicial + progsDez, listaPostos.length-1)];
+      let postoDez;
+      if (area === 'pmam' && incluirChoa) {
+        postoDez = postoDevidoCHOA(postoInicial, mesesDez);
+      } else {
+        const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
+        postoDez = listaPostos[Math.min(idxInicial + progsDez, listaPostos.length-1)];
+      }
       if (postoDez === postoAtual) return;
       const recDez = calcVencimentoSeguranca(area, postoAtual, decDate, incluirAdicional);
       const devDez = calcVencimentoSeguranca(area, postoDez,   decDate, incluirAdicional);
@@ -1747,13 +2035,17 @@ function _coletarEduc(area) {
   const matricula = v('matricula');
   const cargo     = v('cargo') || '';
   const posseStr  = v('posse');
-  const classe    = area === 'seduc' ? v('classe') : null;
-  const refAtual  = v('ref');
-  const refInicStr= v('ref-inicial');
-  const inicioStr = v('inicio');
-  const fimStr    = v('fim');
-  const extras    = r(area === 'seduc' ? 'extras' : 'extras_m') === 'sim';
-  const regencia  = area === 'seduc' ? (r('regencia') === 'sim') : false;
+  // ── Categoria: docente (padrão) ou admin ──
+  const categoria    = v('categoria') || 'docente';
+  const isAdmin      = categoria === 'admin';
+  const classe       = (area === 'seduc' && !isAdmin) ? v('classe') : null;
+  const refAtual     = v('ref');
+  const refInicStr   = v('ref-inicial');
+  const inicioStr    = v('inicio');
+  const fimStr       = v('fim');
+  const extras       = r(area === 'seduc' ? 'extras' : 'extras_m') === 'sim';
+  const regencia     = (area === 'seduc' && !isAdmin) ? (r('regencia') === 'sim') : false;
+  const pctGAA_admin = (area === 'seduc' && isAdmin) ? (parseFloat(v('gaa-admin')) || 0.30) : 0;
 
   let municipio = '', pctLocalidade = 0;
   if (area === 'seduc') {
@@ -1763,13 +2055,13 @@ function _coletarEduc(area) {
     municipio = mn; pctLocalidade = parseFloat(mp) || 0;
   }
 
-  if (!nome) throw new Error('Informe o nome completo.');
-  if (!matricula) throw new Error('Informe a matrícula ou CPF.');
-  if (!posseStr) throw new Error('Informe a data de posse.');
-  if (area === 'seduc' && !classe) throw new Error('Informe a classe atual.');
-  if (!refAtual) throw new Error('Informe a referência atual.');
-  if (!inicioStr) throw new Error('Informe a data de início do retroativo.');
-  if (!fimStr) throw new Error('Informe a data de fim do retroativo.');
+  if (!nome)       throw new Error('Informe o nome completo.');
+  if (!matricula)  throw new Error('Informe a matrícula ou CPF.');
+  if (!posseStr)   throw new Error('Informe a data de posse.');
+  if (area === 'seduc' && !isAdmin && !classe) throw new Error('Informe a classe atual.');
+  if (!refAtual)   throw new Error('Informe a referência atual.');
+  if (!inicioStr)  throw new Error('Informe a data de início do retroativo.');
+  if (!fimStr)     throw new Error('Informe a data de fim do retroativo.');
 
   const posseDate = parseDate(posseStr);
   const startDate = parseDate(inicioStr);
@@ -1777,13 +2069,18 @@ function _coletarEduc(area) {
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate >= endDate) throw new Error('Data de posse deve ser anterior ao período retroativo.');
 
-  const refList    = area === 'seduc' ? REGRAS.SEDUC.referencias : REGRAS.SEMED.referencias;
+  // Seleciona regras da área correta conforme categoria
+  const areaCalc = isAdmin
+    ? (area === 'seduc' ? 'seduc_admin' : 'semed_admin')
+    : area;
+  const regrasKey = areaCalc.toUpperCase();
+  const refList    = REGRAS[regrasKey]?.referencias || [];
   const refInicial = refInicStr || refAtual;
-  if (!refList.includes(refInicial)) throw new Error('Referência inválida: ' + refInicial);
-  if (!refList.includes(refAtual))   throw new Error('Referência inválida: ' + refAtual);
+  if (!refList.includes(refAtual))   throw new Error('Referência inválida para esta categoria: ' + refAtual);
 
-  return gerarDemonstrativoEduc({ area, nome, matricula, cargo, posseDate, classe,
-    refInicial, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade, incluirRegencia: regencia });
+  return gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
+    refInicial, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
+    incluirRegencia: regencia, categoria, pctGAA_admin });
 }
 
 function _coletarSES() {
@@ -1856,17 +2153,17 @@ function _coletarSEMSA() {
 function _coletarPMAM() {
   const v = id => document.getElementById(id)?.value?.trim();
   const r = name => document.querySelector(`input[name="${name}"]:checked`)?.value;
-  const nome       = v('pm-nome');
-  const matricula  = v('pm-matricula');
-  const cargo      = v('pm-cargo') || '';
-  const posseStr   = v('pm-posse');
-  const postoAtual = v('pm-posto');
+  const nome         = v('pm-nome');
+  const matricula    = v('pm-matricula');
+  const cargo        = v('pm-cargo') || '';
+  const posseStr     = v('pm-posse');
+  const postoAtual   = v('pm-posto');
   const postoInicStr = v('pm-posto-inicial');
-  const incluirGT  = r('pm-gt') === 'sim';
-  const incluirAux = r('pm-moradia') === 'sim';
-  const inicioStr  = v('pm-inicio');
-  const fimStr     = v('pm-fim');
-  const extras     = r('extras_pm') === 'sim';
+  const incluirGT    = r('pm-gt') === 'sim';
+  const incluirChoa  = r('pm-choa') === 'sim';
+  const inicioStr    = v('pm-inicio');
+  const fimStr       = v('pm-fim');
+  const extras       = r('extras_pm') === 'sim';
 
   if (!nome) throw new Error('Informe o nome completo.');
   if (!matricula) throw new Error('Informe a matrícula.');
@@ -1880,9 +2177,10 @@ function _coletarPMAM() {
   const endDate    = parseDate(fimStr);
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
 
-  const postoInicial = postoInicStr || postoAtual;
+  // CHOA: força ingresso como Subtenente e ativa modo especial no gerador
+  const postoInicial = incluirChoa ? 'subtente' : (postoInicStr || postoAtual);
   return gerarDemonstrativoSeguranca({ area:'pmam', nome, matricula, cargo, posseDate,
-    postoAtual, postoInicial, incluirAdicional: incluirGT,
+    postoAtual, postoInicial, incluirAdicional: incluirGT, incluirChoa,
     startDate, endDate, incluirExtras: extras });
 }
 
