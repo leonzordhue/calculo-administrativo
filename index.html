@@ -609,15 +609,17 @@
                 <select id="s-categoria" onchange="toggleSEDUCAdmin()">
                   <option value="docente">🎓 Docente — Lei n.º 3.951/2013 (PCCR Magistério)</option>
                   <option value="admin">🗂️ Administrativo — Lei n.º 4.058/2014 (PCCR Administrativo)</option>
+                  <option value="apoio_fundamental">🍽️ Apoio Específico — Nível Fund./Médio (Merendeira, Auxiliar, Vigilante, Porteiro…)</option>
+                  <option value="apoio_superior">🔬 Apoio Específico — Nível Superior (Nutricionista, Psicólogo, Assistente Social…)</option>
                 </select>
-                <span class="field-hint">Docente: interstício 36/48m + regência | Administrativo: interstício 24m + GAA 30%</span>
+                <span class="field-hint">Docente: interstício 36/48m + regência | Administrativo: 24m + GAA 30% | Apoio: tabela Anexo IV/V Lei n.º 3.951/2013</span>
               </div>
 
               <hr class="form-divider" />
               <div class="form-section-title">📊 Dados Funcionais</div>
               <div class="field"><label class="field-label">Data de Posse / Ingresso <span class="req">*</span></label><input type="date" id="s-posse" /></div>
               <div class="field" id="s-classe-wrap"><label class="field-label">Classe Atual <span class="req">*</span></label>
-                <select id="s-classe"><option value="">Selecione...</option><option value="3ª">3ª Classe</option><option value="2ª">2ª Classe</option><option value="1ª">1ª Classe</option></select>
+                <select id="s-classe"><option value="">Selecione...</option><option value="3ª">3ª Classe</option><option value="2ª">2ª Classe</option><option value="1ª">1ª Classe</option><option value="4ª">4ª Classe (extinção)</option></select>
               </div>
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
                 <select id="s-ref"><option value="">Selecione...</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select>
@@ -1121,7 +1123,7 @@
           <table class="result-table" id="result-table">
             <thead>
               <tr>
-                <th>Competência</th><th>Ref. Recebida</th><th>Venc. Recebido</th><th>Ref. Devida</th><th>Venc. Devido</th><th>Lei / Reajuste</th><th>Diferença Mensal</th><th>Obs.</th><th>Total Linha</th>
+                <th>Competência</th><th>Ref. Recebida</th><th>Venc. Recebido</th><th>Ref. Devida</th><th>Venc. Devido</th><th>Lei / Reajuste</th><th>Diferença Nominal</th><th>Fator SELIC</th><th class="col-selic">Valor Corrigido (SELIC)</th><th>Obs.</th><th>Total Linha</th>
               </tr>
             </thead>
             <tbody id="result-tbody"></tbody>
@@ -1202,17 +1204,77 @@
 // CONFIG GLOBAL (JSON v5.0 — LAADV 2026)
 // ─────────────────────────────────────────
 const CORE_RULES = {
-  prescricao_meses:     60,              // Dec. Fed. 20.910/1932
-  index_juros:          'SELIC_EC113',   // EC 113/2021
-  step_2026_mensal:     0.005,           // +0,5%/mês — escalonamento 2026
+  prescricao_meses:     60,
+  index_juros:          'SELIC_EC113',
   marco_temporal_seduc: new Date('2019-03-01'),
 };
 
-const SALARIO_MINIMO = {
-  2019: 998.00, 2020: 1045.00, 2021: 1100.00, 2022: 1212.00,
-  2023: 1320.00, 2024: 1412.00, 2025: 1518.00, 2026: 1624.00,
+// ─────────────────────────────────────────
+// TABELA SELIC MENSAL — EC 113/2021
+// Fonte: BCB (taxas efetivas mensais, arredondadas em 4 casas)
+// Atualizada até março/2026 — inserir mensalmente conforme BCB
+// ─────────────────────────────────────────
+const SELIC_MENSAL = {
+  '2019-01':0.0054,'2019-02':0.0054,'2019-03':0.0057,'2019-04':0.0052,
+  '2019-05':0.0054,'2019-06':0.0052,'2019-07':0.0057,'2019-08':0.0050,
+  '2019-09':0.0048,'2019-10':0.0048,'2019-11':0.0038,'2019-12':0.0038,
+  '2020-01':0.0038,'2020-02':0.0029,'2020-03':0.0034,'2020-04':0.0025,
+  '2020-05':0.0024,'2020-06':0.0021,'2020-07':0.0019,'2020-08':0.0016,
+  '2020-09':0.0016,'2020-10':0.0016,'2020-11':0.0015,'2020-12':0.0016,
+  '2021-01':0.0015,'2021-02':0.0014,'2021-03':0.0020,'2021-04':0.0025,
+  '2021-05':0.0027,'2021-06':0.0033,'2021-07':0.0038,'2021-08':0.0043,
+  '2021-09':0.0048,'2021-10':0.0053,'2021-11':0.0063,'2021-12':0.0073,
+  '2022-01':0.0073,'2022-02':0.0073,'2022-03':0.0083,'2022-04':0.0093,
+  '2022-05':0.0102,'2022-06':0.0109,'2022-07':0.0109,'2022-08':0.0109,
+  '2022-09':0.0107,'2022-10':0.0114,'2022-11':0.0107,'2022-12':0.0107,
+  '2023-01':0.0113,'2023-02':0.0106,'2023-03':0.0113,'2023-04':0.0106,
+  '2023-05':0.0113,'2023-06':0.0106,'2023-07':0.0109,'2023-08':0.0102,
+  '2023-09':0.0099,'2023-10':0.0099,'2023-11':0.0092,'2023-12':0.0092,
+  '2024-01':0.0092,'2024-02':0.0086,'2024-03':0.0092,'2024-04':0.0086,
+  '2024-05':0.0086,'2024-06':0.0092,'2024-07':0.0092,'2024-08':0.0099,
+  '2024-09':0.0099,'2024-10':0.0106,'2024-11':0.0109,'2024-12':0.0116,
+  '2025-01':0.0116,'2025-02':0.0107,'2025-03':0.0116,'2025-04':0.0112,
+  '2025-05':0.0116,'2025-06':0.0112,'2025-07':0.0116,'2025-08':0.0112,
+  '2025-09':0.0116,'2025-10':0.0116,'2025-11':0.0112,'2025-12':0.0116,
+  '2026-01':0.0116,'2026-02':0.0112,'2026-03':0.0116,
 };
-function getSalarioMinimo(ano) { return SALARIO_MINIMO[ano] || SALARIO_MINIMO[2026]; }
+
+/**
+ * Retorna a chave AAAA-MM de uma Date (normalizada para o 1º do mês)
+ */
+function mesKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+/**
+ * Calcula o fator SELIC acumulado de um mês de competência até o mês atual (inclusive).
+ * Cada diferença de competência deve ser corrigida de sua data até hoje.
+ * Retorna fator multiplicador (ex: 1.4523).
+ * Se não houver dados para um mês, usa 0 (sem correção naquele mês).
+ */
+function fatorSelicAcumulado(mesCompetencia) {
+  const hoje = new Date();
+  const fim  = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  let cursor = new Date(mesCompetencia.getFullYear(), mesCompetencia.getMonth(), 1);
+  let fator  = 1.0;
+  while (cursor <= fim) {
+    const k = mesKey(cursor);
+    fator *= (1 + (SELIC_MENSAL[k] || 0));
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+  }
+  return parseFloat(fator.toFixed(6));
+}
+
+/**
+ * Retorna a data de competência de uma row a partir de mes/ano
+ */
+function rowDate(row) {
+  // tipo 13o: usa dezembro do ano; ferias: usa dezembro do ano
+  const m = (row.tipo === '13o' || row.tipo === 'ferias') ? 11 : row.mes;
+  return new Date(row.ano, m, 1);
+}
+
+
 
 const TABELAS_SALARIAIS = {
   SEDUC: [
@@ -1221,14 +1283,14 @@ const TABELAS_SALARIAIS = {
     { vigencia: '2022-01-01', valorBase: 2659.57, lei: 'Lei n.º 5.770/2022 (9,19%)' },
     { vigencia: '2023-03-01', valorBase: 2872.34, lei: 'Lei n.º 6.261/2023 (8,0%)' },
     { vigencia: '2024-05-01', valorBase: 2984.07, lei: 'Data-Base 2024 (3,89%)' },
-    { vigencia: '2025-11-11', valorBase: 3058.58, lei: 'Lei n.º 7.836/2025' },
+    { vigencia: '2025-11-01', valorBase: 3058.58, lei: 'Lei n.º 7.836/2025' }, // normalizado dia 01
   ],
   SEMED: [
     { vigencia: '2019-01-01', valorBase: 1912.45, lei: 'PCCR — Lei Municipal n.º 1.126/2007' },
     { vigencia: '2022-04-01', valorBase: 2404.94, lei: 'Lei Municipal n.º 2.871/2022 (12,47%)' },
     { vigencia: '2023-05-01', valorBase: 2513.16, lei: 'Lei Municipal n.º 3.056/2023 (4,5%)' },
     { vigencia: '2024-05-01', valorBase: 2605.14, lei: 'Lei Municipal n.º 3.315/2024 (3,66%)' },
-    { vigencia: '2025-06-17', valorBase: 2650.29, lei: 'Data-Base 2025 (5,48%)' },
+    { vigencia: '2025-06-01', valorBase: 2650.29, lei: 'Data-Base 2025 (5,48%)' }, // normalizado dia 01
   ],
   // SES: base = Nível Superior (S) / Classe I
   SES: [
@@ -1245,7 +1307,7 @@ const TABELAS_SALARIAIS = {
     { vigencia: '2022-04-01', valorBase: 6982.56, lei: 'Lei Municipal n.º 2.871/2022 (12,47%)' },
     { vigencia: '2023-05-01', valorBase: 7297.08, lei: 'Lei Municipal n.º 3.056/2023 (4,5%)' },
     { vigencia: '2024-05-01', valorBase: 7564.36, lei: 'Lei Municipal n.º 3.315/2024 (3,66%)' },
-    { vigencia: '2025-06-17', valorBase: 7779.44, lei: 'Data-Base 2025 (5,48%)' },
+    { vigencia: '2025-06-01', valorBase: 7779.44, lei: 'Data-Base 2025 (5,48%)' }, // normalizado dia 01
   ],
   // PMAM: base = Coronel (referência máxima para o escalonamento)
   PMAM: [
@@ -1267,9 +1329,64 @@ const TABELAS_SALARIAIS = {
   ],
 };
 
+// ─────────────────────────────────────────
+// TABELA SALARIAL — APOIO ESPECÍFICO À EDUCAÇÃO (SEDUC)
+// Fonte: PDF Tabela Remuneratória SEDUC (SEAD/AM)
+// Lei n.º 3.951/2013 (Anexo IV/V) | Lei n.º 4.836/2019 | Lei n.º 5.770/2022
+// Referências A → E (5 níveis, progressão +2% por referência)
+// ─────────────────────────────────────────
+const TABELAS_APOIO_SUPERIOR = [
+  // Nível Superior: Bibliotecário, Nutricionista, Estatístico, Contador, Assistente Social,
+  //                 Psicólogo, Técnico de Nível Superior, Engenheiro
+  { vigencia: '2019-03-01', valorBase: 2023.48, lei: 'Lei n.º 4.836/2019 — Apoio Nível Superior (Anexo IV)' },
+  { vigencia: '2022-01-01', valorBase: 2209.31, lei: 'Lei n.º 5.770/2022 (9,19%) — Apoio Nível Superior' },
+];
+const TABELAS_APOIO_FUNDAMENTAL = [
+  // Nível Fundamental/Médio: Merendeira, Merendeiro, Cozinheira/Cozinheiro,
+  //   Auxiliar de Cozinha, Auxiliar de Serviços Gerais, Vigilante, Porteiro,
+  //   Zelador, Auxiliar Administrativo, Auxiliar Técnico, Motorista
+  { vigencia: '2019-03-01', valorBase: 1455.14, lei: 'Lei n.º 4.836/2019 — Apoio Nível Fundamental/Médio (Anexo V)' },
+  { vigencia: '2022-01-01', valorBase: 1588.74, lei: 'Lei n.º 5.770/2022 (9,19%) — Apoio Nível Fundamental/Médio' },
+];
+const MULT_REFS_APOIO = { A:1.000, B:1.020, C:1.040, D:1.060, E:1.080 };
+const REFS_APOIO      = ['A','B','C','D','E'];
+
+const CARGOS_APOIO_FUNDAMENTAL = [
+  'merendeira','merendeiro','cozinheira','cozinheiro','auxiliar de cozinha',
+  'auxiliar de servicos gerais','auxiliar de serviços gerais',
+  'vigilante','porteiro','zelador','auxiliar administrativo',
+  'auxiliar tecnico','auxiliar técnico','motorista','auxiliar de limpeza',
+];
+const CARGOS_APOIO_SUPERIOR = [
+  'bibliotecario','bibliotecária','nutricionista','estatistico','estatístico',
+  'contador','assistente social','psicologo','psicólogo',
+  'tecnico de nivel superior','técnico de nível superior','engenheiro','engenheira',
+];
+
+function detectarCarreiraSeduc(cargo, tipoCarreira) {
+  if (tipoCarreira === 'apoio_superior')    return 'SEDUC_APOIO_SUPERIOR';
+  if (tipoCarreira === 'apoio_fundamental') return 'SEDUC_APOIO_FUNDAMENTAL';
+  if (tipoCarreira === 'magisterio')        return 'SEDUC';
+  const c = (cargo||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for (const k of CARGOS_APOIO_FUNDAMENTAL) {
+    if (c.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g,''))) return 'SEDUC_APOIO_FUNDAMENTAL';
+  }
+  for (const k of CARGOS_APOIO_SUPERIOR) {
+    if (c.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g,''))) return 'SEDUC_APOIO_SUPERIOR';
+  }
+  return 'SEDUC';
+}
+
+function getValorBaseApoio(subtipo, dataRef) {
+  const tab = subtipo === 'SEDUC_APOIO_SUPERIOR' ? TABELAS_APOIO_SUPERIOR : TABELAS_APOIO_FUNDAMENTAL;
+  const mesStr = dataRef.getFullYear() + '-' + String(dataRef.getMonth()+1).padStart(2,'0') + '-01';
+  const sorted = [...tab].sort((a,b) => b.vigencia.localeCompare(a.vigencia));
+  return sorted.find(r => r.vigencia <= mesStr) || null;
+}
+
 const REGRAS = {
   SEDUC: {
-    classes:    { '1ª': 1.25, '2ª': 1.10, '3ª': 1.00 },
+    classes:    { '1ª': 1.25, '2ª': 1.10, '3ª': 1.00, '4ª': 0.89 }, // 4ª = classes em extinção (Lic.Curta/Magistério)
     referencias: ['A','B','C','D','E','F','G','H'],
     multRefs:   { A:1.000, B:1.020, C:1.040, D:1.060, E:1.080, F:1.100, G:1.120, H:1.140 },
     intersticioAntigo: 48,
@@ -1353,6 +1470,19 @@ const REGRAS = {
     gep: 1.00, // 100% sobre vencimento base
   },
 
+  // ─── SEDUC APOIO ESPECÍFICO (Lei n.º 3.951/2013 Anexo IV/V) ──────────────
+  SEDUC_APOIO_SUPERIOR: {
+    referencias: ['A','B','C','D','E'],
+    multRefs: MULT_REFS_APOIO,
+    intersticioAntigo: 48, intersticioNovo: 36,
+    marco: new Date('2019-03-01'),
+  },
+  SEDUC_APOIO_FUNDAMENTAL: {
+    referencias: ['A','B','C','D','E'],
+    multRefs: MULT_REFS_APOIO,
+    intersticioAntigo: 48, intersticioNovo: 36,
+    marco: new Date('2019-03-01'),
+  },
   // ─── SEDUC ADMINISTRATIVO (Lei n.º 4.058/2014) ───────────────────────
   SEDUC_ADMIN: {
     referencias:    ['A','B','C','D','E','F','G','H'],
@@ -1388,15 +1518,43 @@ const REGENCIA_PERCENTUAL = 0.25;
 // ─────────────────────────────────────────────────────────────
 function toggleSEDUCAdmin() {
   const cat = document.getElementById('s-categoria')?.value;
-  const isAdmin = cat === 'admin';
-  // Mostrar/ocultar Classe
+  const isAdmin  = cat === 'admin';
+  const isApoio  = cat === 'apoio_fundamental' || cat === 'apoio_superior';
+
+  // Classe: visível apenas para docente
   const classeWrap = document.getElementById('s-classe-wrap');
-  if (classeWrap) classeWrap.style.display = isAdmin ? 'none' : '';
-  // Mostrar/ocultar Regência e GAA
+  if (classeWrap) classeWrap.style.display = (isAdmin || isApoio) ? 'none' : '';
+
+  // Regência: apenas docente
   const regWrap = document.getElementById('seduc-reg-wrap');
+  if (regWrap) regWrap.classList.toggle('hidden', isAdmin || isApoio);
+
+  // GAA: apenas administrativo
   const gaaWrap = document.getElementById('seduc-gaa-wrap');
-  if (regWrap) regWrap.classList.toggle('hidden', isAdmin);
   if (gaaWrap) gaaWrap.classList.toggle('hidden', !isAdmin);
+
+  // Referências: A–E para apoio, A–H para docente/admin
+  const refsApoio  = ['A','B','C','D','E'];
+  const refsMagist = ['A','B','C','D','E','F','G','H'];
+  const refs = isApoio ? refsApoio : refsMagist;
+  ['s-ref','s-ref-inicial'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    const firstOpt = id === 's-ref-inicial'
+      ? '<option value="">Igual à Referência Atual</option>'
+      : '<option value="">Selecione...</option>';
+    sel.innerHTML = firstOpt + refs.map(r => `<option value="${r}">${r}</option>`).join('');
+    if (refs.includes(current)) sel.value = current;
+  });
+
+  // Hint de referência
+  const refHint = document.querySelector('#form-seduc #s-ref + .field-hint');
+  if (refHint) {
+    refHint.textContent = isApoio
+      ? 'Referências A–E (Apoio Específico — Lei n.º 3.951/2013, Anexo IV/V)'
+      : 'Referência constante na folha de pagamento';
+  }
 }
 
 function toggleSEMEDAdmin() {
@@ -1451,14 +1609,25 @@ function getValorBase(area, dataRef) {
 // ─────────────────────────────────────────
 
 function calcVencimentoEduc(area, classe, ref, dataRef, pctLoc, pctReg, pctGAA_extra) {
-  // area pode ser 'seduc', 'semed', 'seduc_admin', 'semed_admin'
   const areaKey = area.toUpperCase();
+
+  // ── Apoio Específico (Merendeira, Auxiliar, Nutricionista, etc.) ──────────
+  if (areaKey === 'SEDUC_APOIO_SUPERIOR' || areaKey === 'SEDUC_APOIO_FUNDAMENTAL') {
+    const baseItem = getValorBaseApoio(areaKey, dataRef);
+    if (!baseItem) return null;
+    const multRef  = MULT_REFS_APOIO[ref] ?? 1.00;
+    const salBase  = parseFloat((baseItem.valorBase * multRef).toFixed(2));
+    // Apoio recebe Gratificação de Localidade mas NÃO Regência de Classe
+    const salLoc   = parseFloat((salBase * (pctLoc || 0)).toFixed(2));
+    return { sal: parseFloat((salBase + salLoc).toFixed(2)), salBase, salLoc, salReg: 0, salGAA: 0, lei: baseItem.lei };
+  }
+
+  // ── Magistério / Admin / Saúde / Segurança ────────────────────────────────
   const areaCfg = REGRAS[areaKey];
   const baseItem = getValorBase(area, dataRef);  // getValorBase já strip _ADMIN
   if (!baseItem) return null;
   let salBase;
   if (areaKey === 'SEDUC' || areaKey === 'SEDUC_ADMIN') {
-    // SEDUC admin: sem multClasse (classe = '' ou ignorada)
     const multCls = (areaCfg.classes && classe && areaCfg.classes[classe]) ? areaCfg.classes[classe] : 1;
     salBase = baseItem.valorBase * multCls * (areaCfg.multRefs[ref] ?? 1);
   } else {
@@ -1482,13 +1651,16 @@ function calcularProgressoesEduc(area, posseDate, ateDate) {
   if (areaKey === 'SEDUC_ADMIN' || areaKey === 'SEMED_ADMIN') {
     return Math.floor(diffMonths(posseDate, ateDate) / 24);
   }
-  const cfg = REGRAS[areaKey];
+  // SEDUC Apoio: mesmas regras de interstício do magistério (48→36 com marco 2019)
+  const cfgKey = (areaKey === 'SEDUC_APOIO_SUPERIOR' || areaKey === 'SEDUC_APOIO_FUNDAMENTAL')
+    ? 'SEDUC_APOIO_SUPERIOR' : areaKey;
+  const cfg = REGRAS[cfgKey] || REGRAS['SEDUC'];
   const ateMes = new Date(ateDate.getFullYear(), ateDate.getMonth(), 1);
   let progCount = 0;
   let cursor = new Date(posseDate.getFullYear(), posseDate.getMonth(), 1);
   while (true) {
     let meses;
-    if (area.toUpperCase() === 'SEDUC') {
+    if (areaKey === 'SEDUC' || areaKey === 'SEDUC_APOIO_SUPERIOR' || areaKey === 'SEDUC_APOIO_FUNDAMENTAL') {
       meses = cursor < cfg.marco ? cfg.intersticioAntigo : cfg.intersticioNovo;
     } else {
       meses = cfg.intersticioUnico;
@@ -1618,7 +1790,10 @@ function gerarDemonstrativoEduc(params) {
 
     rows.push({ competencia: fmtMes(cursor), refRecebida: refInicial, vencRecebido: recItem.sal,
       refDevida: refDevidaMes, vencDevido: devItem.sal, lei: devItem.lei,
-      diffMensal: diff, extras: 0, totalLinha: diff, tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
+      diffMensal: diff, extras: 0, totalLinha: diff,
+      fatorSelic: fatorSelicAcumulado(cursor),
+      diffCorrigida: parseFloat((diff * fatorSelicAcumulado(cursor)).toFixed(2)),
+      tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
     cursor = addMonths(cursor, 1);
   }
 
@@ -1626,23 +1801,44 @@ function gerarDemonstrativoEduc(params) {
     const anos = [...new Set(rows.map(r => r.ano))].sort();
     const extrasRows = [];
     anos.forEach(ano => {
-      const decDate = new Date(ano, 11, 1);
-      const progsAteDez  = calcularProgressoesEduc(area, posseDate, decDate);
+      // Só gera 13º se dezembro do ano está dentro do período (≤ endDate)
+      const dezembro1 = new Date(ano, 11, 1);
+      if (dezembro1 > endDate) return;
+
+      const progsAteDez  = calcularProgressoesEduc(area, posseDate, dezembro1);
       const refDevidaDez = refAposProgressoes(refInicial, refList, progsAteDez);
       if (refDevidaDez === refInicial) return;
-      const recDez = calcVencimentoEduc(areaUp, classe, refInicial,   decDate, pctLoc, pctReg, pctGAA);
-      const devDez = calcVencimentoEduc(areaUp, classe, refDevidaDez, decDate, pctLoc, pctReg, pctGAA);
+      const recDez = calcVencimentoEduc(areaUp, classe, refInicial,   dezembro1, pctLoc, pctReg, pctGAA);
+      const devDez = calcVencimentoEduc(areaUp, classe, refDevidaDez, dezembro1, pctLoc, pctReg, pctGAA);
       if (!recDez || !devDez) return;
       const diffDez = parseFloat((devDez.sal - recDez.sal).toFixed(2));
       if (diffDez <= 0) return;
-      extrasRows.push({ competencia:'13º SAL. '+ano, refRecebida:refInicial, vencRecebido:recDez.sal,
-        refDevida:refDevidaDez, vencDevido:devDez.sal, lei:devDez.lei, diffMensal:diffDez,
-        extras:diffDez, totalLinha:parseFloat((diffDez*2).toFixed(2)), tipo:'13o', ano, mes:13 });
-      const diffFer = parseFloat((diffDez/3).toFixed(2));
-      extrasRows.push({ competencia:'1/3 FÉRIAS '+ano, refRecebida:refInicial,
-        vencRecebido:parseFloat((recDez.sal/3).toFixed(2)), vencDevido:parseFloat((devDez.sal/3).toFixed(2)),
-        refDevida:refDevidaDez, lei:devDez.lei, diffMensal:diffFer,
-        extras:0, totalLinha:diffFer, tipo:'ferias', ano, mes:14 });
+
+      // 13º proporcional por avos: conta meses com diferença no ano dentro do período
+      const rowsDoAno  = rows.filter(r => r.ano === ano && r.tipo === 'normal');
+      const avos       = Math.min(rowsDoAno.length, 12);
+      const diffDecimo = parseFloat((diffDez * avos / 12).toFixed(2));
+      if (diffDecimo <= 0) return;
+
+      extrasRows.push({ competencia: '13º SAL. ' + ano + (avos < 12 ? ` (${avos}/12 avos)` : ''),
+        refRecebida: refInicial, vencRecebido: recDez.sal,
+        refDevida: refDevidaDez, vencDevido: devDez.sal, lei: recDez.lei,
+        diffMensal: diffDecimo, extras: diffDecimo,
+        totalLinha: diffDecimo,
+        fatorSelic: fatorSelicAcumulado(dezembro1),
+        diffCorrigida: parseFloat((diffDecimo * fatorSelicAcumulado(dezembro1)).toFixed(2)),
+        tipo: '13o', ano, mes: 13 });
+
+      const diffFer = parseFloat((diffDecimo / 3).toFixed(2));
+      extrasRows.push({ competencia: '1/3 FÉRIAS ' + ano + (avos < 12 ? ` (${avos}/12 avos)` : ''),
+        refRecebida: refInicial,
+        vencRecebido: parseFloat((recDez.sal/3).toFixed(2)),
+        vencDevido:   parseFloat((devDez.sal/3).toFixed(2)),
+        refDevida: refDevidaDez, lei: recDez.lei,
+        diffMensal: diffFer, extras: 0, totalLinha: diffFer,
+        fatorSelic: fatorSelicAcumulado(dezembro1),
+        diffCorrigida: parseFloat((diffFer * fatorSelicAcumulado(dezembro1)).toFixed(2)),
+        tipo: 'ferias', ano, mes: 14 });
     });
     extrasRows.forEach(er => {
       const afterIdx = rows.reduce((best,r,i) => r.ano===er.ano ? i : best, -1);
@@ -1651,9 +1847,10 @@ function gerarDemonstrativoEduc(params) {
     });
   }
 
-  const totalDiff = parseFloat(rows.reduce((s,r) => s + r.diffMensal, 0).toFixed(2));
-  const nMeses    = rows.filter(r => r.tipo === 'normal').length;
-  return { rows, erros, totalDiff, nMeses, numProgressoesAtraso, refInicial, refDevida,
+  const totalDiff     = parseFloat(rows.reduce((s,r) => s + r.diffMensal, 0).toFixed(2));
+  const totalCorrigido= parseFloat(rows.reduce((s,r) => s + (r.diffCorrigida || r.diffMensal), 0).toFixed(2));
+  const nMeses        = rows.filter(r => r.tipo === 'normal').length;
+  return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial, refDevida,
     area, nome, matricula, cargo, classe, posseDate, startDate, endDate, incluirExtras,
     municipio, pctLocalidade: pctLoc, incluirRegencia, dataCalculo: new Date() };
 }
@@ -1690,17 +1887,21 @@ function gerarDemonstrativoSES(params) {
 
     rows.push({ competencia: fmtMes(cursor), refRecebida: classeAtual, vencRecebido: recItem.sal,
       refDevida: classeDevidaMes, vencDevido: devItem.sal, lei: devItem.lei,
-      diffMensal: diff, extras: 0, totalLinha: diff, tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
+      diffMensal: diff, extras: 0, totalLinha: diff,
+      fatorSelic: fatorSelicAcumulado(cursor),
+      diffCorrigida: parseFloat((diff * fatorSelicAcumulado(cursor)).toFixed(2)),
+      tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
     cursor = addMonths(cursor, 1);
   }
 
   _appendExtras(rows, incluirExtras, posseDate, (classeKey, dataRef) => {
     return calcVencimentoSES(nivel, classeKey, dataRef, pctGTS, pctGAA, nQuinq);
-  }, refList, classeInicial, classeAtual);
+  }, refList, classeInicial, classeAtual, endDate);
 
-  const totalDiff = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
-  const nMeses    = rows.filter(r=>r.tipo==='normal').length;
-  return { rows, erros, totalDiff, nMeses, numProgressoesAtraso, refInicial: classeAtual, refDevida: classeDevida,
+  const totalDiff      = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
+  const totalCorrigido = parseFloat(rows.reduce((s,r) => s+(r.diffCorrigida||r.diffMensal), 0).toFixed(2));
+  const nMeses         = rows.filter(r=>r.tipo==='normal').length;
+  return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial: classeAtual, refDevida: classeDevida,
     area:'ses', nome, matricula, cargo, posseDate, startDate, endDate, incluirExtras,
     nivel, classeAtual, classeDevida, pctGTS, pctGAA, nQuinq, dataCalculo: new Date() };
 }
@@ -1731,7 +1932,10 @@ function gerarDemonstrativoSEMSA(params) {
 
     rows.push({ competencia: fmtMes(cursor), refRecebida: refInicial, vencRecebido: salRec,
       refDevida: refDevidaMes, vencDevido: salDev, lei: baseItem.lei,
-      diffMensal: diff, extras: 0, totalLinha: diff, tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
+      diffMensal: diff, extras: 0, totalLinha: diff,
+      fatorSelic: fatorSelicAcumulado(cursor),
+      diffCorrigida: parseFloat((diff * fatorSelicAcumulado(cursor)).toFixed(2)),
+      tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
     cursor = addMonths(cursor, 1);
   }
 
@@ -1741,11 +1945,12 @@ function gerarDemonstrativoSEMSA(params) {
     const multN = REGRAS.SEMSA.niveis[nivel] ?? 1;
     const salB = parseFloat((bi.valorBase * multN * (REGRAS.SEMSA.multRefs[refKey] ?? 1)).toFixed(2));
     return { sal: salB, salBase: salB, lei: bi.lei };
-  }, refList, refInicial, refInicial);
+  }, refList, refInicial, refInicial, endDate);
 
-  const totalDiff = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
-  const nMeses    = rows.filter(r=>r.tipo==='normal').length;
-  return { rows, erros, totalDiff, nMeses, numProgressoesAtraso, refInicial, refDevida,
+  const totalDiff      = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
+  const totalCorrigido = parseFloat(rows.reduce((s,r) => s+(r.diffCorrigida||r.diffMensal), 0).toFixed(2));
+  const nMeses         = rows.filter(r=>r.tipo==='normal').length;
+  return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial, refDevida,
     area:'semsa', nome, matricula, cargo, posseDate, startDate, endDate, incluirExtras,
     nivel, dataCalculo: new Date() };
 }
@@ -1814,7 +2019,10 @@ function gerarDemonstrativoSeguranca(params) {
 
     rows.push({ competencia: fmtMes(cursor), refRecebida: postoAtual, vencRecebido: recItem.sal,
       refDevida: postoDevidoMes, vencDevido: devItem.sal, lei: devItem.lei,
-      diffMensal: diff, extras: 0, totalLinha: diff, tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
+      diffMensal: diff, extras: 0, totalLinha: diff,
+      fatorSelic: fatorSelicAcumulado(cursor),
+      diffCorrigida: parseFloat((diff * fatorSelicAcumulado(cursor)).toFixed(2)),
+      tipo: 'normal', ano: cursor.getFullYear(), mes: cursor.getMonth() });
     cursor = addMonths(cursor, 1);
   }
 
@@ -1822,8 +2030,9 @@ function gerarDemonstrativoSeguranca(params) {
     const anos = [...new Set(rows.map(r=>r.ano))].sort();
     const extrasRows = [];
     anos.forEach(ano => {
-      const decDate = new Date(ano, 11, 1);
-      const mesesDez = diffMonths(posseDate, decDate);
+      const dezembro1 = new Date(ano, 11, 1);
+      if (dezembro1 > endDate) return;
+      const mesesDez = diffMonths(posseDate, dezembro1);
       let postoDez;
       if (area === 'pmam' && incluirChoa) {
         postoDez = postoDevidoCHOA(postoInicial, mesesDez);
@@ -1832,18 +2041,33 @@ function gerarDemonstrativoSeguranca(params) {
         postoDez = listaPostos[Math.min(idxInicial + progsDez, listaPostos.length-1)];
       }
       if (postoDez === postoAtual) return;
-      const recDez = calcVencimentoSeguranca(area, postoAtual, decDate, incluirAdicional);
-      const devDez = calcVencimentoSeguranca(area, postoDez,   decDate, incluirAdicional);
+      const recDez = calcVencimentoSeguranca(area, postoAtual, dezembro1, incluirAdicional);
+      const devDez = calcVencimentoSeguranca(area, postoDez,   dezembro1, incluirAdicional);
       if (!recDez || !devDez) return;
       const diffDez = parseFloat((devDez.sal - recDez.sal).toFixed(2));
       if (diffDez <= 0) return;
-      extrasRows.push({ competencia:'13º SAL. '+ano, refRecebida:postoAtual, vencRecebido:recDez.sal,
-        refDevida:postoDez, vencDevido:devDez.sal, lei:devDez.lei, diffMensal:diffDez,
-        extras:diffDez, totalLinha:parseFloat((diffDez*2).toFixed(2)), tipo:'13o', ano, mes:13 });
-      const diffFer = parseFloat((diffDez/3).toFixed(2));
-      extrasRows.push({ competencia:'1/3 FÉRIAS '+ano, refRecebida:postoAtual,
+
+      const rowsDoAno  = rows.filter(r => r.ano === ano && r.tipo === 'normal');
+      const avos       = Math.min(rowsDoAno.length, 12);
+      const diffDecimo = parseFloat((diffDez * avos / 12).toFixed(2));
+      if (diffDecimo <= 0) return;
+
+      extrasRows.push({ competencia: '13º SAL. '+ano+(avos<12?` (${avos}/12 avos)`:''),
+        refRecebida:postoAtual, vencRecebido:recDez.sal,
+        refDevida:postoDez, vencDevido:devDez.sal, lei:devDez.lei,
+        diffMensal:diffDecimo, extras:diffDecimo,
+        totalLinha:diffDecimo,
+        fatorSelic: fatorSelicAcumulado(dezembro1),
+        diffCorrigida: parseFloat((diffDecimo * fatorSelicAcumulado(dezembro1)).toFixed(2)),
+        tipo:'13o', ano, mes:13 });
+      const diffFer = parseFloat((diffDecimo/3).toFixed(2));
+      extrasRows.push({ competencia:'1/3 FÉRIAS '+ano+(avos<12?` (${avos}/12 avos)`:''),
+        refRecebida:postoAtual,
         vencRecebido:parseFloat((recDez.sal/3).toFixed(2)), vencDevido:parseFloat((devDez.sal/3).toFixed(2)),
-        refDevida:postoDez, lei:devDez.lei, diffMensal:diffFer, extras:0, totalLinha:diffFer, tipo:'ferias', ano, mes:14 });
+        refDevida:postoDez, lei:devDez.lei, diffMensal:diffFer, extras:0, totalLinha:diffFer,
+        fatorSelic: fatorSelicAcumulado(dezembro1),
+        diffCorrigida: parseFloat((diffFer * fatorSelicAcumulado(dezembro1)).toFixed(2)),
+        tipo:'ferias', ano, mes:14 });
     });
     extrasRows.forEach(er => {
       const afterIdx = rows.reduce((best,r,i) => r.ano===er.ano ? i : best, -1);
@@ -1852,35 +2076,57 @@ function gerarDemonstrativoSeguranca(params) {
     });
   }
 
-  const totalDiff = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
-  const nMeses    = rows.filter(r=>r.tipo==='normal').length;
-  return { rows, erros, totalDiff, nMeses, numProgressoesAtraso, refInicial: postoAtual, refDevida: postoDevido,
+  const totalDiff      = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
+  const totalCorrigido = parseFloat(rows.reduce((s,r) => s+(r.diffCorrigida||r.diffMensal), 0).toFixed(2));
+  const nMeses         = rows.filter(r=>r.tipo==='normal').length;
+  return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial: postoAtual, refDevida: postoDevido,
     area, nome, matricula, cargo, posseDate, startDate, endDate, incluirExtras,
     postoAtual, postoInicial, postoDevido, incluirAdicional, dataCalculo: new Date() };
 }
 
-// Helper para adicionar linhas de 13º e férias
-function _appendExtras(rows, incluirExtras, posseDate, calcFn, refList, refInicial, refAtual) {
+// Helper para adicionar linhas de 13º e férias (SES / SEMSA)
+function _appendExtras(rows, incluirExtras, posseDate, calcFn, refList, refInicial, refAtual, endDate) {
   if (!incluirExtras || rows.length === 0) return;
   const anos = [...new Set(rows.map(r=>r.ano))].sort();
   const extrasRows = [];
   anos.forEach(ano => {
-    const decDate = new Date(ano, 11, 1);
-    const progsAteDez = Math.floor(diffMonths(posseDate, decDate) / 24);
+    // Só gera 13º se dezembro do ano está dentro do período
+    const dezembro1 = new Date(ano, 11, 1);
+    if (endDate && dezembro1 > endDate) return;
+
+    const progsAteDez  = Math.floor(diffMonths(posseDate, dezembro1) / 24);
     const refDevidaDez = refList[Math.min(refList.indexOf(refInicial) + progsAteDez, refList.length-1)];
     if (refDevidaDez === refAtual) return;
-    const recDez = calcFn(refAtual,    decDate);
-    const devDez = calcFn(refDevidaDez, decDate);
+    const recDez = calcFn(refAtual,     dezembro1);
+    const devDez = calcFn(refDevidaDez, dezembro1);
     if (!recDez || !devDez) return;
     const diffDez = parseFloat((devDez.sal - recDez.sal).toFixed(2));
     if (diffDez <= 0) return;
-    extrasRows.push({ competencia:'13º SAL. '+ano, refRecebida:refAtual, vencRecebido:recDez.sal,
-      refDevida:refDevidaDez, vencDevido:devDez.sal, lei:devDez.lei, diffMensal:diffDez,
-      extras:diffDez, totalLinha:parseFloat((diffDez*2).toFixed(2)), tipo:'13o', ano, mes:13 });
-    const diffFer = parseFloat((diffDez/3).toFixed(2));
-    extrasRows.push({ competencia:'1/3 FÉRIAS '+ano, refRecebida:refAtual,
-      vencRecebido:parseFloat((recDez.sal/3).toFixed(2)), vencDevido:parseFloat((devDez.sal/3).toFixed(2)),
-      refDevida:refDevidaDez, lei:devDez.lei, diffMensal:diffFer, extras:0, totalLinha:diffFer, tipo:'ferias', ano, mes:14 });
+
+    // Proporcionalidade por avos
+    const rowsDoAno  = rows.filter(r => r.ano === ano && r.tipo === 'normal');
+    const avos       = Math.min(rowsDoAno.length, 12);
+    const diffDecimo = parseFloat((diffDez * avos / 12).toFixed(2));
+    if (diffDecimo <= 0) return;
+
+    extrasRows.push({ competencia: '13º SAL. '+ano+(avos<12?` (${avos}/12 avos)`:''),
+      refRecebida: refAtual, vencRecebido: recDez.sal,
+      refDevida: refDevidaDez, vencDevido: devDez.sal, lei: devDez.lei,
+      diffMensal: diffDecimo, extras: diffDecimo,
+      totalLinha: diffDecimo,
+      fatorSelic: fatorSelicAcumulado(dezembro1),
+      diffCorrigida: parseFloat((diffDecimo * fatorSelicAcumulado(dezembro1)).toFixed(2)),
+      tipo: '13o', ano, mes: 13 });
+    const diffFer = parseFloat((diffDecimo/3).toFixed(2));
+    extrasRows.push({ competencia: '1/3 FÉRIAS '+ano+(avos<12?` (${avos}/12 avos)`:''),
+      refRecebida: refAtual,
+      vencRecebido: parseFloat((recDez.sal/3).toFixed(2)),
+      vencDevido:   parseFloat((devDez.sal/3).toFixed(2)),
+      refDevida: refDevidaDez, lei: devDez.lei,
+      diffMensal: diffFer, extras: 0, totalLinha: diffFer,
+      fatorSelic: fatorSelicAcumulado(dezembro1),
+      diffCorrigida: parseFloat((diffFer * fatorSelicAcumulado(dezembro1)).toFixed(2)),
+      tipo: 'ferias', ano, mes: 14 });
   });
   extrasRows.forEach(er => {
     const afterIdx = rows.reduce((best,r,i) => r.ano===er.ano ? i : best, -1);
@@ -2035,16 +2281,16 @@ function _coletarEduc(area) {
   const matricula = v('matricula');
   const cargo     = v('cargo') || '';
   const posseStr  = v('posse');
-  // ── Categoria: docente (padrão) ou admin ──
   const categoria    = v('categoria') || 'docente';
   const isAdmin      = categoria === 'admin';
-  const classe       = (area === 'seduc' && !isAdmin) ? v('classe') : null;
+  const isApoio      = categoria === 'apoio_fundamental' || categoria === 'apoio_superior';
+  const classe       = (area === 'seduc' && !isAdmin && !isApoio) ? v('classe') : null;
   const refAtual     = v('ref');
   const refInicStr   = v('ref-inicial');
   const inicioStr    = v('inicio');
   const fimStr       = v('fim');
   const extras       = r(area === 'seduc' ? 'extras' : 'extras_m') === 'sim';
-  const regencia     = (area === 'seduc' && !isAdmin) ? (r('regencia') === 'sim') : false;
+  const regencia     = (area === 'seduc' && !isAdmin && !isApoio) ? (r('regencia') === 'sim') : false;
   const pctGAA_admin = (area === 'seduc' && isAdmin) ? (parseFloat(v('gaa-admin')) || 0.30) : 0;
 
   let municipio = '', pctLocalidade = 0;
@@ -2055,13 +2301,13 @@ function _coletarEduc(area) {
     municipio = mn; pctLocalidade = parseFloat(mp) || 0;
   }
 
-  if (!nome)       throw new Error('Informe o nome completo.');
-  if (!matricula)  throw new Error('Informe a matrícula ou CPF.');
-  if (!posseStr)   throw new Error('Informe a data de posse.');
-  if (area === 'seduc' && !isAdmin && !classe) throw new Error('Informe a classe atual.');
-  if (!refAtual)   throw new Error('Informe a referência atual.');
-  if (!inicioStr)  throw new Error('Informe a data de início do retroativo.');
-  if (!fimStr)     throw new Error('Informe a data de fim do retroativo.');
+  if (!nome)      throw new Error('Informe o nome completo.');
+  if (!matricula) throw new Error('Informe a matrícula ou CPF.');
+  if (!posseStr)  throw new Error('Informe a data de posse.');
+  if (area === 'seduc' && !isAdmin && !isApoio && !classe) throw new Error('Informe a classe atual.');
+  if (!refAtual)  throw new Error('Informe a referência atual.');
+  if (!inicioStr) throw new Error('Informe a data de início do retroativo.');
+  if (!fimStr)    throw new Error('Informe a data de fim do retroativo.');
 
   const posseDate = parseDate(posseStr);
   const startDate = parseDate(inicioStr);
@@ -2069,18 +2315,52 @@ function _coletarEduc(area) {
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate >= endDate) throw new Error('Data de posse deve ser anterior ao período retroativo.');
 
-  // Seleciona regras da área correta conforme categoria
-  const areaCalc = isAdmin
-    ? (area === 'seduc' ? 'seduc_admin' : 'semed_admin')
-    : area;
+  // Bloquear data fim futura
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  if (endDate > hoje) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
+
+  // Determinar área de cálculo efetiva
+  let areaCalc;
+  if (isApoio) {
+    areaCalc = categoria === 'apoio_superior' ? 'SEDUC_APOIO_SUPERIOR' : 'SEDUC_APOIO_FUNDAMENTAL';
+  } else if (isAdmin) {
+    areaCalc = area === 'seduc' ? 'seduc_admin' : 'semed_admin';
+  } else {
+    areaCalc = area;
+  }
+
+  // Lista de referências válidas para a categoria
   const regrasKey = areaCalc.toUpperCase();
-  const refList    = REGRAS[regrasKey]?.referencias || [];
+  let refList;
+  if (regrasKey === 'SEDUC_APOIO_SUPERIOR' || regrasKey === 'SEDUC_APOIO_FUNDAMENTAL') {
+    refList = REFS_APOIO;
+  } else {
+    refList = REGRAS[regrasKey]?.referencias || [];
+  }
+
   const refInicial = refInicStr || refAtual;
   if (!refList.includes(refAtual))   throw new Error('Referência inválida para esta categoria: ' + refAtual);
+  if (!refList.includes(refInicial)) throw new Error('Referência de ingresso inválida: ' + refInicial);
 
-  return gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
+  // Validar: ref inicial não pode ser maior que ref atual
+  const idxIni   = refList.indexOf(refInicial);
+  const idxAtual = refList.indexOf(refAtual);
+  if (idxIni > idxAtual) throw new Error(
+    `A referência no ingresso (${refInicial}) não pode ser maior que a referência atual (${refAtual}). Verifique os dados.`
+  );
+
+  // Alerta de prescrição quinquenal (aviso, não bloqueio)
+  const cincoAnos = new Date(endDate);
+  cincoAnos.setFullYear(cincoAnos.getFullYear() - 5);
+  const alertaPrescrição = startDate < cincoAnos;
+
+  const resultado = gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
     refInicial, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
     incluirRegencia: regencia, categoria, pctGAA_admin });
+
+  resultado.alertaPrescrição = alertaPrescrição;
+  resultado.cincoAnos = cincoAnos;
+  return resultado;
 }
 
 function _coletarSES() {
@@ -2112,6 +2392,7 @@ function _coletarSES() {
   const startDate = parseDate(inicioStr);
   const endDate   = parseDate(fimStr);
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
+  if (posseDate > startDate) throw new Error('Data de posse deve ser anterior ou igual ao início do retroativo.');
 
   const classeInicial = classeInicStr || classeAtual;
   return gerarDemonstrativoSES({ nome, matricula, cargo, posseDate, nivel, classeInicial,
@@ -2144,6 +2425,7 @@ function _coletarSEMSA() {
   const startDate = parseDate(inicioStr);
   const endDate   = parseDate(fimStr);
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
+  if (posseDate > startDate) throw new Error('Data de posse deve ser anterior ou igual ao início do retroativo.');
 
   const refInicial = refInicStr || refAtual;
   return gerarDemonstrativoSEMSA({ nome, matricula, cargo, posseDate, nivel,
@@ -2176,6 +2458,7 @@ function _coletarPMAM() {
   const startDate  = parseDate(inicioStr);
   const endDate    = parseDate(fimStr);
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
+  if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
 
   // CHOA: força ingresso como Subtenente e ativa modo especial no gerador
   const postoInicial = incluirChoa ? 'subtente' : (postoInicStr || postoAtual);
@@ -2209,6 +2492,7 @@ function _coletarPCAM() {
   const startDate  = parseDate(inicioStr);
   const endDate    = parseDate(fimStr);
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
+  if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
 
   const postoInicial = postoInicStr || postoAtual;
   return gerarDemonstrativoSeguranca({ area:'pcam', nome, matricula, cargo, posseDate,
@@ -2224,8 +2508,21 @@ function renderizarResultados(res) {
   const { rows, totalDiff, nMeses, numProgressoesAtraso, refInicial, refDevida,
           nome, matricula, cargo, area, posseDate, startDate, endDate } = res;
 
+  // Alerta de prescrição quinquenal
+  const errEl = document.getElementById('alert-form-error');
+  if (res.alertaPrescrição && res.cincoAnos) {
+    errEl.innerHTML = `⚠️ <strong>Atenção — Prescrição Quinquenal (Dec. Fed. n.º 20.910/1932):</strong> `
+      + `A data de início (${fmtData(startDate)}) está além de 5 anos antes do fim do período. `
+      + `Créditos anteriores a ${fmtData(res.cincoAnos)} podem estar prescritos. `
+      + `Verifique antes de apresentar ao tribunal.`;
+    errEl.className = 'alert alert-warn';
+    errEl.classList.remove('hidden');
+  }
+
   // Labels e fundamento por área
   const legalMap = {
+    SEDUC_APOIO_SUPERIOR:    'Lei n.º 3.951/2013 (Anexo IV — Apoio Nível Superior) → Lei n.º 4.836/2019 → Lei n.º 5.770/2022 | STJ Tema 1075 | Prescrição: Dec. 20.910/1932 (5 anos)',
+    SEDUC_APOIO_FUNDAMENTAL: 'Lei n.º 3.951/2013 (Anexo V — Apoio Nível Fund./Médio) → Lei n.º 4.836/2019 → Lei n.º 5.770/2022 | STJ Tema 1075 | Prescrição: Dec. 20.910/1932 (5 anos)',
     seduc:  'Lei n.º 3.951/2013 (interstício 4 anos) → Lei n.º 4.836/2019 (interstício 3 anos, marco 01/03/2019) | STJ Tema 1075 | Prescrição: Dec. 20.910/1932 (5 anos)',
     semed:  'Lei Municipal n.º 4.852/2019 | Lei n.º 5.771/2022 | Lei n.º 3.056/2023 | STJ Tema 1075',
     ses:    'Lei n.º 3.469/2009 (PCCR SES/AM) — Progressão bienal (interstício 24 meses) | STJ Tema 1075 | EC 113/2021 (SELIC) | Prescrição: Dec. 20.910/1932',
@@ -2234,15 +2531,20 @@ function renderizarResultados(res) {
     pcam:   'Lei n.º 2.875/2004 | Lei n.º 4.059/2014 (PCCR PCAM) | STJ Tema 1075 | EC 113/2021',
   };
   const areaLabel = {
+    SEDUC_APOIO_SUPERIOR:    'SEDUC/AM — Apoio Específico (Nível Superior)',
+    SEDUC_APOIO_FUNDAMENTAL: 'SEDUC/AM — Apoio Específico (Nível Fundamental/Médio)',
     seduc:'SEDUC/AM — Rede Estadual', semed:'SEMED/AM — Rede Municipal',
     ses:'SES/AM — Saúde Estadual', semsa:'SEMSA — Saúde Municipal',
     pmam:'PMAM — Polícia Militar', pcam:'PCAM — Polícia Civil',
   };
-  const tagClass = { seduc:'tag-teal', semed:'tag-teal', ses:'tag-blue', semsa:'tag-blue', pmam:'tag-red', pcam:'tag-red' };
+  const tagClass = { seduc:'tag-teal', semed:'tag-teal', ses:'tag-blue', semsa:'tag-blue',
+                     pmam:'tag-red', pcam:'tag-red',
+                     SEDUC_APOIO_SUPERIOR:'tag-teal', SEDUC_APOIO_FUNDAMENTAL:'tag-teal' };
 
   // Adicionais da área
   let addInfo = '';
-  if (area === 'seduc') {
+  const areaKey = res.area || area;
+  if (areaKey === 'seduc' || areaKey === 'SEDUC_APOIO_SUPERIOR' || areaKey === 'SEDUC_APOIO_FUNDAMENTAL') {
     addInfo = (res.pctLocalidade > 0 ? ` | Localidade: +${Math.round(res.pctLocalidade*100)}% (${res.municipio})` : ' | Localidade: Manaus (0%)') +
               (res.incluirRegencia ? ' | Regência: +25%' : '');
   } else if (area === 'ses') {
@@ -2256,26 +2558,32 @@ function renderizarResultados(res) {
     addInfo = res.incluirAdicional ? ' | GEP: +100%' : ' | GEP não incluída';
   }
 
+  // escHtml para proteger dados do usuário contra XSS
+  function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  const areaKeyDisp = res.area || area;
+
   document.getElementById('legal-text').innerHTML =
-    `<strong>${areaLabel[area] || area.toUpperCase()}</strong> — Servidor: <strong>${nome}</strong> (${matricula}).` +
-    (res.classe ? ` Classe: <strong>${res.classe}</strong>.` : '') +
-    (res.nivel ? ` Nível: <strong>${res.nivel}</strong>.` : '') +
-    ` Referência recebida: <strong>${refInicial}</strong> → Referência devida: <strong>${refDevida}</strong>.` +
+    `<strong>${escH(areaLabel[areaKeyDisp] || areaKeyDisp.toUpperCase())}</strong> — Servidor: <strong>${escH(nome)}</strong> (${escH(matricula)}).` +
+    (res.classe ? ` Classe: <strong>${escH(res.classe)}</strong>.` : '') +
+    (res.nivel  ? ` Nível: <strong>${escH(String(res.nivel))}</strong>.` : '') +
+    ` Referência recebida: <strong>${escH(refInicial)}</strong> → Referência devida: <strong>${escH(refDevida)}</strong>.` +
     ` Progressões em atraso: <strong>${numProgressoesAtraso}</strong>.` +
     ` Período: <strong>${fmtData(startDate)}</strong> a <strong>${fmtData(endDate)}</strong>.` +
     (addInfo ? `<br><span style="font-size:0.73rem;color:var(--gold-dark);">⚙️ Verbas: ${addInfo}</span>` : '') +
-    `<br><em style="font-size:0.73rem;color:var(--teal-light);">${legalMap[area] || ''}</em>`;
+    `<br><em style="font-size:0.73rem;color:var(--teal-light);">${legalMap[areaKeyDisp] || legalMap[area] || ''}</em>`;
 
   document.getElementById('print-doc-info').innerHTML =
-    `Emitido: ${fmtData(new Date())}<br>Matrícula: ${matricula}<br>LAADV — Uso Institucional`;
+    `Emitido: ${fmtData(new Date())}<br>Matrícula: ${escH(matricula)}<br>LAADV — Uso Institucional`;
 
   // Resumo
-  const nomeCurto = nome.split(' ').slice(0,2).join(' ');
+  const nomeCurto      = nome.split(' ').slice(0,2).join(' ');
+  const totalCorrigido = res.totalCorrigido || totalDiff;
   document.getElementById('result-summary').innerHTML = `
-    <div class="rsumm-card gold"><div class="rsumm-label">💰 Total a Receber</div><div class="rsumm-val">${fmtMoeda(totalDiff)}</div><div class="rsumm-sub">Diferença total acumulada</div></div>
+    <div class="rsumm-card gold"><div class="rsumm-label">💰 Total Nominal</div><div class="rsumm-val">${fmtMoeda(totalDiff)}</div><div class="rsumm-sub">Diferença sem correção monetária</div></div>
+    <div class="rsumm-card" style="background:linear-gradient(135deg,#1A4B8C,#0d3570);border-color:#1A4B8C;"><div class="rsumm-label" style="color:rgba(255,255,255,0.6)">📈 Total Corrigido (SELIC)</div><div class="rsumm-val" style="color:#fff;font-size:1.6rem;">${fmtMoeda(totalCorrigido)}</div><div class="rsumm-sub" style="color:rgba(255,255,255,0.55)">EC 113/2021 — acumulado até hoje</div></div>
     <div class="rsumm-card highlight"><div class="rsumm-label">📊 Progressões em Atraso</div><div class="rsumm-val">${numProgressoesAtraso} ref.</div><div class="rsumm-sub">${refInicial} → ${refDevida}</div></div>
     <div class="rsumm-card"><div class="rsumm-label">📅 Meses Analisados</div><div class="rsumm-val">${nMeses}</div><div class="rsumm-sub">${fmtData(startDate)} a ${fmtData(endDate)}</div></div>
-    <div class="rsumm-card"><div class="rsumm-label">👤 Servidor</div><div class="rsumm-val" style="font-size:1rem;">${nomeCurto}</div><div class="rsumm-sub">Matrícula: ${matricula}</div></div>
+    <div class="rsumm-card"><div class="rsumm-label">👤 Servidor</div><div class="rsumm-val" style="font-size:1rem;">${escH(nomeCurto)}</div><div class="rsumm-sub">Matrícula: ${escH(matricula)}</div></div>
   `;
 
   document.getElementById('table-sub').textContent = `${nMeses} competências | ${rows.length} linhas total`;
@@ -2296,6 +2604,8 @@ function renderizarResultados(res) {
     const tr = document.createElement('tr');
     const cls = r.tipo==='13o' ? 'row-13' : r.tipo==='ferias' ? 'row-ferias' : '';
     tr.className = cls;
+    const fatorFmt = r.fatorSelic ? r.fatorSelic.toFixed(4) : '—';
+    const corrigFmt = r.diffCorrigida != null ? fmtMoeda(r.diffCorrigida) : '—';
     tr.innerHTML = `
       <td class="${r.tipo!=='normal'?'td-special':''}">${r.competencia}</td>
       <td class="td-ref">${r.refRecebida||'—'}</td>
@@ -2304,6 +2614,8 @@ function renderizarResultados(res) {
       <td>${r.vencDevido ? fmtMoeda(r.vencDevido) : '—'}</td>
       <td class="td-lei">${r.lei||'—'}</td>
       <td class="${r.diffMensal>0?'td-diff':''}">${fmtMoeda(r.diffMensal)}</td>
+      <td style="font-size:0.7rem;color:var(--gray-mid);text-align:center;">${fatorFmt}</td>
+      <td class="td-diff-selic" style="font-weight:700;color:var(--blue,#1A4B8C);">${corrigFmt}</td>
       <td>${r.extras>0?fmtMoeda(r.extras):'—'}</td>
       <td>${fmtMoeda(r.totalLinha)}</td>`;
     tbody.appendChild(tr);
@@ -2311,7 +2623,12 @@ function renderizarResultados(res) {
 
   const trTotal = document.createElement('tr');
   trTotal.className = 'row-total';
-  trTotal.innerHTML = `<td colspan="6">TOTAL GERAL ACUMULADO — Diferença Salarial Devida</td><td>${fmtMoeda(totalDiff)}</td><td></td><td></td>`;
+  trTotal.innerHTML = `
+    <td colspan="6">TOTAL GERAL — Diferença Salarial Devida</td>
+    <td>${fmtMoeda(totalDiff)}</td>
+    <td style="font-size:0.7rem;opacity:0.7;">EC 113/2021</td>
+    <td style="font-weight:900;font-size:1rem;">${fmtMoeda(totalCorrigido)}</td>
+    <td></td><td></td>`;
   tbody.appendChild(trTotal);
 }
 
@@ -2693,8 +3010,15 @@ function atualizarPreview() {
 }
 
 function bindPreviewListeners() {
+  // Debounce: evita chamadas excessivas em dispositivos lentos
+  let _previewTimer;
+  function atualizarPreviewDebounced() {
+    clearTimeout(_previewTimer);
+    _previewTimer = setTimeout(atualizarPreview, 180);
+  }
+
   const allIds = [
-    's-nome','s-matricula','s-cargo','s-posse','s-classe','s-ref','s-ref-inicial','s-inicio','s-fim','s-municipio',
+    's-nome','s-matricula','s-cargo','s-posse','s-classe','s-ref','s-ref-inicial','s-inicio','s-fim','s-municipio','s-categoria',
     'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-inicio','m-fim',
     'se-nome','se-matricula','se-cargo','se-posse','se-nivel','se-classe','se-classe-inicial','se-gts','se-gaa','se-quinquenio','se-inicio','se-fim',
     'sa-nome','sa-matricula','sa-cargo','sa-posse','sa-nivel','sa-ref','sa-ref-inicial','sa-inicio','sa-fim',
@@ -2703,9 +3027,12 @@ function bindPreviewListeners() {
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
-    if (el) { el.addEventListener('input', atualizarPreview); el.addEventListener('change', atualizarPreview); }
+    if (el) {
+      el.addEventListener('input',  atualizarPreviewDebounced);
+      el.addEventListener('change', atualizarPreviewDebounced);
+    }
   });
-  document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', atualizarPreview));
+  document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', atualizarPreviewDebounced));
 }
 
 // ─────────────────────────────────────────
