@@ -1213,6 +1213,9 @@ const CORE_RULES = {
 // TABELA SELIC MENSAL — EC 113/2021
 // Fonte: BCB (taxas efetivas mensais, arredondadas em 4 casas)
 // Atualizada até março/2026 — inserir mensalmente conforme BCB
+// ATENÇÃO: valores de 2025-04 em diante devem ser conferidos mensalmente
+// em https://www.bcb.gov.br/estatisticas/tabelahistoricataxaselic
+// Qualquer divergência impacta diretamente os totais corrigidos por SELIC.
 // ─────────────────────────────────────────
 const SELIC_MENSAL = {
   '2019-01':0.0054,'2019-02':0.0054,'2019-03':0.0057,'2019-04':0.0052,
@@ -1568,7 +1571,6 @@ function toggleSEMEDAdmin() {
 }
 
 // Estado global
-let AREA_ATUAL = null;
 let RESULTADO  = null;
 
 // ─────────────────────────────────────────
@@ -1736,13 +1738,13 @@ function calcProgressoesSeguranca(area, posseDate, postoAtual, postoInicial, ate
   const idxAtual   = listaPostos.indexOf(postoAtual);
   const idxInicial = listaPostos.indexOf(postoInicial);
   if (idxInicial < 0 || idxAtual < 0) return 0;
-  // Progressões em atraso = diferença de postos não aplicada
-  // A lógica aqui é simples: calculamos quantas progressões cabem no tempo
+  // ATENÇÃO: a lista está ordenada do maior posto (idx 0 = Coronel) para o menor (idx N = Aluno).
+  // Progressão (promoção) = redução de índice. idxInicial > idxAtual indica que o servidor
+  // já foi promovido; a diferença entre o devida e o atual indica o atraso.
   const mesesDecorridos = diffMonths(posseDate, ateDate);
   const mesesPorProg    = cfg.intersticioPromo || 36;
-  const progsDevidas    = Math.min(Math.floor(mesesDecorridos / mesesPorProg), idxAtual - idxInicial);
-  return Math.max(0, (idxAtual - idxInicial) - progsDevidas);
-  // Retorna quantas progressões foram pagas mas não deveriam ter sido adiadas
+  const progsDevidas    = Math.min(Math.floor(mesesDecorridos / mesesPorProg), idxInicial - idxAtual);
+  return Math.max(0, (idxInicial - idxAtual) - progsDevidas);
 }
 
 // ─────────────────────────────────────────
@@ -1770,7 +1772,7 @@ function gerarDemonstrativoEduc(params) {
 
   const progsTotal = calcularProgressoesEduc(area, posseDate, endDate);
   const refDevida  = refAposProgressoes(refInicial, refList, progsTotal);
-  const numProgressoesAtraso = refList.indexOf(refDevida) - refList.indexOf(refInicial);
+  const numProgressoesAtraso = Math.max(0, refList.indexOf(refDevida) - refList.indexOf(refInicial));
 
   const rows = [], erros = [];
   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
@@ -1867,7 +1869,7 @@ function gerarDemonstrativoSES(params) {
   // Progressões em atraso: servidor está em classeAtual mas possivelmente deveria ter avançado mais
   const progsDevidas = Math.floor(diffMonths(posseDate, endDate) / 24);
   const classeDevida = refList[Math.min(refList.indexOf(classeInicial) + progsDevidas, refList.length-1)];
-  const numProgressoesAtraso = refList.indexOf(classeDevida) - refList.indexOf(classeAtual);
+  const numProgressoesAtraso = Math.max(0, refList.indexOf(classeDevida) - refList.indexOf(classeAtual));
 
   const rows = [], erros = [];
   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
@@ -1911,7 +1913,7 @@ function gerarDemonstrativoSEMSA(params) {
   const refList = REGRAS.SEMSA.referencias;
   const progsTotal = Math.floor(diffMonths(posseDate, endDate) / 24);
   const refDevida  = refList[Math.min(refList.indexOf(refInicial) + progsTotal, refList.length-1)];
-  const numProgressoesAtraso = refList.indexOf(refDevida) - refList.indexOf(refInicial);
+  const numProgressoesAtraso = Math.max(0, refList.indexOf(refDevida) - refList.indexOf(refInicial));
 
   const rows = [], erros = [];
   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
@@ -1980,7 +1982,9 @@ function gerarDemonstrativoSeguranca(params) {
     return atual;
   }
 
-  // Calcula índice de progressões devidas (modo geral)
+  // ATENÇÃO: listaPostos está ordenada do maior posto (idx 0 = Coronel/Delegado Especial)
+  // para o menor (idx N = Aluno/Agente4). Promoção = REDUÇÃO de índice.
+  // idxInicial deve ser MAIOR que idxAtual (servidor ingressou em posto inferior).
   const idxAtual   = listaPostos.indexOf(postoAtual);
   const idxInicial = listaPostos.indexOf(postoInicial);
   const mesesTotal = diffMonths(posseDate, endDate);
@@ -1989,11 +1993,13 @@ function gerarDemonstrativoSeguranca(params) {
   if (area === 'pmam' && incluirChoa) {
     postoDevido = postoDevidoCHOA(postoInicial, mesesTotal);
   } else {
+    // progsDevidas subtrai do índice (sobe na hierarquia)
     const progsDevidas = Math.floor(mesesTotal / (cfg.intersticioPromo || 36));
-    postoDevido = listaPostos[Math.min(idxInicial + progsDevidas, listaPostos.length-1)];
+    postoDevido = listaPostos[Math.max(idxInicial - progsDevidas, 0)];
   }
-  // Progressões em atraso = servidor está em postoAtual mas devia estar em postoDevido
-  const numProgressoesAtraso = Math.max(0, listaPostos.indexOf(postoDevido) - idxAtual);
+  // Progressões em atraso = server já deveria estar em postoDevido (menor idx = mais alto)
+  // mas ainda está em postoAtual (maior idx = mais baixo)
+  const numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
 
   const rows = [], erros = [];
   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
@@ -2006,7 +2012,7 @@ function gerarDemonstrativoSeguranca(params) {
       postoDevidoMes = postoDevidoCHOA(postoInicial, mesesAteAgora);
     } else {
       const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
-      postoDevidoMes = listaPostos[Math.min(idxInicial + progsAteMes, listaPostos.length-1)];
+      postoDevidoMes = listaPostos[Math.max(idxInicial - progsAteMes, 0)];
     }
     if (postoDevidoMes === postoAtual) { cursor = addMonths(cursor,1); continue; }
 
@@ -2038,7 +2044,7 @@ function gerarDemonstrativoSeguranca(params) {
         postoDez = postoDevidoCHOA(postoInicial, mesesDez);
       } else {
         const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
-        postoDez = listaPostos[Math.min(idxInicial + progsDez, listaPostos.length-1)];
+        postoDez = listaPostos[Math.max(idxInicial - progsDez, 0)];
       }
       if (postoDez === postoAtual) return;
       const recDez = calcVencimentoSeguranca(area, postoAtual, dezembro1, incluirAdicional);
@@ -2324,7 +2330,7 @@ function _coletarEduc(area) {
   if (isApoio) {
     areaCalc = categoria === 'apoio_superior' ? 'SEDUC_APOIO_SUPERIOR' : 'SEDUC_APOIO_FUNDAMENTAL';
   } else if (isAdmin) {
-    areaCalc = area === 'seduc' ? 'seduc_admin' : 'semed_admin';
+    areaCalc = area === 'seduc' ? 'SEDUC_ADMIN' : 'SEMED_ADMIN';
   } else {
     areaCalc = area;
   }
@@ -2352,13 +2358,13 @@ function _coletarEduc(area) {
   // Alerta de prescrição quinquenal (aviso, não bloqueio)
   const cincoAnos = new Date(endDate);
   cincoAnos.setFullYear(cincoAnos.getFullYear() - 5);
-  const alertaPrescrição = startDate < cincoAnos;
+  const alertaPrescricao = startDate < cincoAnos;
 
   const resultado = gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
     refInicial, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
     incluirRegencia: regencia, categoria, pctGAA_admin });
 
-  resultado.alertaPrescrição = alertaPrescrição;
+  resultado.alertaPrescricao = alertaPrescricao;
   resultado.cincoAnos = cincoAnos;
   return resultado;
 }
@@ -2394,9 +2400,22 @@ function _coletarSES() {
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de posse deve ser anterior ou igual ao início do retroativo.');
 
+  // Bloquear data fim futura
+  const hoje_ses = new Date(); hoje_ses.setHours(0,0,0,0);
+  if (endDate > hoje_ses) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
+
   const classeInicial = classeInicStr || classeAtual;
-  return gerarDemonstrativoSES({ nome, matricula, cargo, posseDate, nivel, classeInicial,
+
+  // Alerta de prescrição quinquenal (aviso, não bloqueio)
+  const cincoAnos_ses = new Date(endDate);
+  cincoAnos_ses.setFullYear(cincoAnos_ses.getFullYear() - 5);
+  const alertaPrescricao_ses = startDate < cincoAnos_ses;
+
+  const resultado_ses = gerarDemonstrativoSES({ nome, matricula, cargo, posseDate, nivel, classeInicial,
     classeAtual, pctGTS, pctGAA, nQuinq, startDate, endDate, incluirExtras: extras });
+  resultado_ses.alertaPrescricao = alertaPrescricao_ses;
+  resultado_ses.cincoAnos = cincoAnos_ses;
+  return resultado_ses;
 }
 
 function _coletarSEMSA() {
@@ -2427,9 +2446,22 @@ function _coletarSEMSA() {
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de posse deve ser anterior ou igual ao início do retroativo.');
 
+  // Bloquear data fim futura
+  const hoje_sa = new Date(); hoje_sa.setHours(0,0,0,0);
+  if (endDate > hoje_sa) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
+
   const refInicial = refInicStr || refAtual;
-  return gerarDemonstrativoSEMSA({ nome, matricula, cargo, posseDate, nivel,
+
+  // Alerta de prescrição quinquenal (aviso, não bloqueio)
+  const cincoAnos_sa = new Date(endDate);
+  cincoAnos_sa.setFullYear(cincoAnos_sa.getFullYear() - 5);
+  const alertaPrescricao_sa = startDate < cincoAnos_sa;
+
+  const resultado_sa = gerarDemonstrativoSEMSA({ nome, matricula, cargo, posseDate, nivel,
     refInicial, startDate, endDate, incluirExtras: extras });
+  resultado_sa.alertaPrescricao = alertaPrescricao_sa;
+  resultado_sa.cincoAnos = cincoAnos_sa;
+  return resultado_sa;
 }
 
 function _coletarPMAM() {
@@ -2460,11 +2492,24 @@ function _coletarPMAM() {
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
 
+  // Bloquear data fim futura
+  const hoje_pm = new Date(); hoje_pm.setHours(0,0,0,0);
+  if (endDate > hoje_pm) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
+
   // CHOA: força ingresso como Subtenente e ativa modo especial no gerador
   const postoInicial = incluirChoa ? 'subtente' : (postoInicStr || postoAtual);
-  return gerarDemonstrativoSeguranca({ area:'pmam', nome, matricula, cargo, posseDate,
+
+  // Alerta de prescrição quinquenal (aviso, não bloqueio)
+  const cincoAnos_pm = new Date(endDate);
+  cincoAnos_pm.setFullYear(cincoAnos_pm.getFullYear() - 5);
+  const alertaPrescricao_pm = startDate < cincoAnos_pm;
+
+  const resultado_pm = gerarDemonstrativoSeguranca({ area:'pmam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGT, incluirChoa,
     startDate, endDate, incluirExtras: extras });
+  resultado_pm.alertaPrescricao = alertaPrescricao_pm;
+  resultado_pm.cincoAnos = cincoAnos_pm;
+  return resultado_pm;
 }
 
 function _coletarPCAM() {
@@ -2494,10 +2539,23 @@ function _coletarPCAM() {
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
 
+  // Bloquear data fim futura
+  const hoje_pc = new Date(); hoje_pc.setHours(0,0,0,0);
+  if (endDate > hoje_pc) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
+
   const postoInicial = postoInicStr || postoAtual;
-  return gerarDemonstrativoSeguranca({ area:'pcam', nome, matricula, cargo, posseDate,
+
+  // Alerta de prescrição quinquenal (aviso, não bloqueio)
+  const cincoAnos_pc = new Date(endDate);
+  cincoAnos_pc.setFullYear(cincoAnos_pc.getFullYear() - 5);
+  const alertaPrescricao_pc = startDate < cincoAnos_pc;
+
+  const resultado_pc = gerarDemonstrativoSeguranca({ area:'pcam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGEP,
     startDate, endDate, incluirExtras: extras });
+  resultado_pc.alertaPrescricao = alertaPrescricao_pc;
+  resultado_pc.cincoAnos = cincoAnos_pc;
+  return resultado_pc;
 }
 
 // ─────────────────────────────────────────
@@ -2510,7 +2568,7 @@ function renderizarResultados(res) {
 
   // Alerta de prescrição quinquenal
   const errEl = document.getElementById('alert-form-error');
-  if (res.alertaPrescrição && res.cincoAnos) {
+  if (res.alertaPrescricao && res.cincoAnos) {
     errEl.innerHTML = `⚠️ <strong>Atenção — Prescrição Quinquenal (Dec. Fed. n.º 20.910/1932):</strong> `
       + `A data de início (${fmtData(startDate)}) está além de 5 anos antes do fim do período. `
       + `Créditos anteriores a ${fmtData(res.cincoAnos)} podem estar prescritos. `
@@ -2523,6 +2581,8 @@ function renderizarResultados(res) {
   const legalMap = {
     SEDUC_APOIO_SUPERIOR:    'Lei n.º 3.951/2013 (Anexo IV — Apoio Nível Superior) → Lei n.º 4.836/2019 → Lei n.º 5.770/2022 | STJ Tema 1075 | Prescrição: Dec. 20.910/1932 (5 anos)',
     SEDUC_APOIO_FUNDAMENTAL: 'Lei n.º 3.951/2013 (Anexo V — Apoio Nível Fund./Médio) → Lei n.º 4.836/2019 → Lei n.º 5.770/2022 | STJ Tema 1075 | Prescrição: Dec. 20.910/1932 (5 anos)',
+    SEDUC_ADMIN: 'Lei n.º 4.058/2014 (PCCR Administrativo SEDUC) — Progressão bienal (A–H) | STJ Tema 1075 | EC 113/2021 | Prescrição: Dec. 20.910/1932 (5 anos)',
+    SEMED_ADMIN: 'Lei Municipal n.º 1.118/2007 (PCCR Administrativo SEMED) — Progressão bienal (A1–L2, 24 níveis) | STJ Tema 1075 | EC 113/2021 | Prescrição quinquenal',
     seduc:  'Lei n.º 3.951/2013 (interstício 4 anos) → Lei n.º 4.836/2019 (interstício 3 anos, marco 01/03/2019) | STJ Tema 1075 | Prescrição: Dec. 20.910/1932 (5 anos)',
     semed:  'Lei Municipal n.º 4.852/2019 | Lei n.º 5.771/2022 | Lei n.º 3.056/2023 | STJ Tema 1075',
     ses:    'Lei n.º 3.469/2009 (PCCR SES/AM) — Progressão bienal (interstício 24 meses) | STJ Tema 1075 | EC 113/2021 (SELIC) | Prescrição: Dec. 20.910/1932',
@@ -2533,28 +2593,31 @@ function renderizarResultados(res) {
   const areaLabel = {
     SEDUC_APOIO_SUPERIOR:    'SEDUC/AM — Apoio Específico (Nível Superior)',
     SEDUC_APOIO_FUNDAMENTAL: 'SEDUC/AM — Apoio Específico (Nível Fundamental/Médio)',
+    SEDUC_ADMIN: 'SEDUC/AM — Administrativo (Lei 4.058/2014)',
+    SEMED_ADMIN: 'SEMED/AM — Administrativo (Lei 1.118/2007)',
     seduc:'SEDUC/AM — Rede Estadual', semed:'SEMED/AM — Rede Municipal',
     ses:'SES/AM — Saúde Estadual', semsa:'SEMSA — Saúde Municipal',
     pmam:'PMAM — Polícia Militar', pcam:'PCAM — Polícia Civil',
   };
   const tagClass = { seduc:'tag-teal', semed:'tag-teal', ses:'tag-blue', semsa:'tag-blue',
                      pmam:'tag-red', pcam:'tag-red',
-                     SEDUC_APOIO_SUPERIOR:'tag-teal', SEDUC_APOIO_FUNDAMENTAL:'tag-teal' };
+                     SEDUC_APOIO_SUPERIOR:'tag-teal', SEDUC_APOIO_FUNDAMENTAL:'tag-teal',
+                     SEDUC_ADMIN:'tag-teal', SEMED_ADMIN:'tag-teal' };
 
   // Adicionais da área
   let addInfo = '';
   const areaKey = res.area || area;
-  if (areaKey === 'seduc' || areaKey === 'SEDUC_APOIO_SUPERIOR' || areaKey === 'SEDUC_APOIO_FUNDAMENTAL') {
+  if (areaKey === 'seduc' || areaKey === 'SEDUC_ADMIN' || areaKey === 'SEDUC_APOIO_SUPERIOR' || areaKey === 'SEDUC_APOIO_FUNDAMENTAL') {
     addInfo = (res.pctLocalidade > 0 ? ` | Localidade: +${Math.round(res.pctLocalidade*100)}% (${res.municipio})` : ' | Localidade: Manaus (0%)') +
               (res.incluirRegencia ? ' | Regência: +25%' : '');
-  } else if (area === 'ses') {
+  } else if (areaKey === 'ses') {
     const gtsLabel = res.pctGTS > 0 ? `GTS: +${Math.round(res.pctGTS*100)}%` : 'GTS: não';
     const gaaLabel = res.pctGAA > 0 ? `GAA: +${Math.round(res.pctGAA*100)}%` : '';
     const quinqLabel = res.nQuinq > 0 ? `Quinquênios: ${res.nQuinq}×5%` : '';
     addInfo = ' | ' + [gtsLabel, gaaLabel, quinqLabel].filter(Boolean).join(' | ');
-  } else if (area === 'pmam') {
+  } else if (areaKey === 'pmam') {
     addInfo = res.incluirAdicional ? ' | G.T. incluída' : ' | G.T. não incluída';
-  } else if (area === 'pcam') {
+  } else if (areaKey === 'pcam') {
     addInfo = res.incluirAdicional ? ' | GEP: +100%' : ' | GEP não incluída';
   }
 
@@ -2589,13 +2652,17 @@ function renderizarResultados(res) {
   document.getElementById('table-sub').textContent = `${nMeses} competências | ${rows.length} linhas total`;
 
   // Tags
-  const tagIco = { seduc:'📚', semed:'🏫', ses:'🏥', semsa:'🏥', pmam:'🛡️', pcam:'🚔' };
+  const tagIco = {
+    seduc:'📚', SEDUC_ADMIN:'📚', SEDUC_APOIO_SUPERIOR:'📚', SEDUC_APOIO_FUNDAMENTAL:'📚',
+    semed:'🏫', SEMED_ADMIN:'🏫',
+    ses:'🏥', semsa:'🏥', pmam:'🛡️', pcam:'🚔',
+  };
   document.getElementById('result-tags').innerHTML =
-    `<span class="tag ${tagClass[area]}">${tagIco[area] || '📋'} ${(areaLabel[area]||area).split('—')[0].trim()}</span>` +
+    `<span class="tag ${tagClass[areaKeyDisp]||'tag-teal'}">${tagIco[areaKeyDisp] || '📋'} ${(areaLabel[areaKeyDisp]||areaKeyDisp).split('—')[0].trim()}</span>` +
     (res.municipio ? `<span class="tag tag-gold">📍 ${res.municipio}</span>` : '') +
-    (res.incluirAdicional && area==='pmam' ? '<span class="tag tag-red">🎖️ G.T.</span>' : '') +
-    (res.incluirAdicional && area==='pcam' ? '<span class="tag tag-red">🔒 GEP +100%</span>' : '') +
-    (area==='ses' && res.pctGTS>0 ? `<span class="tag tag-blue">GTS +${Math.round(res.pctGTS*100)}%</span>` : '');
+    (res.incluirAdicional && areaKey==='pmam' ? '<span class="tag tag-red">🎖️ G.T.</span>' : '') +
+    (res.incluirAdicional && areaKey==='pcam' ? '<span class="tag tag-red">🔒 GEP +100%</span>' : '') +
+    (areaKey==='ses' && res.pctGTS>0 ? `<span class="tag tag-blue">GTS +${Math.round(res.pctGTS*100)}%</span>` : '');
 
   // Tabela
   const tbody = document.getElementById('result-tbody');
@@ -2609,9 +2676,9 @@ function renderizarResultados(res) {
     tr.innerHTML = `
       <td class="${r.tipo!=='normal'?'td-special':''}">${r.competencia}</td>
       <td class="td-ref">${r.refRecebida||'—'}</td>
-      <td>${r.vencRecebido ? fmtMoeda(r.vencRecebido) : '—'}</td>
+      <td>${r.vencRecebido != null ? fmtMoeda(r.vencRecebido) : '—'}</td>
       <td class="td-ref-due">${r.refDevida||'—'}</td>
-      <td>${r.vencDevido ? fmtMoeda(r.vencDevido) : '—'}</td>
+      <td>${r.vencDevido != null ? fmtMoeda(r.vencDevido) : '—'}</td>
       <td class="td-lei">${r.lei||'—'}</td>
       <td class="${r.diffMensal>0?'td-diff':''}">${fmtMoeda(r.diffMensal)}</td>
       <td style="font-size:0.7rem;color:var(--gray-mid);text-align:center;">${fatorFmt}</td>
@@ -2736,22 +2803,25 @@ async function salvarSheets() {
     // Totais
     totalDiff:            RESULTADO.totalDiff,
     totalGeral:           RESULTADO.totalDiff,
+    totalCorrigido:       RESULTADO.totalCorrigido || RESULTADO.totalDiff,
     nMeses:               RESULTADO.nMeses,
     incluirExtras:        RESULTADO.incluirExtras,
     dataCalculo:          new Date().toISOString().slice(0,10),
     // Linhas do demonstrativo
     rows: RESULTADO.rows.map(r => ({
-      competencia:  r.competencia,
-      refRecebida:  r.refRecebida  || '',
-      vencRecebido: r.vencRecebido || 0,
-      refDevida:    r.refDevida    || '',
-      vencDevido:   r.vencDevido   || 0,
-      lei:          r.lei          || '',
-      diffMensal:   r.diffMensal   || 0,
-      extras:       r.extras       || 0,
-      totalLinha:   r.totalLinha   || 0,
-      total:        r.totalLinha   || 0,
-      tipo:         r.tipo         || 'normal'
+      competencia:   r.competencia,
+      refRecebida:   r.refRecebida  || '',
+      vencRecebido:  r.vencRecebido ?? 0,
+      refDevida:     r.refDevida    || '',
+      vencDevido:    r.vencDevido   ?? 0,
+      lei:           r.lei          || '',
+      diffMensal:    r.diffMensal   ?? 0,
+      fatorSelic:    r.fatorSelic   ?? 1,
+      diffCorrigida: r.diffCorrigida ?? r.diffMensal ?? 0,
+      extras:        r.extras       ?? 0,
+      totalLinha:    r.totalLinha   ?? 0,
+      total:         r.totalLinha   ?? 0,
+      tipo:          r.tipo         || 'normal'
     })),
   };
   // Alias para compatibilidade com diferentes versões do Apps Script
@@ -3019,7 +3089,7 @@ function bindPreviewListeners() {
 
   const allIds = [
     's-nome','s-matricula','s-cargo','s-posse','s-classe','s-ref','s-ref-inicial','s-inicio','s-fim','s-municipio','s-categoria',
-    'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-inicio','m-fim',
+    'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-inicio','m-fim','m-categoria',
     'se-nome','se-matricula','se-cargo','se-posse','se-nivel','se-classe','se-classe-inicial','se-gts','se-gaa','se-quinquenio','se-inicio','se-fim',
     'sa-nome','sa-matricula','sa-cargo','sa-posse','sa-nivel','sa-ref','sa-ref-inicial','sa-inicio','sa-fim',
     'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-posto','pm-posto-inicial','pm-inicio','pm-fim',
