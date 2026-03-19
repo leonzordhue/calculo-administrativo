@@ -938,6 +938,35 @@
                 </select>
                 <span class="field-hint">Se o caso envolver CHOA: selecione "Subtenente" como ingresso</span>
               </div>
+              <div class="field"><label class="field-label">Posto que <strong>Deveria Estar</strong> (Devida)</label>
+                <select id="pm-posto-devida">
+                  <option value="">Calcular automaticamente pela data de ingresso</option>
+                  <optgroup label="Oficiais — QOPM">
+                    <option value="coronel">Coronel</option>
+                    <option value="tencoronel">Tenente-Coronel</option>
+                    <option value="major">Major</option>
+                    <option value="capitao_qopm">Capitão (QOPM)</option>
+                    <option value="tenente1">1.º Tenente (QOPM)</option>
+                    <option value="tenente2">2.º Tenente (QOPM)</option>
+                    <option value="aspirante">Aspirante a Oficial</option>
+                  </optgroup>
+                  <optgroup label="Oficiais — QOAPM (CHOA)">
+                    <option value="capitao_qoapm">Capitão (QOAPM)</option>
+                    <option value="tenente1_qoapm">1.º Tenente (QOAPM)</option>
+                    <option value="tenente2_qoapm">2.º Tenente (QOAPM)</option>
+                  </optgroup>
+                  <optgroup label="Praças">
+                    <option value="subtente">Subtenente</option>
+                    <option value="sgt1">1.º Sargento</option>
+                    <option value="sgt2">2.º Sargento</option>
+                    <option value="sgt3">3.º Sargento</option>
+                    <option value="cabo">Cabo</option>
+                    <option value="soldado1">Soldado de 1.ª Classe</option>
+                    <option value="soldado2">Soldado de 2.ª Classe</option>
+                  </optgroup>
+                </select>
+                <span class="field-hint">⚠️ Preencha este campo quando souber o posto correto. Evita erros de "Nenhuma diferença encontrada".</span>
+              </div>
 
               <hr class="form-divider" />
               <div class="form-section-title">🎖️ CHOA — Curso de Habilitação de Oficiais Auxiliares</div>
@@ -1027,6 +1056,32 @@
                   <option value="agente4">Agente/Escrivão de 4.ª Classe</option>
                   <option value="perito3">Perito de 3.ª Classe</option>
                 </select>
+              </div>
+              <div class="field"><label class="field-label">Cargo / Classe que <strong>Deveria Estar</strong> (Devida)</label>
+                <select id="pc-quadro-devida">
+                  <option value="">Calcular automaticamente pela data de ingresso</option>
+                  <optgroup label="Delegados de Polícia">
+                    <option value="delegado_especial">Delegado Especial</option>
+                    <option value="delegado_classe_especial">Delegado Classe Especial</option>
+                    <option value="delegado1">Delegado de 1.ª Classe</option>
+                    <option value="delegado2">Delegado de 2.ª Classe</option>
+                    <option value="delegado3">Delegado de 3.ª Classe</option>
+                  </optgroup>
+                  <optgroup label="Agentes / Escrivães / Investigadores">
+                    <option value="agente_especial">Agente/Escrivão Especial</option>
+                    <option value="agente1">Agente/Escrivão de 1.ª Classe</option>
+                    <option value="agente2">Agente/Escrivão de 2.ª Classe</option>
+                    <option value="agente3">Agente/Escrivão de 3.ª Classe</option>
+                    <option value="agente4">Agente/Escrivão de 4.ª Classe</option>
+                  </optgroup>
+                  <optgroup label="Peritos e Técnicos">
+                    <option value="perito_especial">Perito Criminal Especial</option>
+                    <option value="perito1">Perito Criminal de 1.ª Classe</option>
+                    <option value="perito2">Perito Criminal de 2.ª Classe</option>
+                    <option value="perito3">Perito Criminal de 3.ª Classe</option>
+                  </optgroup>
+                </select>
+                <span class="field-hint">⚠️ Preencha este campo quando souber o cargo correto. Evita erros de "Nenhuma diferença encontrada".</span>
               </div>
 
               <hr class="form-divider" />
@@ -1995,9 +2050,17 @@ function calcPostoDevido(cfg, listaPostos, postoInicial, nProgs) {
 
 function gerarDemonstrativoSeguranca(params) {
   const { area, nome, matricula, cargo, posseDate, postoAtual, postoInicial,
-          incluirAdicional, incluirChoa, startDate, endDate, incluirExtras } = params;
+          incluirAdicional, incluirChoa, startDate, endDate, incluirExtras,
+          postoDevidaFixo } = params;                      // ← campo opcional (REV-6)
   const cfg = REGRAS[area.toUpperCase()];
   const listaPostos = Object.keys(area === 'pmam' ? cfg.postos : cfg.cargos);
+
+  // ── MODO POSTO DEVIDA FIXO ────────────────────────────────────────────────
+  // Quando o operador preenche "Posto que deveria estar", usamos esse valor
+  // diretamente para todos os meses, sem calcular via posseDate + interstício.
+  // Resolve o caso de PM/PC que JÁ foi promovido mas quer retroativo do atraso,
+  // ou quando a data de ingresso informada não é a data original na corporação.
+  const modoFixo = !!(postoDevidaFixo && postoDevidaFixo !== postoAtual);
 
   // ── MODO CHOA (PMAM) ──────────────────────────────────────────────────────
   // Quando CHOA ativo, o post devida segue o mapa cfg.choa em vez da lista linear
@@ -2022,19 +2085,20 @@ function gerarDemonstrativoSeguranca(params) {
   const mesesTotal = diffMonths(posseDate, endDate);
 
   let postoDevido;
-  if (area === 'pmam' && incluirChoa) {
+  if (modoFixo) {
+    postoDevido = postoDevidaFixo;
+  } else if (area === 'pmam' && incluirChoa) {
     postoDevido = postoDevidoCHOA(postoInicial, mesesTotal);
   } else {
     const progsDevidas = Math.floor(mesesTotal / (cfg.intersticioPromo || 36));
     postoDevido = calcPostoDevido(cfg, listaPostos, postoInicial, progsDevidas);
   }
   // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha
-  const trilhaRef = getTrilhaProgresso(cfg, postoInicial);
+  const trilhaRef = getTrilhaProgresso(cfg, modoFixo ? postoAtual : postoInicial);
   let numProgressoesAtraso;
   if (trilhaRef) {
     const tIdxAtual  = trilhaRef.indexOf(postoAtual);
     const tIdxDevido = trilhaRef.indexOf(postoDevido);
-    // postoDevido deve ser >= postoAtual na trilha (índice maior = mais alto)
     numProgressoesAtraso = Math.max(0, tIdxDevido - tIdxAtual);
   } else {
     numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
@@ -2047,7 +2111,9 @@ function gerarDemonstrativoSeguranca(params) {
   while (cursor <= endM) {
     const mesesAteAgora = diffMonths(posseDate, cursor);
     let postoDevidoMes;
-    if (area === 'pmam' && incluirChoa) {
+    if (modoFixo) {
+      postoDevidoMes = postoDevidaFixo;           // posto fixo — mesmo valor todos os meses
+    } else if (area === 'pmam' && incluirChoa) {
       postoDevidoMes = postoDevidoCHOA(postoInicial, mesesAteAgora);
     } else {
       const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
@@ -2079,7 +2145,9 @@ function gerarDemonstrativoSeguranca(params) {
       if (dezembro1 > endDate) return;
       const mesesDez = diffMonths(posseDate, dezembro1);
       let postoDez;
-      if (area === 'pmam' && incluirChoa) {
+      if (modoFixo) {
+        postoDez = postoDevidaFixo;
+      } else if (area === 'pmam' && incluirChoa) {
         postoDez = postoDevidoCHOA(postoInicial, mesesDez);
       } else {
         const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
@@ -2512,6 +2580,7 @@ function _coletarPMAM() {
   const posseStr     = v('pm-posse');
   const postoAtual   = v('pm-posto');
   const postoInicStr = v('pm-posto-inicial');
+  const postoDevidaStr = v('pm-posto-devida');    // campo opcional REV-6
   const incluirGT    = r('pm-gt') === 'sim';
   const incluirChoa  = r('pm-choa') === 'sim';
   const inicioStr    = v('pm-inicio');
@@ -2557,9 +2626,23 @@ function _coletarPMAM() {
   cincoAnos_pm.setFullYear(cincoAnos_pm.getFullYear() - 5);
   const alertaPrescricao_pm = startDate < cincoAnos_pm;
 
+  // Validar postoDevida se informado
+  if (postoDevidaStr) {
+    const cfgPMAM_d = REGRAS.PMAM;
+    const trilhaDevida  = getTrilhaProgresso(cfgPMAM_d, postoDevidaStr);
+    const trilhaAtualPM = getTrilhaProgresso(cfgPMAM_d, postoAtual);
+    if (trilhaDevida && trilhaAtualPM && trilhaDevida !== trilhaAtualPM) {
+      throw new Error(`"Posto que deveria estar" (${postoDevidaStr}) e "Posto Atual" (${postoAtual}) pertencem a trilhas distintas. Ambos devem ser da mesma carreira (Praças / QOPM / QOAPM).`);
+    }
+    const trilha_pm = trilhaDevida || trilhaAtualPM;
+    if (trilha_pm && trilha_pm.indexOf(postoDevidaStr) <= trilha_pm.indexOf(postoAtual)) {
+      throw new Error(`O posto devida (${postoDevidaStr}) deve ser SUPERIOR ao posto atual (${postoAtual}) na hierarquia. Verifique os campos.`);
+    }
+  }
+
   const resultado_pm = gerarDemonstrativoSeguranca({ area:'pmam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGT, incluirChoa,
-    startDate, endDate, incluirExtras: extras });
+    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr || null });
   resultado_pm.alertaPrescricao = alertaPrescricao_pm;
   resultado_pm.cincoAnos = cincoAnos_pm;
   return resultado_pm;
@@ -2574,6 +2657,7 @@ function _coletarPCAM() {
   const posseStr   = v('pc-posse');
   const postoAtual = v('pc-quadro');
   const postoInicStr = v('pc-quadro-inicial');
+  const postoDevidaStr_pc = v('pc-quadro-devida');   // campo opcional REV-6
   const incluirGEP = r('pc-gep') === 'sim';
   const inicioStr  = v('pc-inicio');
   const fimStr     = v('pc-fim');
@@ -2614,9 +2698,21 @@ function _coletarPCAM() {
   cincoAnos_pc.setFullYear(cincoAnos_pc.getFullYear() - 5);
   const alertaPrescricao_pc = startDate < cincoAnos_pc;
 
+  // Validar postoDevida se informado
+  if (postoDevidaStr_pc) {
+    const trilhaDevida_pc = getTrilhaProgresso(cfgPCAM, postoDevidaStr_pc);
+    if (trilhaAtual && trilhaDevida_pc && trilhaAtual !== trilhaDevida_pc) {
+      throw new Error(`"Cargo devida" (${postoDevidaStr_pc}) e "Cargo Atual" (${postoAtual}) pertencem a carreiras distintas. Ambos devem ser da mesma carreira (Delegados / Agentes / Peritos).`);
+    }
+    const trilha_pc = trilhaDevida_pc || trilhaAtual;
+    if (trilha_pc && trilha_pc.indexOf(postoDevidaStr_pc) <= trilha_pc.indexOf(postoAtual)) {
+      throw new Error(`O cargo devida (${postoDevidaStr_pc}) deve ser SUPERIOR ao cargo atual (${postoAtual}) na hierarquia. Verifique os campos.`);
+    }
+  }
+
   const resultado_pc = gerarDemonstrativoSeguranca({ area:'pcam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGEP,
-    startDate, endDate, incluirExtras: extras });
+    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr_pc || null });
   resultado_pc.alertaPrescricao = alertaPrescricao_pc;
   resultado_pc.cincoAnos = cincoAnos_pc;
   return resultado_pc;
@@ -3062,6 +3158,7 @@ const PREVIEW_FIELDS = {
     { section: '📊 Dados Funcionais' },
     { id:'pm-posse',      label:'Data de Ingresso',    obs:'Na corporação',                        type:'date',   req:true },
     { id:'pm-posto',      label:'Posto/Graduação',     obs:'Atual',                                type:'select', req:true },
+    { id:'pm-posto-devida', label:'Posto Devida',      obs:'Preencher se conhecido',               type:'select', req:false },
     { name:'pm-gt',       label:'Grat. de Tropa',      obs:'% sobre o subsídio',                   type:'radio',  req:true },
     { section: '📅 Período' },
     { id:'pm-inicio',     label:'Início Retroativo',   obs:'Máx. 5 anos',                          type:'date',   req:true },
@@ -3074,6 +3171,7 @@ const PREVIEW_FIELDS = {
     { section: '📊 Dados Funcionais' },
     { id:'pc-posse',      label:'Data de Ingresso',    obs:'No cargo',                             type:'date',   req:true },
     { id:'pc-quadro',     label:'Cargo/Classe',        obs:'Atual',                                type:'select', req:true },
+    { id:'pc-quadro-devida', label:'Cargo Devida',     obs:'Preencher se conhecido',               type:'select', req:false },
     { name:'pc-gep',      label:'GEP',                 obs:'100% sobre venc. base',                type:'radio',  req:true },
     { section: '📅 Período' },
     { id:'pc-inicio',     label:'Início Retroativo',   obs:'Máx. 5 anos',                          type:'date',   req:true },
@@ -3156,8 +3254,8 @@ function bindPreviewListeners() {
     'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-inicio','m-fim','m-categoria',
     'se-nome','se-matricula','se-cargo','se-posse','se-nivel','se-classe','se-classe-inicial','se-gts','se-gaa','se-quinquenio','se-inicio','se-fim',
     'sa-nome','sa-matricula','sa-cargo','sa-posse','sa-nivel','sa-ref','sa-ref-inicial','sa-inicio','sa-fim',
-    'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-posto','pm-posto-inicial','pm-inicio','pm-fim',
-    'pc-nome','pc-matricula','pc-cargo','pc-posse','pc-quadro','pc-quadro-inicial','pc-inicio','pc-fim',
+    'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-posto','pm-posto-inicial','pm-posto-devida','pm-inicio','pm-fim',
+    'pc-nome','pc-matricula','pc-cargo','pc-posse','pc-quadro','pc-quadro-inicial','pc-quadro-devida','pc-inicio','pc-fim',
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
@@ -3194,6 +3292,441 @@ document.addEventListener('DOMContentLoaded', () => {
 
   bindPreviewListeners();
 });
+</script>
+
+<!-- ████████████████████████████████████████████████████████████████
+     ██  IA: LEIA ESTE BLOCO ANTES DE QUALQUER EDIÇÃO            ██
+     ██  1. div#app-version-log  → histórico completo de versões ██
+     ██  2. window._VICIOS_CONHECIDOS → erros recorrentes        ██
+     ██  3. Sempre atualize o log ao entregar nova versão        ██
+     ████████████████████████████████████████████████████████████████ -->
+<div id="app-version-log" style="display:none"
+     data-app="LAADV — Cálculo de Diferenças Salariais"
+     data-versao-atual="REV-6"
+     data-data-atual="2026-03-19">
+
+  <!-- ── REV-1 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-1" data-data="2026-03-19" data-status="SUPERADA">
+    <span data-tipo="IMPL">
+      Versão base do sistema. SPA monolítica (HTML/CSS/JS).
+      Áreas: SEDUC, SEMED, SES, SEMSA, PMAM, PCAM.
+      Motor de cálculo de diferenças salariais com SELIC (EC 113/2021),
+      13º proporcional, 1/3 férias, integração Google Sheets via Apps Script,
+      live preview de formulário, stepper 3 passos.
+    </span>
+  </div>
+
+  <!-- ── REV-2 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-2" data-data="2026-03-19" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="alertaPrescrição-acento">
+      CORRIGIDO: identificador alertaPrescrição (com cedilha) renomeado
+      para alertaPrescricao. Causa: caracteres especiais em identificadores
+      JS funcionam em motores modernos mas quebram em ambientes restritos,
+      minificadores e copiar/colar manual. Evitar: nunca usar acentos
+      ou cedilha em nomes de variáveis/propriedades JS.
+    </span>
+    <span data-tipo="FIX" data-bug="areaCalc-lowercase">
+      CORRIGIDO: areaCalc atribuía 'seduc_admin'/'semed_admin' (lowercase)
+      enquanto REGRAS usa 'SEDUC_ADMIN'/'SEMED_ADMIN' (uppercase). Apesar
+      de existir um .toUpperCase() posterior, a inconsistência era frágil.
+      Normalizado para uppercase diretamente na atribuição.
+    </span>
+    <span data-tipo="FIX" data-bug="legalMap-admin-ausente">
+      CORRIGIDO: legalMap e areaLabel em renderizarResultados não tinham
+      chaves para SEDUC_ADMIN e SEMED_ADMIN. Resultava em fundamentação
+      jurídica genérica (fallback silencioso) para cálculos administrativos.
+      Adicionadas entradas com base legal correta de cada PCCR.
+    </span>
+    <span data-tipo="FIX" data-bug="numProgressoesAtraso-SES-negativo">
+      CORRIGIDO: numProgressoesAtraso em gerarDemonstrativoSES podia ser
+      negativo quando classeDevida era anterior a classeAtual. Envolvido
+      em Math.max(0, ...) para garantir valor mínimo zero.
+    </span>
+    <span data-tipo="FIX" data-bug="s-categoria-preview">
+      CORRIGIDO: campo 's-categoria' ausente em allIds de bindPreviewListeners.
+      Mudança de categoria não acionava atualização do live preview.
+      Adicionados 's-categoria' e 'm-categoria' à lista.
+    </span>
+    <span data-tipo="INFO" data-bug="SELIC-especulativa">
+      ATENÇÃO: taxas SELIC de 2025-04 em diante podem divergir do BCB.
+      Conferir mensalmente em bcb.gov.br. Adicionado comentário no código.
+    </span>
+  </div>
+
+  <!-- ── REV-3 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-3" data-data="2026-03-19" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="PMAM-PCAM-tabela-vazia-direcao">
+      CORRIGIDO (CRÍTICO): gerarDemonstrativoSeguranca calculava postoDevido
+      na direção errada. Object.keys(cfg.postos/cargos) está ordenado do
+      posto MAIOR (idx 0 = Coronel/Delegado Especial) para o MENOR
+      (idx N = Aluno/Agente4). Promoção = REDUÇÃO de índice.
+      O código usava Math.min(idxInicial + progsDevidas, length-1),
+      movendo do maior para o menor posto (rebaixamento).
+      Para PM com posse em 1989: dezenas de promoções calculadas → posto
+      fictício abaixo do atual → devItem.sal menor → diff ≤ 0 → tabela vazia.
+      Corrigido para Math.max(idxInicial - progsDevidas, 0).
+      Evitar: sempre verificar a semântica de ordenação do objeto antes
+      de somar/subtrair índices de progressão.
+    </span>
+    <span data-tipo="FIX" data-bug="numProgressoesAtraso-SEMSA-negativo">
+      CORRIGIDO: mesmo padrão do SES — numProgressoesAtraso em SEMSA
+      sem Math.max(0, ...). Corrigido. Padrão: sempre proteger contagens
+      de progressão com Math.max(0, ...).
+    </span>
+    <span data-tipo="FIX" data-bug="data-futura-ausente-SES-SEMSA-PMAM-PCAM">
+      CORRIGIDO: bloqueio de data fim futura só existia em _coletarEduc.
+      SES, SEMSA, PMAM e PCAM permitiam calcular períodos futuros.
+      Adicionada validação (endDate > hoje → throw Error) em todos.
+    </span>
+    <span data-tipo="FIX" data-bug="prescricao-ausente-seguranca-saude">
+      CORRIGIDO: alerta de prescrição quinquenal (Dec. 20.910/1932) só
+      era emitido para SEDUC/SEMED. SES, SEMSA, PMAM, PCAM não alertavam.
+      Adicionado em todas as funções _coletar*.
+    </span>
+    <span data-tipo="FIX" data-bug="AREA_ATUAL-dead-code">
+      REMOVIDO: variável global AREA_ATUAL declarada e nunca usada.
+      Dead code — removido para reduzir superfície de confusão.
+    </span>
+    <span data-tipo="FIX" data-bug="addInfo-area-vs-areaKey">
+      CORRIGIDO: addInfo em renderizarResultados usava 'area' (parâmetro
+      desestruturado de res) em vez de 'areaKey' para SES/PMAM/PCAM.
+      Normalizado para areaKey em todos os branches.
+    </span>
+    <span data-tipo="FIX" data-bug="tagIco-sem-cobertura-admin">
+      CORRIGIDO: tagIco e result-tags não cobriam variantes admin/apoio.
+      Renderizava ícone '📋' genérico e classe CSS undefined para
+      SEDUC_ADMIN, SEMED_ADMIN, SEDUC_APOIO_*. Expandido.
+    </span>
+    <span data-tipo="FIX" data-bug="payload-sheets-sem-selic">
+      CORRIGIDO: payload enviado ao Google Sheets não incluía totalCorrigido
+      (SELIC) nem fatorSelic/diffCorrigida por linha. Planilha recebia
+      apenas valor nominal. Adicionados todos os campos de correção.
+    </span>
+    <span data-tipo="FIX" data-bug="falsy-check-vencimento">
+      CORRIGIDO: células de vencRecebido/vencDevido na tabela usavam
+      'r.vencRecebido ?' (falsy check). Um valor R$ 0,00 exibiria '—'.
+      Trocado para '!= null' (null check correto).
+    </span>
+  </div>
+
+  <!-- ── REV-4 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-4" data-data="2026-03-19" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="PCAM-cruzamento-carreira">
+      CORRIGIDO (CRÍTICO): motor de progressão da PCAM usava lista global
+      de cargos como escada única (Delegados → Agentes → Peritos em
+      sequência). Um agente com muitos anos de serviço "progride" além
+      de agente_especial e cruza para a carreira de delegado — juridicamente
+      impossível (carreiras distintas, concursos distintos).
+      Solução: adicionado objeto 'trilhas' ao REGRAS.PCAM com listas
+      separadas por carreira (delegados / agentes / peritos).
+      Mesmo padrão aplicado ao REGRAS.PMAM (pracas / oficiais_qopm / qoapm).
+      Criadas funções getTrilhaProgresso() e calcPostoDevido() que
+      respeitam o teto de cada trilha. calcProgressoesSeguranca() removida
+      (dead code).
+    </span>
+    <span data-tipo="FIX" data-bug="PCAM-validacao-trilha-cruzada">
+      ADICIONADO: validação explícita em _coletarPCAM e _coletarPMAM.
+      Se postoAtual e postoInicial pertencerem a trilhas distintas,
+      lança erro descritivo orientando o operador, em vez de calcular
+      silenciosamente valores errados.
+    </span>
+  </div>
+
+  <!-- ── REV-5 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-5" data-data="2026-03-19" data-status="SUPERADA">
+    <span data-tipo="IMPL">
+      Inserção do sistema de log de versões (este bloco).
+      Todas as correções REV-1 a REV-4 documentadas retroativamente.
+      window._VERSION_LOG e window._VICIOS_CONHECIDOS disponíveis via
+      console (F12) para auditoria e manutenção.
+    </span>
+  </div>
+
+  <!-- ── REV-6 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-6" data-data="2026-03-19" data-status="ATUAL">
+    <span data-tipo="FIX" data-bug="PMAM-PCAM-tabela-vazia-data-ingresso">
+      CORRIGIDO: "Nenhuma diferença encontrada" para PMAM/PCAM quando o
+      operador não sabe/não informa a data de ingresso original, ou quando
+      o PM já foi promovido e quer apenas o retroativo do período de atraso.
+      Causa raiz: motor calculava postoDevido exclusivamente via
+      posseDate + N×interstício. Se posseDate for recente ou errada,
+      progsAteMes = 0 para todo o período → postoDevidoMes = postoAtual
+      → todas as linhas puladas → tabela vazia sem nenhum erro.
+      Solução: campo opcional "Posto que Deveria Estar" (pm-posto-devida /
+      pc-quadro-devida). Quando preenchido, o motor usa esse valor como
+      postoDevidoMes fixo para todos os meses, eliminando a dependência
+      da data de ingresso. Validações: trilha cruzada + verificação de
+      que devida > atual na hierarquia.
+    </span>
+    <span data-tipo="IMPL">
+      Novos campos no formulário PMAM e PCAM:
+      pm-posto-devida e pc-quadro-devida (selects opcionais com hint de aviso).
+      Adicionados ao allIds do live preview e ao PREVIEW_FIELDS.
+      Parâmetro postoDevidaFixo propagado por gerarDemonstrativoSeguranca,
+      loop mensal e loop de extras (13º/férias).
+    </span>
+  </div>
+
+  <!-- ── VÍCIOS CONHECIDOS (guia para IA e manutenção) ─────────── -->
+  <div data-rev="VICIOS_CONHECIDOS" data-tipo="GUIA_IA">
+    <span data-vicio="V01" data-severidade="CRITICA">
+      VÍCIO V01 — DIREÇÃO DE PROGRESSÃO EM OBJETOS ORDENADOS:
+      Object.keys() de postos/cargos está ordenado do MAIOR para o MENOR
+      (Coronel=idx0, Aluno=idxN). Progressão (promoção) = SUBTRAÇÃO de
+      índice (idxInicial - nProgs). NUNCA somar. Sempre usar calcPostoDevido()
+      que abstrai essa lógica.
+    </span>
+    <span data-vicio="V02" data-severidade="CRITICA">
+      VÍCIO V02 — CRUZAMENTO DE TRILHAS DE CARREIRA:
+      PCAM e PMAM têm carreiras independentes com progressões restritas
+      à trilha de ingresso. NUNCA tratar a lista de cargos como escada
+      linear única. Sempre usar getTrilhaProgresso() + calcPostoDevido().
+    </span>
+    <span data-vicio="V03" data-severidade="ALTA">
+      VÍCIO V03 — CONTAGEM DE PROGRESSÕES SEM PROTEÇÃO:
+      numProgressoesAtraso pode ser negativo se a classe/posto atual
+      for maior que o calculado (dados inconsistentes ou cenário
+      edge-case). SEMPRE proteger com Math.max(0, ...).
+    </span>
+    <span data-vicio="V04" data-severidade="ALTA">
+      VÍCIO V04 — VALIDAÇÕES ASSIMETRICAS POR ÁREA:
+      Regras de negócio (data futura, prescrição quinquenal) devem ser
+      aplicadas em TODAS as funções _coletar* (educ, SES, SEMSA, PMAM,
+      PCAM). Ao adicionar nova validação, revisar todas as 5+ funções.
+    </span>
+    <span data-vicio="V05" data-severidade="MEDIA">
+      VÍCIO V05 — CHAVES DE ÁREA INCONSISTENTES:
+      res.area pode ser 'seduc', 'SEDUC_ADMIN', 'SEDUC_APOIO_SUPERIOR' etc.
+      Nunca comparar com strings fixas sem cobrir TODAS as variantes.
+      Usar areaKey = res.area || area e cobrir todos os casos nos maps.
+    </span>
+    <span data-vicio="V06" data-severidade="MEDIA">
+      VÍCIO V06 — FALSY CHECK EM VALORES MONETÁRIOS:
+      'r.valor ?' falha para R$ 0,00 (falsy). SEMPRE usar '!= null'
+      ou 'r.valor !== undefined' ao checar existência de valores numéricos.
+    </span>
+    <span data-vicio="V07" data-severidade="BAIXA">
+      VÍCIO V07 — IDENTIFICADORES COM CARACTERES ESPECIAIS:
+      Nunca usar acentos (ç, ã, é) em nomes de variáveis, propriedades
+      ou chaves de objeto JS. Funciona em motores modernos mas quebra
+      em minificadores, ambientes restritos e cópia manual.
+    </span>
+    <span data-vicio="V08" data-severidade="BAIXA">
+      VÍCIO V08 — DEAD CODE ACUMULADO:
+      Variáveis globais declaradas e nunca usadas (ex: AREA_ATUAL) e
+      funções inutilizadas (ex: calcProgressoesSeguranca antes da remoção)
+      confundem manutenção. Remover ao identificar.
+    </span>
+    <span data-vicio="V09" data-severidade="ALTA">
+      VÍCIO V09 — DEPENDÊNCIA EXCLUSIVA DE posseDate NO MOTOR PMAM/PCAM:
+      O motor calcula postoDevido via posseDate + N×interstício. Se o
+      operador informar data errada (ex: data da última promoção em vez
+      do ingresso original), progsAteMes = 0 → tabela vazia sem erro.
+      SEMPRE oferecer campo postoDevidaFixo como override. Quando preenchido,
+      usar esse valor diretamente (modoFixo = true), ignorando posseDate.
+    </span>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// SISTEMA DE VERSIONAMENTO — LAADV
+// Consulte via console (F12): window._VERSION_LOG, window._VICIOS_CONHECIDOS
+// ─────────────────────────────────────────
+window._VERSION_LOG = [
+  {
+    rev: "REV-1",
+    data: "2026-03-19",
+    status: "SUPERADA",
+    descricao: "Versão base — SPA monolítica LAADV. Áreas: SEDUC, SEMED, SES, SEMSA, PMAM, PCAM.",
+    fixes: [],
+    bugs_pendentes: [
+      "Direção de progressão PMAM/PCAM invertida",
+      "Cruzamento de trilhas de carreira PCAM/PMAM",
+      "alertaPrescrição com acento no identificador",
+      "areaCalc lowercase inconsistente",
+      "legalMap sem SEDUC_ADMIN/SEMED_ADMIN",
+      "numProgressoesAtraso podia ser negativo (SES/SEMSA/Educ)",
+      "s-categoria ausente no live preview",
+      "Validações assimétrias entre áreas (data futura, prescrição)",
+      "payload Sheets sem totalCorrigido/SELIC",
+      "falsy check em valores monetários na tabela"
+    ]
+  },
+  {
+    rev: "REV-2",
+    data: "2026-03-19",
+    status: "SUPERADA",
+    descricao: "Correções gerais: 6 bugs de qualidade e consistência.",
+    fixes: [
+      "alertaPrescrição → alertaPrescricao (identificador sem acento)",
+      "areaCalc: 'seduc_admin'/'semed_admin' → 'SEDUC_ADMIN'/'SEMED_ADMIN' (uppercase normalizado)",
+      "legalMap/areaLabel: adicionadas entradas SEDUC_ADMIN e SEMED_ADMIN com base legal correta",
+      "numProgressoesAtraso SES: envolvido em Math.max(0, ...)",
+      "s-categoria e m-categoria adicionados ao allIds do bindPreviewListeners",
+      "SELIC: adicionado comentário de alerta para taxas 2025-04 em diante"
+    ],
+    bugs_pendentes: [
+      "Direção de progressão PMAM/PCAM invertida (CRÍTICO)",
+      "Cruzamento de trilhas de carreira PCAM/PMAM (CRÍTICO)",
+      "Validações assimétrias entre áreas",
+      "payload Sheets sem totalCorrigido/SELIC",
+      "falsy check em valores monetários"
+    ]
+  },
+  {
+    rev: "REV-3",
+    data: "2026-03-19",
+    status: "SUPERADA",
+    descricao: "Fix crítico PMAM: direção de progressão + 8 correções adicionais.",
+    fixes: [
+      "CRÍTICO: gerarDemonstrativoSeguranca — direção de progressão corrigida (soma→subtração de índice). PM aposentado com posse em 1989 gerava tabela vazia.",
+      "numProgressoesAtraso SEMSA: Math.max(0, ...) aplicado",
+      "numProgressoesAtraso Educ: Math.max(0, ...) aplicado",
+      "Bloqueio de data futura adicionado a SES, SEMSA, PMAM e PCAM",
+      "Alerta de prescrição quinquenal adicionado a SES, SEMSA, PMAM e PCAM",
+      "AREA_ATUAL (dead code) removido",
+      "addInfo: normalizado para usar areaKey em SES/PMAM/PCAM",
+      "tagIco: expandido para cobrir SEDUC_ADMIN, SEMED_ADMIN, SEDUC_APOIO_*",
+      "payload Sheets: adicionados totalCorrigido, fatorSelic e diffCorrigida por linha",
+      "Tabela: falsy check '?' → null check '!= null' em vencRecebido/vencDevido"
+    ],
+    bugs_pendentes: [
+      "Cruzamento de trilhas de carreira PCAM/PMAM (CRÍTICO)"
+    ]
+  },
+  {
+    rev: "REV-4",
+    data: "2026-03-19",
+    status: "SUPERADA",
+    descricao: "Fix crítico PCAM/PMAM: trilhas de carreira independentes.",
+    fixes: [
+      "CRÍTICO: PCAM — adicionado objeto 'trilhas' com listas separadas por carreira (delegados/agentes/peritos). Motor de progressão não cruza mais carreiras.",
+      "CRÍTICO: PMAM — adicionado objeto 'trilhas' (pracas/oficiais_qopm/qoapm). Praças não se tornam oficiais por progressão automática.",
+      "Criadas funções getTrilhaProgresso() e calcPostoDevido() com lógica de trilha encapsulada.",
+      "calcProgressoesSeguranca() removida (dead code substituído pelas novas funções).",
+      "Validação de trilha cruzada adicionada em _coletarPCAM e _coletarPMAM com mensagem de erro descritiva."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-5",
+    data: "2026-03-19",
+    status: "SUPERADA",
+    descricao: "Inserção do sistema de log de versões (este bloco). Documentação retroativa de REV-1 a REV-4.",
+    fixes: [
+      "Sistema de versionamento inserido: div#app-version-log, window._VERSION_LOG, window._VICIOS_CONHECIDOS",
+      "8 vícios conhecidos documentados para orientar manutenção futura"
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-6",
+    data: "2026-03-19",
+    status: "ATUAL",
+    descricao: "Campo postoDevidaFixo em PMAM/PCAM. Resolve 'Nenhuma diferença encontrada' por data de ingresso errada.",
+    fixes: [
+      "PMAM: adicionado campo pm-posto-devida (Posto que Deveria Estar). Quando preenchido, motor usa valor fixo em todos os meses, eliminando dependência de posseDate.",
+      "PCAM: adicionado campo pc-quadro-devida (Cargo que Deveria Estar). Mesma lógica.",
+      "gerarDemonstrativoSeguranca: aceita parâmetro postoDevidaFixo. modoFixo=true bypassa cálculo automático por interstício.",
+      "Validações: trilha cruzada + devida deve ser superior ao atual, em _coletarPMAM e _coletarPCAM.",
+      "pm-posto-devida e pc-quadro-devida adicionados ao allIds do live preview e ao PREVIEW_FIELDS.",
+      "Vício V09 documentado: dependência exclusiva de posseDate no motor PMAM/PCAM."
+    ],
+    bugs_pendentes: []
+  }
+];
+
+window._VICIOS_CONHECIDOS = [
+  {
+    id: "V01",
+    severidade: "CRITICA",
+    titulo: "Direção de progressão em objetos ordenados",
+    descricao: "Object.keys(cfg.postos/cargos) está ordenado do MAIOR para o MENOR posto. Promoção = SUBTRAÇÃO de índice. Nunca somar. Usar calcPostoDevido().",
+    exemplo_errado: "listaPostos[Math.min(idxInicial + nProgs, length-1)]",
+    exemplo_correto: "calcPostoDevido(cfg, listaPostos, postoInicial, nProgs)"
+  },
+  {
+    id: "V02",
+    severidade: "CRITICA",
+    titulo: "Cruzamento de trilhas de carreira PCAM/PMAM",
+    descricao: "PCAM e PMAM têm carreiras independentes. Nunca tratar lista de cargos como escada única. Usar getTrilhaProgresso() + calcPostoDevido().",
+    exemplo_errado: "listaPostos[Math.max(idxInicial - nProgs, 0)] // cruza Agente→Delegado",
+    exemplo_correto: "calcPostoDevido(cfg, listaPostos, postoInicial, nProgs) // respeita trilha"
+  },
+  {
+    id: "V03",
+    severidade: "ALTA",
+    titulo: "Contagem de progressões sem proteção de negativos",
+    descricao: "numProgressoesAtraso pode ser negativo em cenários edge-case. Sempre proteger com Math.max(0, ...).",
+    exemplo_errado: "const n = refList.indexOf(refDevida) - refList.indexOf(refAtual)",
+    exemplo_correto: "const n = Math.max(0, refList.indexOf(refDevida) - refList.indexOf(refAtual))"
+  },
+  {
+    id: "V04",
+    severidade: "ALTA",
+    titulo: "Validações assimétricas entre áreas",
+    descricao: "Regras como bloqueio de data futura e prescrição quinquenal devem estar em TODAS as funções _coletar*. Ao adicionar validação, revisar todas as 5+.",
+    exemplo_errado: "Validação só em _coletarEduc, ausente em _coletarPMAM/_coletarPCAM",
+    exemplo_correto: "Validação replicada em _coletarEduc/_coletarSES/_coletarSEMSA/_coletarPMAM/_coletarPCAM"
+  },
+  {
+    id: "V05",
+    severidade: "MEDIA",
+    titulo: "Chaves de área inconsistentes",
+    descricao: "res.area pode ser 'seduc', 'SEDUC_ADMIN', 'SEDUC_APOIO_SUPERIOR' etc. Nunca comparar sem cobrir todas as variantes. Usar areaKey = res.area || area.",
+    exemplo_errado: "if (area === 'seduc') // não cobre SEDUC_ADMIN",
+    exemplo_correto: "const areaKey = res.area || area; if (areaKey === 'seduc' || areaKey === 'SEDUC_ADMIN' ...)"
+  },
+  {
+    id: "V06",
+    severidade: "MEDIA",
+    titulo: "Falsy check em valores monetários",
+    descricao: "r.valor ? é falso para 0 (zero). Usar != null para checar existência de números.",
+    exemplo_errado: "r.vencRecebido ? fmtMoeda(r.vencRecebido) : '—'",
+    exemplo_correto: "r.vencRecebido != null ? fmtMoeda(r.vencRecebido) : '—'"
+  },
+  {
+    id: "V07",
+    severidade: "BAIXA",
+    titulo: "Identificadores JS com caracteres especiais",
+    descricao: "Nunca usar acentos ou cedilha em nomes de variáveis/propriedades. Quebra em minificadores e cópia manual.",
+    exemplo_errado: "let alertaPrescrição = ...",
+    exemplo_correto: "let alertaPrescricao = ..."
+  },
+  {
+    id: "V08",
+    severidade: "BAIXA",
+    titulo: "Dead code acumulado",
+    descricao: "Variáveis/funções declaradas e nunca usadas confundem manutenção e auditoria. Remover ao identificar.",
+    exemplo_errado: "let AREA_ATUAL = null; // nunca lida",
+    exemplo_correto: "Remover declaração ou documentar uso pendente em bugs_pendentes"
+  },
+  {
+    id: "V09",
+    severidade: "ALTA",
+    titulo: "Dependência exclusiva de posseDate no motor PMAM/PCAM",
+    descricao: "Motor calcula postoDevido via posseDate + N×interstício. Se operador informa data errada (ex: última promoção em vez de ingresso original), progsAteMes=0 → tabela vazia sem erro. Sempre oferecer postoDevidaFixo como override.",
+    exemplo_errado: "Math.floor(diffMonths(posseDate, cursor) / 36) // depende 100% de posseDate",
+    exemplo_correto: "modoFixo ? postoDevidaFixo : calcPostoDevido(cfg, listaPostos, postoInicial, progs)"
+  }
+];
+
+(function() {
+  const atual = window._VERSION_LOG.find(v => v.status === 'ATUAL') || window._VERSION_LOG[window._VERSION_LOG.length - 1];
+  console.groupCollapsed(
+    "%c LAADV " + atual.rev + " ",
+    "background:#0B4A44;color:#C9A93E;font-weight:bold;padding:2px 8px;border-radius:3px;font-size:12px"
+  );
+  console.log("%cVersão atual: " + atual.rev + " — " + atual.data, "color:#0B4A44;font-weight:bold");
+  console.log("%c" + atual.descricao, "color:#3D4F63");
+  console.log("Fixes desta versão:", atual.fixes);
+  console.log("Bugs pendentes:", atual.bugs_pendentes.length ? atual.bugs_pendentes : "✅ Nenhum");
+  console.log("%cVícios conhecidos (" + window._VICIOS_CONHECIDOS.length + "):", "color:#9E8130;font-weight:bold", window._VICIOS_CONHECIDOS.map(v => v.id + ' ' + v.severidade + ': ' + v.titulo));
+  console.log("%cConsulte: window._VERSION_LOG | window._VICIOS_CONHECIDOS", "color:#8899AA;font-size:11px");
+  console.groupEnd();
+})();
 </script>
 </body>
 </html>
