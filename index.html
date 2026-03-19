@@ -1450,6 +1450,15 @@ const REGRAS = {
       cabo:0.18, soldado1:0.18, soldado2:0.18, aluno:0.00,
     },
     intersticioPromo: 36, // mínimo 3 anos entre promoções
+    // ─── TRILHAS DE CARREIRA (Lei n.º 3.725/2012) ─────────────────────────────
+    // Praças NÃO se tornam Oficiais por progressão automática do sistema.
+    // QOAPM é acessado via CHOA (tratamento especial separado).
+    // Ordenação: do posto de menor ao de maior hierarquia dentro da carreira.
+    trilhas: {
+      pracas:        ['aluno','soldado2','soldado1','cabo','sgt3','sgt2','sgt1','subtente'],
+      oficiais_qopm: ['aspirante','tenente2','tenente1','capitao_qopm','major','tencoronel','coronel'],
+      qoapm:         ['tenente2_qoapm','tenente1_qoapm','capitao_qoapm'],
+    },
     // CHOA: mapa de progressão Subtenente → QOAPM
     choa: {
       subtente:        'tenente2_qoapm',
@@ -1468,6 +1477,15 @@ const REGRAS = {
       agente4:              0.330,
       perito_especial:      0.650, perito1:                  0.570,
       perito2:              0.500, perito3:                  0.430,
+    },
+    // ─── TRILHAS DE CARREIRA (Lei n.º 2.875/2004 / Lei n.º 4.059/2014) ───────
+    // Progressão é RESTRITA à trilha de ingresso — agente NÃO se torna delegado
+    // por promoção automática; delegado e perito são carreiras independentes.
+    // Ordenação: do cargo de menor ao de maior hierarquia dentro da carreira.
+    trilhas: {
+      delegados: ['delegado3','delegado2','delegado1','delegado_classe_especial','delegado_especial'],
+      agentes:   ['agente4','agente3','agente2','agente1','agente_especial'],
+      peritos:   ['perito3','perito2','perito1','perito_especial'],
     },
     intersticioPromo: 36, // 3 anos entre promoções por classe
     gep: 1.00, // 100% sobre vencimento base
@@ -1732,21 +1750,6 @@ function calcVencimentoSeguranca(area, postoKey, dataRef, incluirGT_ou_GEP) {
   return { sal: parseFloat((salBase + adicional).toFixed(2)), salBase, adicional, lei: baseItem.lei };
 }
 
-function calcProgressoesSeguranca(area, posseDate, postoAtual, postoInicial, ateDate) {
-  const cfg = REGRAS[area.toUpperCase()];
-  const listaPostos = Object.keys(area === 'pmam' ? cfg.postos : cfg.cargos);
-  const idxAtual   = listaPostos.indexOf(postoAtual);
-  const idxInicial = listaPostos.indexOf(postoInicial);
-  if (idxInicial < 0 || idxAtual < 0) return 0;
-  // ATENÇÃO: a lista está ordenada do maior posto (idx 0 = Coronel) para o menor (idx N = Aluno).
-  // Progressão (promoção) = redução de índice. idxInicial > idxAtual indica que o servidor
-  // já foi promovido; a diferença entre o devida e o atual indica o atraso.
-  const mesesDecorridos = diffMonths(posseDate, ateDate);
-  const mesesPorProg    = cfg.intersticioPromo || 36;
-  const progsDevidas    = Math.min(Math.floor(mesesDecorridos / mesesPorProg), idxInicial - idxAtual);
-  return Math.max(0, (idxInicial - idxAtual) - progsDevidas);
-}
-
 // ─────────────────────────────────────────
 // 6. GERADOR DO DEMONSTRATIVO (EDUCAÇÃO)
 // ─────────────────────────────────────────
@@ -1961,6 +1964,35 @@ function gerarDemonstrativoSEMSA(params) {
 // 8. GERADOR DO DEMONSTRATIVO (SEGURANÇA)
 // ─────────────────────────────────────────
 
+/**
+ * Retorna a trilha de carreira (lista ordenada baixo→alto) à qual um posto pertence.
+ * Garante que a progressão não ultrapasse o teto da própria carreira.
+ * Retorna null se o cfg não tiver trilhas definidas.
+ */
+function getTrilhaProgresso(cfg, postoKey) {
+  if (!cfg.trilhas) return null;
+  for (const lista of Object.values(cfg.trilhas)) {
+    if (lista.includes(postoKey)) return lista;
+  }
+  return null;
+}
+
+/**
+ * Calcula o posto devido após N progressões, respeitando a trilha de carreira.
+ * - Se trilha encontrada: progressão dentro da trilha (cap no topo)
+ * - Se não: usa listaPostos global (fallback, compatível com sistemas sem trilhas)
+ */
+function calcPostoDevido(cfg, listaPostos, postoInicial, nProgs) {
+  const trilha = getTrilhaProgresso(cfg, postoInicial);
+  if (trilha) {
+    const idxT = trilha.indexOf(postoInicial);
+    return trilha[Math.min(idxT + nProgs, trilha.length - 1)];
+  }
+  // Fallback: listaPostos global ordenado alto→baixo, promoção = redução de índice
+  const idxG = listaPostos.indexOf(postoInicial);
+  return listaPostos[Math.max(idxG - nProgs, 0)];
+}
+
 function gerarDemonstrativoSeguranca(params) {
   const { area, nome, matricula, cargo, posseDate, postoAtual, postoInicial,
           incluirAdicional, incluirChoa, startDate, endDate, incluirExtras } = params;
@@ -1982,9 +2014,9 @@ function gerarDemonstrativoSeguranca(params) {
     return atual;
   }
 
-  // ATENÇÃO: listaPostos está ordenada do maior posto (idx 0 = Coronel/Delegado Especial)
-  // para o menor (idx N = Aluno/Agente4). Promoção = REDUÇÃO de índice.
-  // idxInicial deve ser MAIOR que idxAtual (servidor ingressou em posto inferior).
+  // ATENÇÃO: listaPostos está ordenada do maior posto (idx 0) para o menor (idx N).
+  // Mas a progressão agora usa calcPostoDevido() que respeita trilhas de carreira,
+  // impedindo que agentes "progridam" para delegado ou praças para oficiais.
   const idxAtual   = listaPostos.indexOf(postoAtual);
   const idxInicial = listaPostos.indexOf(postoInicial);
   const mesesTotal = diffMonths(posseDate, endDate);
@@ -1993,13 +2025,20 @@ function gerarDemonstrativoSeguranca(params) {
   if (area === 'pmam' && incluirChoa) {
     postoDevido = postoDevidoCHOA(postoInicial, mesesTotal);
   } else {
-    // progsDevidas subtrai do índice (sobe na hierarquia)
     const progsDevidas = Math.floor(mesesTotal / (cfg.intersticioPromo || 36));
-    postoDevido = listaPostos[Math.max(idxInicial - progsDevidas, 0)];
+    postoDevido = calcPostoDevido(cfg, listaPostos, postoInicial, progsDevidas);
   }
-  // Progressões em atraso = server já deveria estar em postoDevido (menor idx = mais alto)
-  // mas ainda está em postoAtual (maior idx = mais baixo)
-  const numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
+  // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha
+  const trilhaRef = getTrilhaProgresso(cfg, postoInicial);
+  let numProgressoesAtraso;
+  if (trilhaRef) {
+    const tIdxAtual  = trilhaRef.indexOf(postoAtual);
+    const tIdxDevido = trilhaRef.indexOf(postoDevido);
+    // postoDevido deve ser >= postoAtual na trilha (índice maior = mais alto)
+    numProgressoesAtraso = Math.max(0, tIdxDevido - tIdxAtual);
+  } else {
+    numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
+  }
 
   const rows = [], erros = [];
   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
@@ -2012,7 +2051,7 @@ function gerarDemonstrativoSeguranca(params) {
       postoDevidoMes = postoDevidoCHOA(postoInicial, mesesAteAgora);
     } else {
       const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
-      postoDevidoMes = listaPostos[Math.max(idxInicial - progsAteMes, 0)];
+      postoDevidoMes = calcPostoDevido(cfg, listaPostos, postoInicial, progsAteMes);
     }
     if (postoDevidoMes === postoAtual) { cursor = addMonths(cursor,1); continue; }
 
@@ -2044,7 +2083,7 @@ function gerarDemonstrativoSeguranca(params) {
         postoDez = postoDevidoCHOA(postoInicial, mesesDez);
       } else {
         const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
-        postoDez = listaPostos[Math.max(idxInicial - progsDez, 0)];
+        postoDez = calcPostoDevido(cfg, listaPostos, postoInicial, progsDez);
       }
       if (postoDez === postoAtual) return;
       const recDez = calcVencimentoSeguranca(area, postoAtual, dezembro1, incluirAdicional);
@@ -2499,6 +2538,20 @@ function _coletarPMAM() {
   // CHOA: força ingresso como Subtenente e ativa modo especial no gerador
   const postoInicial = incluirChoa ? 'subtente' : (postoInicStr || postoAtual);
 
+  // Validação de trilha (apenas modo não-CHOA): postoAtual e postoInicial
+  // devem pertencer à mesma trilha (praças não viram oficiais por progressão automática)
+  if (!incluirChoa) {
+    const cfgPMAM = REGRAS.PMAM;
+    const trilhaPM_Atual   = getTrilhaProgresso(cfgPMAM, postoAtual);
+    const trilhaPM_Inicial = getTrilhaProgresso(cfgPMAM, postoInicial);
+    if (trilhaPM_Atual && trilhaPM_Inicial && trilhaPM_Atual !== trilhaPM_Inicial) {
+      throw new Error(
+        `Trilhas de carreira incompatíveis: "${postoAtual}" e "${postoInicial}" pertencem a carreiras distintas (Praças / Oficiais QOPM / QOAPM). ` +
+        `Para acesso de Praças à carreira de Oficiais via CHOA, marque a opção correspondente.`
+      );
+    }
+  }
+
   // Alerta de prescrição quinquenal (aviso, não bloqueio)
   const cincoAnos_pm = new Date(endDate);
   cincoAnos_pm.setFullYear(cincoAnos_pm.getFullYear() - 5);
@@ -2544,6 +2597,17 @@ function _coletarPCAM() {
   if (endDate > hoje_pc) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
 
   const postoInicial = postoInicStr || postoAtual;
+
+  // Validação de trilha: postoAtual e postoInicial devem pertencer à mesma carreira
+  const cfgPCAM = REGRAS.PCAM;
+  const trilhaAtual   = getTrilhaProgresso(cfgPCAM, postoAtual);
+  const trilhaInicial = getTrilhaProgresso(cfgPCAM, postoInicial);
+  if (trilhaAtual && trilhaInicial && trilhaAtual !== trilhaInicial) {
+    throw new Error(
+      `Trilhas de carreira incompatíveis: "${postoAtual}" e "${postoInicial}" pertencem a carreiras distintas (Delegados / Agentes / Peritos). ` +
+      `Verifique os campos "Cargo Atual" e "Cargo no Ingresso".`
+    );
+  }
 
   // Alerta de prescrição quinquenal (aviso, não bloqueio)
   const cincoAnos_pc = new Date(endDate);
