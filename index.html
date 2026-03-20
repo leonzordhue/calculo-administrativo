@@ -2161,6 +2161,11 @@ function gerarDemonstrativoSeguranca(params) {
     if (modoFixo) {
       postoDevidoMes   = postoDevidaFixo;
       postoRecebidoMes = postoAtual;
+    } else if (autoDetectado) {
+      // Modo retroativo de promoção: servidor estava em postoInicial, deveria estar em postoAtual.
+      // Fixo para TODO o período — progs intermediárias são irrelevantes para este cálculo.
+      postoRecebidoMes = postoAnteriorAutoDetect; // postoInicial (o que recebia)
+      postoDevidoMes   = postoAtual;              // o que deveria ter recebido
     } else if (area === 'pmam' && incluirChoa) {
       postoDevidoMes   = postoDevidoCHOA(postoInicial, mesesAteAgora);
       postoRecebidoMes = postoAtual;
@@ -2168,21 +2173,14 @@ function gerarDemonstrativoSeguranca(params) {
       const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
       postoDevidoMes   = calcPostoDevido(cfg, listaPostos, postoInicial, progsAteMes);
       postoRecebidoMes = postoAtual;
-
-      // ── INVERSÃO AUTOMÁTICA ────────────────────────────────────────────────
-      // Se postoDevidoMes está ABAIXO de postoAtual na mesma trilha, significa
-      // que a progressão natural do postoInicial ainda não chegou no postoAtual.
-      // Neste caso, o servidor RECEBIA postoDevidoMes e DEVERIA ter sido postoAtual.
-      // Ex: postoInicial=aluno, postoAtual=sgt1, progsAteMes=1 → postoDevidoMes=soldado2
-      // Correto: recebido=soldado2, devida=sgt1 (diferença positiva).
+      // Inversão residual: caso não-autoDetectado onde postoDevidoMes < postoAtual
       const trilhaInv = getTrilhaProgresso(cfg, postoAtual);
       if (trilhaInv && postoDevidoMes !== postoAtual) {
         const tIdxAtual  = trilhaInv.indexOf(postoAtual);
         const tIdxDevido = trilhaInv.indexOf(postoDevidoMes);
         if (tIdxDevido >= 0 && tIdxDevido < tIdxAtual) {
-          // postoDevidoMes está abaixo de postoAtual → inverter
-          postoRecebidoMes = postoDevidoMes;  // o que recebia (mais baixo)
-          postoDevidoMes   = postoAtual;      // o que deveria ter recebido (postoAtual)
+          postoRecebidoMes = postoDevidoMes;
+          postoDevidoMes   = postoAtual;
         }
       }
     }
@@ -2216,6 +2214,9 @@ function gerarDemonstrativoSeguranca(params) {
       if (modoFixo) {
         postoDez    = postoDevidaFixo;
         postoRecDez = postoAtual;
+      } else if (autoDetectado) {
+        postoDez    = postoAtual;
+        postoRecDez = postoAnteriorAutoDetect;
       } else if (area === 'pmam' && incluirChoa) {
         postoDez    = postoDevidoCHOA(postoInicial, mesesDez);
         postoRecDez = postoAtual;
@@ -2223,7 +2224,7 @@ function gerarDemonstrativoSeguranca(params) {
         const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
         postoDez    = calcPostoDevido(cfg, listaPostos, postoInicial, progsDez);
         postoRecDez = postoAtual;
-        // Inversão: se postoDez < postoAtual na trilha, swap
+        // Inversão residual
         const trilhaInvDez = getTrilhaProgresso(cfg, postoAtual);
         if (trilhaInvDez && postoDez !== postoAtual) {
           const tIdxA = trilhaInvDez.indexOf(postoAtual);
@@ -3455,7 +3456,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-11"
+     data-versao-atual="REV-12"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3683,20 +3684,31 @@ document.addEventListener('DOMContentLoaded', () => {
     </span>
   </div>
 
-  <!-- ── REV-11 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-11" data-data="2026-03-20" data-status="ATUAL">
-    <span data-tipo="FIX" data-bug="inversao-automatica-devida-recebida">
-      CORRIGIDO: "Nenhuma diferença" quando postoInicial está ABAIXO de
-      postoAtual na trilha e o motor calculava diff negativa (devItem.sal
-      menor que recItem.sal porque o posto calculado era inferior ao atual).
-      Causa: postoRecebidoMes estava hardcoded como postoAtual, mas quando
-      postoDevidoMes < postoAtual, a situação é a inversa — o servidor
-      RECEBIA postoDevidoMes e DEVERIA ter sido postoAtual.
-      Fix: inversão automática no loop — quando postoDevidoMes < postoAtual
-      na mesma trilha, swap: recebido = postoDevidoMes, devida = postoAtual.
-      Aplicado no loop mensal e no loop de extras (13º/férias).
-      Auto-detecção expandida para qualquer caso onde postoInicial < postoAtual.
-      Label do campo pm-posto-inicial atualizado para maior clareza.
+  <div data-rev="REV-11" data-data="2026-03-20" data-status="SUPERADA">
+    <span data-tipo="FIX" data-id="INVERSAO_DINAMICA">
+      Fix parcial de inversão automática. Falha quando progsAteMes >= 1 retorna
+      postoDevidoMes = postoAtual — inversão não dispara. VICIO_EVITAR: inversão
+      dinâmica por comparação de índice NÃO é suficiente quando postoDevidoMes
+      pode igualar postoAtual. Use o branch autoDetectado com valores fixos.
+    </span>
+  </div>
+
+  <!-- ── REV-12 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-12" data-data="2026-03-20" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="AUTODETECT_BYPASS_PROGS">
+      CORRIGIDO: "só 2023 pra cá" mesmo sem pm-data-promocao.
+      Causa raiz: loop usava inversão dinâmica que falha quando progsAteMes≥1
+      retorna postoDevidoMes=postoAtual → inversão não dispara → ambos sgt1 → skip.
+      Fix: branch autoDetectado bypassa completamente o cálculo de progs.
+      Quando postoInicial menor que postoAtual na trilha: recebido=postoInicial,
+      devida=postoAtual para TODOS os meses do período.
+      VICIO_EVITAR: inversão dinâmica é insuficiente quando postoDevidoMes pode
+      igualar postoAtual em algum mês. Sempre usar branch autoDetectado com
+      postoRecebidoMes/postoDevidoMes fixos quando retroativo de promoção.
+    </span>
+    <span data-tipo="IMPL" data-id="NOVO_LOG_FORMAT">
+      Sistema de log migrado para formato estruturado com data-id em cada span,
+      fixes como objetos {id,desc} no _VERSION_LOG JS, console aprimorado.
     </span>
   </div>
 
@@ -3950,14 +3962,24 @@ window._VERSION_LOG = [
   {
     rev: "REV-11",
     data: "2026-03-20",
-    status: "ATUAL",
-    descricao: "Fix crítico: inversão automática devida/recebida quando postoDevidoMes < postoAtual na trilha.",
+    status: "SUPERADA",
+    descricao: "Fix parcial de inversão. Falha quando progsAteMes>=1 retorna postoDevidoMes=postoAtual.",
     fixes: [
-      "Loop mensal: quando postoDevidoMes está abaixo de postoAtual na mesma trilha, swap automático — recebido=postoDevidoMes, devida=postoAtual. Elimina diffs negativas silenciosas.",
-      "Loop extras (13º/férias): mesma inversão aplicada com trilhaInvDez.",
-      "Auto-detecção expandida: qualquer caso onde postoInicial < postoAtual na trilha ativa o banner informativo.",
-      "Label 'Posto / Graduação no Ingresso' → 'Posto / Graduação no Início do Retroativo' com hint explicativo.",
-      "Branches autoDetectado removidos do loop (inversão dinâmica é suficiente e mais genérica)."
+      { id: "INVERSAO_DINAMICA", desc: "Inversão dinâmica por índice de trilha — funcionava só para progs=0." }
+    ],
+    bugs_pendentes: [
+      { id: "AUTODETECT_BYPASS_PROGS", desc: "autoDetectado não bypassa progs: para progs>=1 postoDevidoMes=postoAtual, inversão não dispara, meses pulados." }
+    ]
+  },
+  {
+    rev: "REV-12",
+    data: "2026-03-20",
+    status: "ATUAL",
+    descricao: "Fix definitivo: autoDetectado bypassa cálculo de progs, usa postoInicial/postoAtual fixos para todo o período.",
+    fixes: [
+      { id: "AUTODETECT_BYPASS_PROGS", desc: "Loop mensal: branch autoDetectado usa postoRecebidoMes=postoInicial, postoDevidoMes=postoAtual fixos. Progs intermediárias ignoradas para retroativo de promoção." },
+      { id: "EXTRAS_AUTODETECT",       desc: "Loop extras (13º/férias): mesmo bypass aplicado com autoDetectado." },
+      { id: "NOVO_LOG_FORMAT",         desc: "fixes[] migrado para objetos {id,desc}. Console aprimorado com novo formato do sistema de versionamento." }
     ],
     bugs_pendentes: []
   }
@@ -4051,21 +4073,52 @@ window._VICIOS_CONHECIDOS = [
     descricao: "Se cursor < dataRef, diffMonths retorna negativo. Math.floor(neg/36) ainda negativo. calcPostoDevido recebe nProgs negativo → trilha[idxT-1] = trilha[-1] = undefined → calcVencimentoSeguranca(area, undefined) → null → 'Vigência não encontrada' para cada mês.",
     exemplo_errado: "const progs = Math.floor(diffMonths(dataRef, cursor) / 36); // pode ser negativo",
     exemplo_correto: "if (mesesAteAgora < 0) continue; // pular meses antes da dataRef\n// E em calcPostoDevido: if (nProgs <= 0) return postoInicial;"
+  },
+  {
+    id: "V12",
+    severidade: "CRITICA",
+    titulo: "inversão dinâmica insuficiente para autoDetectado",
+    descricao: "Inversão por índice de trilha falha quando progsAteMes>=1 retorna postoDevidoMes=postoAtual (mesma coisa). Condição postoDevidoMes!==postoAtual é FALSE → inversão não dispara → ambos iguais → skip. Para retroativo de promoção: usar branch autoDetectado com valores FIXOS, nunca depender de progs.",
+    exemplo_errado: "postoDevidoMes = calcPostoDevido(...); if (tIdxDevido < tIdxAtual) swap(); // falha para progs>=1",
+    exemplo_correto: "if (autoDetectado) { postoRecebidoMes=postoInicial; postoDevidoMes=postoAtual; } // fixo"
   }
 ];
 
+/* ================================================================
+   CONSOLE — exibe ao carregar (novo formato v2)
+   ================================================================ */
 (function() {
   const atual = window._VERSION_LOG.find(v => v.status === 'ATUAL') || window._VERSION_LOG[window._VERSION_LOG.length - 1];
   console.groupCollapsed(
     "%c LAADV " + atual.rev + " ",
     "background:#0B4A44;color:#C9A93E;font-weight:bold;padding:2px 8px;border-radius:3px;font-size:12px"
   );
-  console.log("%cVersão atual: " + atual.rev + " — " + atual.data, "color:#0B4A44;font-weight:bold");
+  console.log("%cVersão: " + atual.rev + " (" + atual.data + ")", "color:#0B4A44;font-weight:bold");
   console.log("%c" + atual.descricao, "color:#3D4F63");
-  console.log("Fixes desta versão:", atual.fixes);
-  console.log("Bugs pendentes:", atual.bugs_pendentes.length ? atual.bugs_pendentes : "✅ Nenhum");
-  console.log("%cVícios conhecidos (" + window._VICIOS_CONHECIDOS.length + "):", "color:#9E8130;font-weight:bold", window._VICIOS_CONHECIDOS.map(v => v.id + ' ' + v.severidade + ': ' + v.titulo));
-  console.log("%cConsulte: window._VERSION_LOG | window._VICIOS_CONHECIDOS", "color:#8899AA;font-size:11px");
+
+  if (atual.fixes?.length) {
+    console.log("%cFixes desta versão:", "color:#2E7D32;font-weight:bold");
+    atual.fixes.forEach(f => {
+      const desc = typeof f === 'string' ? f : "[" + f.id + "] " + f.desc;
+      console.log("  ✅ " + desc);
+    });
+  }
+
+  if (atual.bugs_pendentes?.length) {
+    console.log("%cBugs pendentes:", "color:#C0392B;font-weight:bold");
+    atual.bugs_pendentes.forEach(b => {
+      const desc = typeof b === 'string' ? b : "[" + b.id + "] " + b.desc;
+      console.log("  ⚠️ " + desc);
+    });
+  }
+
+  if (window._VICIOS_CONHECIDOS.length) {
+    const criticos = window._VICIOS_CONHECIDOS.filter(v => v.severidade === 'CRITICA');
+    console.log("%cVícios CRÍTICOS (" + criticos.length + "/" + window._VICIOS_CONHECIDOS.length + "):", "color:#7B1FA2;font-weight:bold");
+    criticos.forEach(v => console.log("  🚫 [" + v.id + "] " + v.titulo));
+  }
+
+  console.log("%cConsulte: window._VERSION_LOG  |  window._VICIOS_CONHECIDOS", "color:#8899AA;font-size:11px");
   console.groupEnd();
 })();
 </script>
