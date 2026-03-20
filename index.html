@@ -2107,6 +2107,37 @@ function gerarDemonstrativoSeguranca(params) {
     const progsDevidas = Math.floor(mesesTotal / (cfg.intersticioPromo || 36));
     postoDevido = calcPostoDevido(cfg, listaPostos, postoInicial, progsDevidas);
   }
+
+  // ── AUTO-DETECÇÃO CENÁRIO A ───────────────────────────────────────────────
+  // Se o postoDevido calculado === postoAtual, significa que o servidor já foi
+  // promovido ao posto correto, mas quer o retroativo do período em que estava
+  // no posto inferior. Neste caso, elevamos automaticamente postoDevido para o
+  // próximo posto da trilha acima de postoAtual, e usamos postoAtual como
+  // "recebido" (o que ele recebeu durante o atraso).
+  // Exemplo: sgt2 → devia ser sgt1 desde mês 36, só foi promovido no mês 48.
+  // Período retroativo: mês 36 a 48. postoAtual=sgt1, postoInicial=sgt2.
+  // O sistema calcularia postoDevido=sgt1=postoAtual → sem diferença.
+  // Com auto-detecção: postoDevido=sgt1 (já é o posto correto), postoAtual
+  // passa a ser tratado como o ANTERIOR (sgt2) durante o período.
+  // NOTA: isso só se aplica quando postoInicial < postoAtual na trilha,
+  // indicando que houve promoção — e o retroativo é sobre o atraso dessa promoção.
+  let autoDetectado = false;
+  let postoAnteriorAutoDetect = null;
+  if (!modoFixo && postoDevido === postoAtual) {
+    const trilhaAuto = getTrilhaProgresso(cfg, postoAtual);
+    if (trilhaAuto) {
+      const tIdxAtual   = trilhaAuto.indexOf(postoAtual);
+      const tIdxInicial = trilhaAuto.indexOf(postoInicial);
+      // Confirma que houve promoção: postoInicial está abaixo de postoAtual na trilha
+      if (tIdxInicial >= 0 && tIdxInicial < tIdxAtual) {
+        // O retroativo é sobre o período de atraso antes da promoção a postoAtual
+        // Tratamos: recebido = postoInicial, devida = postoAtual
+        autoDetectado = true;
+        postoAnteriorAutoDetect = postoInicial; // o que ele recebia durante o atraso
+        // postoDevido já é postoAtual — correto
+      }
+    }
+  }
   // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha
   const trilhaRef = getTrilhaProgresso(cfg, modoFixo ? postoAtual : postoInicial);
   let numProgressoesAtraso;
@@ -2124,27 +2155,33 @@ function gerarDemonstrativoSeguranca(params) {
 
   while (cursor <= endM) {
     const mesesAteAgora = diffMonths(dataRef, cursor);
-    // Se cursor ainda está antes da dataRef (interstício não iniciou), skip silencioso
     if (mesesAteAgora < 0) { cursor = addMonths(cursor, 1); continue; }
     let postoDevidoMes;
-    if (modoFixo) {
-      postoDevidoMes = postoDevidaFixo;           // posto fixo — mesmo valor todos os meses
+    let postoRecebidoMes; // = postoAtual normalmente, mas = postoInicial no modo autoDetectado
+    if (autoDetectado) {
+      postoDevidoMes  = postoDevido;               // o posto que deveria estar (postoAtual)
+      postoRecebidoMes = postoAnteriorAutoDetect;  // o que recebia durante o atraso (postoInicial)
+    } else if (modoFixo) {
+      postoDevidoMes   = postoDevidaFixo;
+      postoRecebidoMes = postoAtual;
     } else if (area === 'pmam' && incluirChoa) {
-      postoDevidoMes = postoDevidoCHOA(postoInicial, mesesAteAgora);
+      postoDevidoMes   = postoDevidoCHOA(postoInicial, mesesAteAgora);
+      postoRecebidoMes = postoAtual;
     } else {
       const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
-      postoDevidoMes = calcPostoDevido(cfg, listaPostos, postoInicial, progsAteMes);
+      postoDevidoMes   = calcPostoDevido(cfg, listaPostos, postoInicial, progsAteMes);
+      postoRecebidoMes = postoAtual;
     }
-    if (postoDevidoMes === postoAtual) { cursor = addMonths(cursor,1); continue; }
+    if (postoDevidoMes === postoRecebidoMes) { cursor = addMonths(cursor,1); continue; }
 
-    const recItem = calcVencimentoSeguranca(area, postoAtual,    cursor, incluirAdicional);
-    const devItem = calcVencimentoSeguranca(area, postoDevidoMes, cursor, incluirAdicional);
+    const recItem = calcVencimentoSeguranca(area, postoRecebidoMes, cursor, incluirAdicional);
+    const devItem = calcVencimentoSeguranca(area, postoDevidoMes,   cursor, incluirAdicional);
     if (!recItem || !devItem) { erros.push('Vigência não encontrada: '+fmtMes(cursor)); cursor = addMonths(cursor,1); continue; }
 
     const diff = parseFloat((devItem.sal - recItem.sal).toFixed(2));
     if (diff <= 0) { cursor = addMonths(cursor,1); continue; }
 
-    rows.push({ competencia: fmtMes(cursor), refRecebida: postoAtual, vencRecebido: recItem.sal,
+    rows.push({ competencia: fmtMes(cursor), refRecebida: postoRecebidoMes, vencRecebido: recItem.sal,
       refDevida: postoDevidoMes, vencDevido: devItem.sal, lei: devItem.lei,
       diffMensal: diff, extras: 0, totalLinha: diff,
       fatorSelic: fatorSelicAcumulado(cursor),
@@ -2160,19 +2197,25 @@ function gerarDemonstrativoSeguranca(params) {
       const dezembro1 = new Date(ano, 11, 1);
       if (dezembro1 > endDate) return;
       const mesesDez = diffMonths(dataRef, dezembro1);
-      if (mesesDez < 0) return; // dezembro anterior a dataRef — sem progressão
-      let postoDez;
-      if (modoFixo) {
-        postoDez = postoDevidaFixo;
+      if (mesesDez < 0) return;
+      let postoDez, postoRecDez;
+      if (autoDetectado) {
+        postoDez    = postoDevido;              // = postoAtual (o que deveria ter sido)
+        postoRecDez = postoAnteriorAutoDetect;  // = postoInicial (o que recebia)
+      } else if (modoFixo) {
+        postoDez    = postoDevidaFixo;
+        postoRecDez = postoAtual;
       } else if (area === 'pmam' && incluirChoa) {
-        postoDez = postoDevidoCHOA(postoInicial, mesesDez);
+        postoDez    = postoDevidoCHOA(postoInicial, mesesDez);
+        postoRecDez = postoAtual;
       } else {
         const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
-        postoDez = calcPostoDevido(cfg, listaPostos, postoInicial, progsDez);
+        postoDez    = calcPostoDevido(cfg, listaPostos, postoInicial, progsDez);
+        postoRecDez = postoAtual;
       }
-      if (postoDez === postoAtual) return;
-      const recDez = calcVencimentoSeguranca(area, postoAtual, dezembro1, incluirAdicional);
-      const devDez = calcVencimentoSeguranca(area, postoDez,   dezembro1, incluirAdicional);
+      if (postoDez === postoRecDez) return;
+      const recDez = calcVencimentoSeguranca(area, postoRecDez, dezembro1, incluirAdicional);
+      const devDez = calcVencimentoSeguranca(area, postoDez,    dezembro1, incluirAdicional);
       if (!recDez || !devDez) return;
       const diffDez = parseFloat((devDez.sal - recDez.sal).toFixed(2));
       if (diffDez <= 0) return;
@@ -2183,7 +2226,7 @@ function gerarDemonstrativoSeguranca(params) {
       if (diffDecimo <= 0) return;
 
       extrasRows.push({ competencia: '13º SAL. '+ano+(avos<12?` (${avos}/12 avos)`:''),
-        refRecebida:postoAtual, vencRecebido:recDez.sal,
+        refRecebida:postoRecDez, vencRecebido:recDez.sal,
         refDevida:postoDez, vencDevido:devDez.sal, lei:devDez.lei,
         diffMensal:diffDecimo, extras:diffDecimo,
         totalLinha:diffDecimo,
@@ -2192,7 +2235,7 @@ function gerarDemonstrativoSeguranca(params) {
         tipo:'13o', ano, mes:13 });
       const diffFer = parseFloat((diffDecimo/3).toFixed(2));
       extrasRows.push({ competencia:'1/3 FÉRIAS '+ano+(avos<12?` (${avos}/12 avos)`:''),
-        refRecebida:postoAtual,
+        refRecebida:postoRecDez,
         vencRecebido:parseFloat((recDez.sal/3).toFixed(2)), vencDevido:parseFloat((devDez.sal/3).toFixed(2)),
         refDevida:postoDez, lei:devDez.lei, diffMensal:diffFer, extras:0, totalLinha:diffFer,
         fatorSelic: fatorSelicAcumulado(dezembro1),
@@ -2225,7 +2268,8 @@ function gerarDemonstrativoSeguranca(params) {
   return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial: postoAtual, refDevida: postoDevido,
     area, nome, matricula, cargo, posseDate, startDate, endDate, incluirExtras,
     postoAtual, postoInicial, postoDevido, incluirAdicional, dataCalculo: new Date(),
-    alertaLinhasDescartadas, dataCalculadaPrimeiraProgressao, dataReferenciaIntersticio: dataRef };
+    alertaLinhasDescartadas, dataCalculadaPrimeiraProgressao, dataReferenciaIntersticio: dataRef,
+    autoDetectado, postoAnteriorAutoDetect };
 }
 
 // Helper para adicionar linhas de 13º e férias (SES / SEMSA)
@@ -2385,8 +2429,28 @@ function calcular() {
   }
 
   if (resultado.rows.length === 0 && (!resultado.erros || resultado.erros.length === 0)) {
-    errEl.textContent = 'Nenhuma diferença encontrada no período. Verifique os dados informados.';
-    errEl.className = 'alert alert-info';
+    const area = AREA_FORM;
+    let msgExtra = '';
+    if (area === 'pmam' || area === 'pcam') {
+      const labelDevida  = area === 'pmam' ? '"Posto que Deveria Estar (Devida)"' : '"Cargo / Classe que Deveria Estar (Devida)"';
+      const labelPromoc  = area === 'pmam' ? '"Data da Última Promoção ao Posto Atual"' : '"Data da Última Promoção ao Cargo Atual"';
+      const idDevida     = area === 'pmam' ? 'pm-posto-devida'    : 'pc-quadro-devida';
+      const idPromocao   = area === 'pmam' ? 'pm-data-promocao'   : 'pc-data-promocao';
+      const devidaVal    = document.getElementById(idDevida)?.value;
+      const promocaoVal  = document.getElementById(idPromocao)?.value;
+      if (!devidaVal && !promocaoVal) {
+        msgExtra = `<br><br><strong>Como resolver:</strong><br>`
+          + `<strong>Opção 1 (recomendada):</strong> Preencha o campo ${labelDevida} com o posto/cargo que o servidor deveria ocupar. `
+          + `O sistema irá calcular a diferença diretamente, sem precisar da data de promoção.<br>`
+          + `<strong>Opção 2:</strong> Preencha ${labelPromoc} com a data em que o servidor foi promovido ao posto atual. `
+          + `O sistema usará essa data para contar o interstício de 36 meses corretamente.`;
+      } else if (!devidaVal && promocaoVal) {
+        msgExtra = `<br><br>A data de promoção foi informada (${promocaoVal}), mas o interstício de 36 meses ainda não se completou dentro do período retroativo. `
+          + `Verifique se a data está correta, ou preencha ${labelDevida} para forçar o posto devida diretamente.`;
+      }
+    }
+    errEl.innerHTML = '⚠️ Nenhuma diferença salarial encontrada no período informado.' + msgExtra;
+    errEl.className = 'alert alert-warn';
     errEl.classList.remove('hidden');
     return;
   }
@@ -2833,6 +2897,18 @@ function renderizarResultados(res) {
     addInfo = res.incluirAdicional ? ' | G.T. incluída' : ' | G.T. não incluída';
   } else if (areaKey === 'pcam') {
     addInfo = res.incluirAdicional ? ' | GEP: +100%' : ' | GEP não incluída';
+  }
+
+  // Banner informativo quando modo auto-detectado foi ativado
+  if (res.autoDetectado && res.postoAnteriorAutoDetect) {
+    const bannerAuto = document.createElement('div');
+    bannerAuto.className = 'alert alert-info';
+    bannerAuto.style.marginBottom = '1rem';
+    bannerAuto.innerHTML = `ℹ️ <strong>Cálculo automático de retroativo de promoção:</strong> `
+      + `O sistema identificou que o servidor já está no posto <strong>${escH(res.postoAtual)}</strong> (posto devida), `
+      + `mas o período retroativo cobre o atraso em que recebia como <strong>${escH(res.postoAnteriorAutoDetect)}</strong>. `
+      + `A diferença calculada corresponde ao período em que a promoção deveria ter sido efetivada.`;
+    errEl.parentNode.insertBefore(bannerAuto, errEl.nextSibling);
   }
 
   // escHtml para proteger dados do usuário contra XSS
@@ -3358,7 +3434,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-8"
+     data-versao-atual="REV-10"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3542,7 +3618,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-8 ─────────────────────────────────────────────────── -->
-  <div data-rev="REV-8" data-data="2026-03-20" data-status="ATUAL">
+  <div data-rev="REV-8" data-data="2026-03-20" data-status="SUPERADA">
     <span data-tipo="FIX" data-bug="vigencia-nao-encontrada-mesesAteAgora-negativo">
       CORRIGIDO: erro "Vigência não encontrada" para todos os meses entre
       startDate e dataReferenciaIntersticio quando dataRef > startDate.
@@ -3556,6 +3632,33 @@ document.addEventListener('DOMContentLoaded', () => {
       retorna postoInicial imediatamente; (2) loop mensal pula meses
       onde mesesAteAgora < 0 (cursor antes de dataRef); (3) loop de
       extras (13º/férias) com mesma proteção.
+    </span>
+  </div>
+
+  <!-- ── REV-9 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-9" data-data="2026-03-20" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="mensagem-nenhuma-diferenca-generica">
+      CORRIGIDO: mensagem "Nenhuma diferença encontrada" era genérica e não
+      orientava o operador. Para PMAM e PCAM, o sistema agora detecta a causa
+      provável e exibe orientação específica: se nenhum campo auxiliar foi
+      preenchido (pm-posto-devida / pm-data-promocao), orienta o operador a
+      usar a Opção 1 (posto devida) ou Opção 2 (data da promoção). Se a data
+      de promoção foi preenchida mas o interstício não completou, informa isso
+      explicitamente com o valor informado e sugere alternativa.
+    </span>
+  </div>
+
+  <!-- ── REV-10 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-10" data-data="2026-03-20" data-status="ATUAL">
+    <span data-tipo="FIX" data-bug="auto-deteccao-cenario-retroativo-promocao">
+      CORRIGIDO: "Nenhuma diferença" quando servidor já foi promovido e quer
+      retroativo do período de atraso. Sistema agora detecta automaticamente:
+      se postoDevido calculado === postoAtual E postoInicial está abaixo na
+      trilha, ativa modoAutoDetectado — trata postoInicial como "recebido"
+      e postoAtual como "devida" para todos os meses do período.
+      Elimina necessidade de campo manual "Posto que Deveria Estar" na
+      maioria dos casos. Banner informativo exibido na tela de resultados
+      quando auto-detecção foi ativada.
     </span>
   </div>
 
@@ -3767,13 +3870,42 @@ window._VERSION_LOG = [
   {
     rev: "REV-8",
     data: "2026-03-20",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Fix crítico: 'Vigência não encontrada' causado por diffMonths negativo destruindo índice de array.",
     fixes: [
       "calcPostoDevido: adicionado guard 'if (nProgs <= 0) return postoInicial'. Nenhuma progressão negativa pode entrar na função.",
       "Loop mensal: 'if (mesesAteAgora < 0) continue' — meses antes de dataRef são pulados silenciosamente.",
       "Loop extras (13º/férias): 'if (mesesDez < 0) return' — dezembro antes de dataRef não gera extras.",
       "Vício V11 documentado: diffMonths negativo → índice negativo de array → undefined → crash silencioso."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-9",
+    data: "2026-03-20",
+    status: "SUPERADA",
+    descricao: "UX fix: mensagem diagnóstica específica quando rows.length=0 em PMAM/PCAM.",
+    fixes: [
+      "Mensagem 'Nenhuma diferença encontrada' substituída por diagnóstico contextual para PMAM/PCAM.",
+      "Detecta qual campo está faltando (pm-posto-devida ou pm-data-promocao) e orienta o operador com instruções específicas.",
+      "Caso 1: nenhum campo auxiliar preenchido → mostra Opção 1 (posto devida) e Opção 2 (data promoção).",
+      "Caso 2: data de promoção preenchida mas interstício não completo → informa data informada e sugere usar campo devida.",
+      "Para outras áreas (SEDUC/SEMED/SES/SEMSA): mantém mensagem genérica de verificação."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-10",
+    data: "2026-03-20",
+    status: "ATUAL",
+    descricao: "Auto-detecção de retroativo de promoção: elimina necessidade do campo manual 'Posto que Deveria Estar' na maioria dos casos.",
+    fixes: [
+      "Auto-detecção Cenário A: se postoDevido calculado === postoAtual E postoInicial está abaixo na trilha, ativa modoAutoDetectado.",
+      "modoAutoDetectado: postoInicial = 'recebido' (o que recebia durante o atraso), postoAtual = 'devida' (o que deveria ter sido).",
+      "Loop mensal refatorado: usa postoRecebidoMes em vez de hardcoded postoAtual.",
+      "Loop extras (13º/férias): usa postoRecDez em vez de hardcoded postoAtual.",
+      "Banner informativo na tela de resultados explica o que o sistema detectou.",
+      "Campo 'Posto que Deveria Estar' permanece disponível para casos que a auto-detecção não cobre."
     ],
     bugs_pendentes: []
   }
