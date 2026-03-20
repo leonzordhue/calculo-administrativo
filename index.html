@@ -927,9 +927,9 @@
                 </select>
                 <span class="field-hint">Posto/Graduação constante na portaria de nomeação atual</span>
               </div>
-              <div class="field"><label class="field-label">Posto / Graduação no Ingresso</label>
+              <div class="field"><label class="field-label">Posto / Graduação no Início do Retroativo</label>
                 <select id="pm-posto-inicial">
-                  <option value="">Igual ao atual</option>
+                  <option value="">Igual ao atual (sem mudança de posto)</option>
                   <option value="aluno">Aluno-Soldado</option>
                   <option value="soldado2">Soldado de 2.ª Classe</option>
                   <option value="soldado1">Soldado de 1.ª Classe</option>
@@ -941,7 +941,7 @@
                   <option value="tenente2_qoapm">2.º Tenente QOAPM (CHOA)</option>
                   <option value="tenente1_qoapm">1.º Tenente QOAPM</option>
                 </select>
-                <span class="field-hint">Se o caso envolver CHOA: selecione "Subtenente" como ingresso</span>
+                <span class="field-hint">Informe o posto que o servidor RECEBIA no início do período reivindicado. Ex: estava como Sgt2 e deveria ser Sgt1 → informe Sgt2. Se ingressou como Aluno e agora é Sgt1, informe Aluno-Soldado. Para CHOA: selecione Subtenente.</span>
               </div>
               <div class="field"><label class="field-label">Posto que <strong>Deveria Estar</strong> (Devida)</label>
                 <select id="pm-posto-devida">
@@ -2123,18 +2123,18 @@ function gerarDemonstrativoSeguranca(params) {
   // indicando que houve promoção — e o retroativo é sobre o atraso dessa promoção.
   let autoDetectado = false;
   let postoAnteriorAutoDetect = null;
-  if (!modoFixo && postoDevido === postoAtual) {
+  if (!modoFixo) {
     const trilhaAuto = getTrilhaProgresso(cfg, postoAtual);
     if (trilhaAuto) {
       const tIdxAtual   = trilhaAuto.indexOf(postoAtual);
       const tIdxInicial = trilhaAuto.indexOf(postoInicial);
-      // Confirma que houve promoção: postoInicial está abaixo de postoAtual na trilha
+      // Auto-detecção: postoInicial está ABAIXO de postoAtual na trilha
+      // → servidor foi promovido; retroativo sobre o período de atraso
       if (tIdxInicial >= 0 && tIdxInicial < tIdxAtual) {
-        // O retroativo é sobre o período de atraso antes da promoção a postoAtual
-        // Tratamos: recebido = postoInicial, devida = postoAtual
         autoDetectado = true;
-        postoAnteriorAutoDetect = postoInicial; // o que ele recebia durante o atraso
-        // postoDevido já é postoAtual — correto
+        postoAnteriorAutoDetect = postoInicial;
+        // postoDevido já é o calculado; no loop a inversão dinâmica
+        // garante postoRecebidoMes = postoDevidoMes e postoDevidoMes = postoAtual
       }
     }
   }
@@ -2158,10 +2158,7 @@ function gerarDemonstrativoSeguranca(params) {
     if (mesesAteAgora < 0) { cursor = addMonths(cursor, 1); continue; }
     let postoDevidoMes;
     let postoRecebidoMes; // = postoAtual normalmente, mas = postoInicial no modo autoDetectado
-    if (autoDetectado) {
-      postoDevidoMes  = postoDevido;               // o posto que deveria estar (postoAtual)
-      postoRecebidoMes = postoAnteriorAutoDetect;  // o que recebia durante o atraso (postoInicial)
-    } else if (modoFixo) {
+    if (modoFixo) {
       postoDevidoMes   = postoDevidaFixo;
       postoRecebidoMes = postoAtual;
     } else if (area === 'pmam' && incluirChoa) {
@@ -2171,6 +2168,23 @@ function gerarDemonstrativoSeguranca(params) {
       const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
       postoDevidoMes   = calcPostoDevido(cfg, listaPostos, postoInicial, progsAteMes);
       postoRecebidoMes = postoAtual;
+
+      // ── INVERSÃO AUTOMÁTICA ────────────────────────────────────────────────
+      // Se postoDevidoMes está ABAIXO de postoAtual na mesma trilha, significa
+      // que a progressão natural do postoInicial ainda não chegou no postoAtual.
+      // Neste caso, o servidor RECEBIA postoDevidoMes e DEVERIA ter sido postoAtual.
+      // Ex: postoInicial=aluno, postoAtual=sgt1, progsAteMes=1 → postoDevidoMes=soldado2
+      // Correto: recebido=soldado2, devida=sgt1 (diferença positiva).
+      const trilhaInv = getTrilhaProgresso(cfg, postoAtual);
+      if (trilhaInv && postoDevidoMes !== postoAtual) {
+        const tIdxAtual  = trilhaInv.indexOf(postoAtual);
+        const tIdxDevido = trilhaInv.indexOf(postoDevidoMes);
+        if (tIdxDevido >= 0 && tIdxDevido < tIdxAtual) {
+          // postoDevidoMes está abaixo de postoAtual → inverter
+          postoRecebidoMes = postoDevidoMes;  // o que recebia (mais baixo)
+          postoDevidoMes   = postoAtual;      // o que deveria ter recebido (postoAtual)
+        }
+      }
     }
     if (postoDevidoMes === postoRecebidoMes) { cursor = addMonths(cursor,1); continue; }
 
@@ -2199,10 +2213,7 @@ function gerarDemonstrativoSeguranca(params) {
       const mesesDez = diffMonths(dataRef, dezembro1);
       if (mesesDez < 0) return;
       let postoDez, postoRecDez;
-      if (autoDetectado) {
-        postoDez    = postoDevido;              // = postoAtual (o que deveria ter sido)
-        postoRecDez = postoAnteriorAutoDetect;  // = postoInicial (o que recebia)
-      } else if (modoFixo) {
+      if (modoFixo) {
         postoDez    = postoDevidaFixo;
         postoRecDez = postoAtual;
       } else if (area === 'pmam' && incluirChoa) {
@@ -2212,6 +2223,16 @@ function gerarDemonstrativoSeguranca(params) {
         const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
         postoDez    = calcPostoDevido(cfg, listaPostos, postoInicial, progsDez);
         postoRecDez = postoAtual;
+        // Inversão: se postoDez < postoAtual na trilha, swap
+        const trilhaInvDez = getTrilhaProgresso(cfg, postoAtual);
+        if (trilhaInvDez && postoDez !== postoAtual) {
+          const tIdxA = trilhaInvDez.indexOf(postoAtual);
+          const tIdxD = trilhaInvDez.indexOf(postoDez);
+          if (tIdxD >= 0 && tIdxD < tIdxA) {
+            postoRecDez = postoDez;
+            postoDez    = postoAtual;
+          }
+        }
       }
       if (postoDez === postoRecDez) return;
       const recDez = calcVencimentoSeguranca(area, postoRecDez, dezembro1, incluirAdicional);
@@ -3434,7 +3455,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-10"
+     data-versao-atual="REV-11"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3649,7 +3670,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-10 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-10" data-data="2026-03-20" data-status="ATUAL">
+  <div data-rev="REV-10" data-data="2026-03-20" data-status="SUPERADA">
     <span data-tipo="FIX" data-bug="auto-deteccao-cenario-retroativo-promocao">
       CORRIGIDO: "Nenhuma diferença" quando servidor já foi promovido e quer
       retroativo do período de atraso. Sistema agora detecta automaticamente:
@@ -3659,6 +3680,23 @@ document.addEventListener('DOMContentLoaded', () => {
       Elimina necessidade de campo manual "Posto que Deveria Estar" na
       maioria dos casos. Banner informativo exibido na tela de resultados
       quando auto-detecção foi ativada.
+    </span>
+  </div>
+
+  <!-- ── REV-11 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-11" data-data="2026-03-20" data-status="ATUAL">
+    <span data-tipo="FIX" data-bug="inversao-automatica-devida-recebida">
+      CORRIGIDO: "Nenhuma diferença" quando postoInicial está ABAIXO de
+      postoAtual na trilha e o motor calculava diff negativa (devItem.sal
+      menor que recItem.sal porque o posto calculado era inferior ao atual).
+      Causa: postoRecebidoMes estava hardcoded como postoAtual, mas quando
+      postoDevidoMes < postoAtual, a situação é a inversa — o servidor
+      RECEBIA postoDevidoMes e DEVERIA ter sido postoAtual.
+      Fix: inversão automática no loop — quando postoDevidoMes < postoAtual
+      na mesma trilha, swap: recebido = postoDevidoMes, devida = postoAtual.
+      Aplicado no loop mensal e no loop de extras (13º/férias).
+      Auto-detecção expandida para qualquer caso onde postoInicial < postoAtual.
+      Label do campo pm-posto-inicial atualizado para maior clareza.
     </span>
   </div>
 
@@ -3897,7 +3935,7 @@ window._VERSION_LOG = [
   {
     rev: "REV-10",
     data: "2026-03-20",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Auto-detecção de retroativo de promoção: elimina necessidade do campo manual 'Posto que Deveria Estar' na maioria dos casos.",
     fixes: [
       "Auto-detecção Cenário A: se postoDevido calculado === postoAtual E postoInicial está abaixo na trilha, ativa modoAutoDetectado.",
@@ -3906,6 +3944,20 @@ window._VERSION_LOG = [
       "Loop extras (13º/férias): usa postoRecDez em vez de hardcoded postoAtual.",
       "Banner informativo na tela de resultados explica o que o sistema detectou.",
       "Campo 'Posto que Deveria Estar' permanece disponível para casos que a auto-detecção não cobre."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-11",
+    data: "2026-03-20",
+    status: "ATUAL",
+    descricao: "Fix crítico: inversão automática devida/recebida quando postoDevidoMes < postoAtual na trilha.",
+    fixes: [
+      "Loop mensal: quando postoDevidoMes está abaixo de postoAtual na mesma trilha, swap automático — recebido=postoDevidoMes, devida=postoAtual. Elimina diffs negativas silenciosas.",
+      "Loop extras (13º/férias): mesma inversão aplicada com trilhaInvDez.",
+      "Auto-detecção expandida: qualquer caso onde postoInicial < postoAtual na trilha ativa o banner informativo.",
+      "Label 'Posto / Graduação no Ingresso' → 'Posto / Graduação no Início do Retroativo' com hint explicativo.",
+      "Branches autoDetectado removidos do loop (inversão dinâmica é suficiente e mais genérica)."
     ],
     bugs_pendentes: []
   }
