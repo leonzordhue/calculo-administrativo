@@ -892,6 +892,11 @@
               <hr class="form-divider" />
               <div class="form-section-title">📊 Dados Funcionais — PMAM (Lei n.º 3.725/2012 | CHOA — QOAPM)</div>
               <div class="field"><label class="field-label">Data de Ingresso na Corporação <span class="req">*</span></label><input type="date" id="pm-posse" /></div>
+              <div class="field">
+                <label class="field-label">Data da Última Promoção ao Posto Atual</label>
+                <input type="date" id="pm-data-promocao" />
+                <span class="field-hint">⚠️ Preencha se o ingresso na corporação for diferente do ingresso no posto atual. O interstício é contado a partir desta data. Ex: entrou em 2010, virou Sgt2 em 2018 → informe 2018.</span>
+              </div>
               <div class="field"><label class="field-label">Posto / Graduação Atual <span class="req">*</span></label>
                 <select id="pm-posto">
                   <option value="">Selecione...</option>
@@ -1023,6 +1028,11 @@
               <hr class="form-divider" />
               <div class="form-section-title">📊 Dados Funcionais — PCAM (Lei n.º 2.875/2004 | Lei n.º 4.059/2014)</div>
               <div class="field"><label class="field-label">Data de Ingresso no Cargo <span class="req">*</span></label><input type="date" id="pc-posse" /></div>
+              <div class="field">
+                <label class="field-label">Data da Última Promoção ao Cargo Atual</label>
+                <input type="date" id="pc-data-promocao" />
+                <span class="field-hint">⚠️ Preencha se o ingresso na carreira for anterior à última promoção. O interstício é contado a partir desta data.</span>
+              </div>
               <div class="field"><label class="field-label">Cargo / Quadro <span class="req">*</span></label>
                 <select id="pc-quadro">
                   <option value="">Selecione...</option>
@@ -2051,15 +2061,18 @@ function calcPostoDevido(cfg, listaPostos, postoInicial, nProgs) {
 function gerarDemonstrativoSeguranca(params) {
   const { area, nome, matricula, cargo, posseDate, postoAtual, postoInicial,
           incluirAdicional, incluirChoa, startDate, endDate, incluirExtras,
-          postoDevidaFixo } = params;                      // ← campo opcional (REV-6)
+          postoDevidaFixo, dataReferenciaIntersticio } = params;
   const cfg = REGRAS[area.toUpperCase()];
   const listaPostos = Object.keys(area === 'pmam' ? cfg.postos : cfg.cargos);
 
+  // ── DATA DE REFERÊNCIA PARA INTERSTÍCIO ───────────────────────────────────
+  // dataReferenciaIntersticio = data em que o militar foi promovido ao postoInicial.
+  // DIFERENTE de posseDate (data de ingresso na corporação).
+  // Um PM que entrou em 2010 e virou Sgt2 em 2018: posseDate=2010, dataRef=2018.
+  // Quando não informado, usa posseDate como fallback (comportamento anterior).
+  const dataRef = dataReferenciaIntersticio || posseDate;
+
   // ── MODO POSTO DEVIDA FIXO ────────────────────────────────────────────────
-  // Quando o operador preenche "Posto que deveria estar", usamos esse valor
-  // diretamente para todos os meses, sem calcular via posseDate + interstício.
-  // Resolve o caso de PM/PC que JÁ foi promovido mas quer retroativo do atraso,
-  // ou quando a data de ingresso informada não é a data original na corporação.
   const modoFixo = !!(postoDevidaFixo && postoDevidaFixo !== postoAtual);
 
   // ── MODO CHOA (PMAM) ──────────────────────────────────────────────────────
@@ -2082,7 +2095,7 @@ function gerarDemonstrativoSeguranca(params) {
   // impedindo que agentes "progridam" para delegado ou praças para oficiais.
   const idxAtual   = listaPostos.indexOf(postoAtual);
   const idxInicial = listaPostos.indexOf(postoInicial);
-  const mesesTotal = diffMonths(posseDate, endDate);
+  const mesesTotal = diffMonths(dataRef, endDate);
 
   let postoDevido;
   if (modoFixo) {
@@ -2109,7 +2122,7 @@ function gerarDemonstrativoSeguranca(params) {
   const endM = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
 
   while (cursor <= endM) {
-    const mesesAteAgora = diffMonths(posseDate, cursor);
+    const mesesAteAgora = diffMonths(dataRef, cursor);
     let postoDevidoMes;
     if (modoFixo) {
       postoDevidoMes = postoDevidaFixo;           // posto fixo — mesmo valor todos os meses
@@ -2143,7 +2156,7 @@ function gerarDemonstrativoSeguranca(params) {
     anos.forEach(ano => {
       const dezembro1 = new Date(ano, 11, 1);
       if (dezembro1 > endDate) return;
-      const mesesDez = diffMonths(posseDate, dezembro1);
+      const mesesDez = diffMonths(dataRef, dezembro1);
       let postoDez;
       if (modoFixo) {
         postoDez = postoDevidaFixo;
@@ -2192,9 +2205,23 @@ function gerarDemonstrativoSeguranca(params) {
   const totalDiff      = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
   const totalCorrigido = parseFloat(rows.reduce((s,r) => s+(r.diffCorrigida||r.diffMensal), 0).toFixed(2));
   const nMeses         = rows.filter(r=>r.tipo==='normal').length;
+
+  // ── ALERTA: linhas descartadas antes da primeira diferença ───────────────
+  // Detecta quando startDate foi informado antes do primeiro interstício calculado,
+  // ou seja, o sistema está ignorando meses que o operador pensava que seriam incluídos.
+  // Causa: dataRef (data de promoção ao posto) é posterior a startDate.
+  const primeiraCompetencia = rows.find(r => r.tipo === 'normal');
+  const alertaLinhasDescartadas = !modoFixo && primeiraCompetencia
+    && diffMonths(startDate, new Date(primeiraCompetencia.ano, primeiraCompetencia.mes, 1)) > 0;
+  // Data do primeiro interstício calculado
+  const dataCalculadaPrimeiraProgressao = !modoFixo
+    ? new Date(dataRef.getFullYear(), dataRef.getMonth() + (cfg.intersticioPromo || 36), 1)
+    : null;
+
   return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial: postoAtual, refDevida: postoDevido,
     area, nome, matricula, cargo, posseDate, startDate, endDate, incluirExtras,
-    postoAtual, postoInicial, postoDevido, incluirAdicional, dataCalculo: new Date() };
+    postoAtual, postoInicial, postoDevido, incluirAdicional, dataCalculo: new Date(),
+    alertaLinhasDescartadas, dataCalculadaPrimeiraProgressao, dataReferenciaIntersticio: dataRef };
 }
 
 // Helper para adicionar linhas de 13º e férias (SES / SEMSA)
@@ -2578,6 +2605,7 @@ function _coletarPMAM() {
   const matricula    = v('pm-matricula');
   const cargo        = v('pm-cargo') || '';
   const posseStr     = v('pm-posse');
+  const dataPromocaoStr = v('pm-data-promocao');   // data da última promoção ao posto (REV-7)
   const postoAtual   = v('pm-posto');
   const postoInicStr = v('pm-posto-inicial');
   const postoDevidaStr = v('pm-posto-devida');    // campo opcional REV-6
@@ -2593,13 +2621,14 @@ function _coletarPMAM() {
   if (!postoAtual) throw new Error('Selecione o posto/graduação atual.');
   if (!inicioStr) throw new Error('Informe a data de início do retroativo.');
   if (!fimStr) throw new Error('Informe a data de fim do retroativo.');
-
   const posseDate  = parseDate(posseStr);
   const startDate  = parseDate(inicioStr);
   const endDate    = parseDate(fimStr);
+  const dataPromocao_pm = dataPromocaoStr ? parseDate(dataPromocaoStr) : null;
+  const dataReferenciaIntersticio_pm = dataPromocao_pm || posseDate;
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
-
+  if (dataPromocao_pm && dataPromocao_pm > endDate) throw new Error('A data da última promoção não pode ser posterior ao fim do período.');
   // Bloquear data fim futura
   const hoje_pm = new Date(); hoje_pm.setHours(0,0,0,0);
   if (endDate > hoje_pm) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
@@ -2642,7 +2671,8 @@ function _coletarPMAM() {
 
   const resultado_pm = gerarDemonstrativoSeguranca({ area:'pmam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGT, incluirChoa,
-    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr || null });
+    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr || null,
+    dataReferenciaIntersticio: dataReferenciaIntersticio_pm });
   resultado_pm.alertaPrescricao = alertaPrescricao_pm;
   resultado_pm.cincoAnos = cincoAnos_pm;
   return resultado_pm;
@@ -2655,6 +2685,7 @@ function _coletarPCAM() {
   const matricula  = v('pc-matricula');
   const cargo      = v('pc-cargo') || '';
   const posseStr   = v('pc-posse');
+  const dataPromocaoStr_pc = v('pc-data-promocao');  // data última promoção (REV-7)
   const postoAtual = v('pc-quadro');
   const postoInicStr = v('pc-quadro-inicial');
   const postoDevidaStr_pc = v('pc-quadro-devida');   // campo opcional REV-6
@@ -2673,8 +2704,11 @@ function _coletarPCAM() {
   const posseDate  = parseDate(posseStr);
   const startDate  = parseDate(inicioStr);
   const endDate    = parseDate(fimStr);
+  const dataPromocao_pc = dataPromocaoStr_pc ? parseDate(dataPromocaoStr_pc) : null;
+  const dataReferenciaIntersticio_pc = dataPromocao_pc || posseDate;
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
+  if (dataPromocao_pc && dataPromocao_pc > endDate) throw new Error('A data da última promoção não pode ser posterior ao fim do período.');
 
   // Bloquear data fim futura
   const hoje_pc = new Date(); hoje_pc.setHours(0,0,0,0);
@@ -2712,7 +2746,8 @@ function _coletarPCAM() {
 
   const resultado_pc = gerarDemonstrativoSeguranca({ area:'pcam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGEP,
-    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr_pc || null });
+    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr_pc || null,
+    dataReferenciaIntersticio: dataReferenciaIntersticio_pc });
   resultado_pc.alertaPrescricao = alertaPrescricao_pc;
   resultado_pc.cincoAnos = cincoAnos_pc;
   return resultado_pc;
@@ -2735,6 +2770,21 @@ function renderizarResultados(res) {
       + `Verifique antes de apresentar ao tribunal.`;
     errEl.className = 'alert alert-warn';
     errEl.classList.remove('hidden');
+  }
+
+  // Alerta de linhas descartadas (PMAM/PCAM): startDate anterior ao primeiro interstício calculado
+  if (res.alertaLinhasDescartadas && res.dataCalculadaPrimeiraProgressao) {
+    const alertaDesc = document.createElement('div');
+    alertaDesc.className = 'alert alert-warn';
+    alertaDesc.innerHTML = `⚠️ <strong>Atenção — Período parcialmente calculado:</strong> `
+      + `O sistema calculou o primeiro interstício a partir de <strong>${fmtData(res.dataReferenciaIntersticio)}</strong> `
+      + `(data de referência informada). A primeira progressão devida só foi identificada a partir de `
+      + `<strong>${fmtData(res.dataCalculadaPrimeiraProgressao)}</strong>, `
+      + `mas o início do retroativo informado foi <strong>${fmtData(startDate)}</strong>. `
+      + `<br>Se o servidor foi promovido ao posto atual antes da data de ingresso informada, preencha o campo `
+      + `<strong>"Data da Última Promoção ao Posto Atual"</strong> com a data correta `
+      + `ou use o campo <strong>"Posto que Deveria Estar"</strong> para forçar o posto devida.`;
+    errEl.parentNode.insertBefore(alertaDesc, errEl.nextSibling);
   }
 
   // Labels e fundamento por área
@@ -3157,6 +3207,7 @@ const PREVIEW_FIELDS = {
     { id:'pm-matricula',  label:'RG Funcional',        obs:'Número funcional PMAM',                type:'text',   req:true },
     { section: '📊 Dados Funcionais' },
     { id:'pm-posse',      label:'Data de Ingresso',    obs:'Na corporação',                        type:'date',   req:true },
+    { id:'pm-data-promocao', label:'Data Última Promoção', obs:'Ao posto atual (se diferente)',     type:'date',   req:false },
     { id:'pm-posto',      label:'Posto/Graduação',     obs:'Atual',                                type:'select', req:true },
     { id:'pm-posto-devida', label:'Posto Devida',      obs:'Preencher se conhecido',               type:'select', req:false },
     { name:'pm-gt',       label:'Grat. de Tropa',      obs:'% sobre o subsídio',                   type:'radio',  req:true },
@@ -3170,6 +3221,7 @@ const PREVIEW_FIELDS = {
     { id:'pc-matricula',  label:'Matrícula',           obs:'Número funcional PCAM',                type:'text',   req:true },
     { section: '📊 Dados Funcionais' },
     { id:'pc-posse',      label:'Data de Ingresso',    obs:'No cargo',                             type:'date',   req:true },
+    { id:'pc-data-promocao', label:'Data Última Promoção', obs:'Ao cargo atual (se diferente)',    type:'date',   req:false },
     { id:'pc-quadro',     label:'Cargo/Classe',        obs:'Atual',                                type:'select', req:true },
     { id:'pc-quadro-devida', label:'Cargo Devida',     obs:'Preencher se conhecido',               type:'select', req:false },
     { name:'pc-gep',      label:'GEP',                 obs:'100% sobre venc. base',                type:'radio',  req:true },
@@ -3254,8 +3306,8 @@ function bindPreviewListeners() {
     'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-inicio','m-fim','m-categoria',
     'se-nome','se-matricula','se-cargo','se-posse','se-nivel','se-classe','se-classe-inicial','se-gts','se-gaa','se-quinquenio','se-inicio','se-fim',
     'sa-nome','sa-matricula','sa-cargo','sa-posse','sa-nivel','sa-ref','sa-ref-inicial','sa-inicio','sa-fim',
-    'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-posto','pm-posto-inicial','pm-posto-devida','pm-inicio','pm-fim',
-    'pc-nome','pc-matricula','pc-cargo','pc-posse','pc-quadro','pc-quadro-inicial','pc-quadro-devida','pc-inicio','pc-fim',
+    'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-data-promocao','pm-posto','pm-posto-inicial','pm-posto-devida','pm-inicio','pm-fim',
+    'pc-nome','pc-matricula','pc-cargo','pc-posse','pc-data-promocao','pc-quadro','pc-quadro-inicial','pc-quadro-devida','pc-inicio','pc-fim',
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
@@ -3302,7 +3354,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-6"
+     data-versao-atual="REV-7"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3443,7 +3495,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-6 ─────────────────────────────────────────────────── -->
-  <div data-rev="REV-6" data-data="2026-03-19" data-status="ATUAL">
+  <div data-rev="REV-6" data-data="2026-03-19" data-status="SUPERADA">
     <span data-tipo="FIX" data-bug="PMAM-PCAM-tabela-vazia-data-ingresso">
       CORRIGIDO: "Nenhuma diferença encontrada" para PMAM/PCAM quando o
       operador não sabe/não informa a data de ingresso original, ou quando
@@ -3464,6 +3516,24 @@ document.addEventListener('DOMContentLoaded', () => {
       Adicionados ao allIds do live preview e ao PREVIEW_FIELDS.
       Parâmetro postoDevidaFixo propagado por gerarDemonstrativoSeguranca,
       loop mensal e loop de extras (13º/férias).
+    </span>
+  </div>
+
+  <!-- ── REV-7 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-7" data-data="2026-03-19" data-status="ATUAL">
+    <span data-tipo="FIX" data-bug="PMAM-PCAM-periodo-incompleto-intersticio">
+      CORRIGIDO: cálculo iniciava somente após o primeiro interstício medido
+      desde posseDate (data de ingresso na corporação). Para PM promovido há
+      anos ao posto atual (ex: sgt2 em 2018 mas ingresso em 2010), o motor
+      calculava 36 meses a partir de 2010, gerando primeira diferença em 2013
+      — mas se o retroativo foi pedido a partir de 2021, os meses de 2021 a
+      2022 eram descartados silenciosamente. Caso real: Johnny Bronson pediu
+      desde 2021, apareceu só 2023.
+      Solução: campo "Data da Última Promoção ao Posto Atual" (pm-data-promocao /
+      pc-data-promocao). Quando preenchido, o motor usa essa data como
+      dataReferenciaIntersticio em vez de posseDate para medir o interstício.
+      Adicionado alerta visual quando linhas foram descartadas antes do startDate.
+      Vício V10 documentado.
     </span>
   </div>
 
@@ -3524,6 +3594,15 @@ document.addEventListener('DOMContentLoaded', () => {
       do ingresso original), progsAteMes = 0 → tabela vazia sem erro.
       SEMPRE oferecer campo postoDevidaFixo como override. Quando preenchido,
       usar esse valor diretamente (modoFixo = true), ignorando posseDate.
+    </span>
+    <span data-vicio="V10" data-severidade="ALTA">
+      VÍCIO V10 — CONFUSÃO ENTRE posseDate E dataReferenciaIntersticio:
+      posseDate = data de ingresso na corporação (ex: 2010).
+      dataReferenciaIntersticio = data em que o militar foi promovido ao
+      posto ATUAL — que é o ponto de partida real do interstício (ex: 2018).
+      Usar posseDate para medir interstício faz o motor pular meses válidos.
+      SEMPRE oferecer campo pm-data-promocao / pc-data-promocao. Quando
+      preenchido, usar parseDate desse campo como dataRef, não posseDate.
     </span>
   </div>
 
@@ -3624,7 +3703,7 @@ window._VERSION_LOG = [
   {
     rev: "REV-6",
     data: "2026-03-19",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Campo postoDevidaFixo em PMAM/PCAM. Resolve 'Nenhuma diferença encontrada' por data de ingresso errada.",
     fixes: [
       "PMAM: adicionado campo pm-posto-devida (Posto que Deveria Estar). Quando preenchido, motor usa valor fixo em todos os meses, eliminando dependência de posseDate.",
@@ -3633,6 +3712,22 @@ window._VERSION_LOG = [
       "Validações: trilha cruzada + devida deve ser superior ao atual, em _coletarPMAM e _coletarPCAM.",
       "pm-posto-devida e pc-quadro-devida adicionados ao allIds do live preview e ao PREVIEW_FIELDS.",
       "Vício V09 documentado: dependência exclusiva de posseDate no motor PMAM/PCAM."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-7",
+    data: "2026-03-19",
+    status: "ATUAL",
+    descricao: "Fix crítico PMAM/PCAM: período incompleto por confusão posseDate vs dataReferenciaIntersticio.",
+    fixes: [
+      "Causa raiz: motor usava posseDate (ingresso na corporação) para medir interstício. PM promovido ao posto atual em 2018 mas com ingresso em 2010 gerava interstício contado de 2010, pulando anos válidos. Caso real: Johnny Bronson pediu desde 2021, apareceu só 2023.",
+      "PMAM: adicionado campo pm-data-promocao ('Data da Última Promoção ao Posto Atual'). Quando preenchido, o motor usa essa data como dataReferenciaIntersticio em vez de posseDate.",
+      "PCAM: adicionado campo pc-data-promocao com mesma lógica.",
+      "gerarDemonstrativoSeguranca: aceita parâmetro dataReferenciaIntersticio. Usado em mesesTotal, loop mensal e loop de extras (13º/férias).",
+      "Alerta visual adicionado à tela de resultados quando linhas foram descartadas antes do startDate informado (detecta e avisa o operador).",
+      "Campos adicionados ao allIds do live preview e ao PREVIEW_FIELDS (PMAM e PCAM).",
+      "Vício V10 documentado: distinção obrigatória entre posseDate e dataReferenciaIntersticio."
     ],
     bugs_pendentes: []
   }
@@ -3710,6 +3805,14 @@ window._VICIOS_CONHECIDOS = [
     descricao: "Motor calcula postoDevido via posseDate + N×interstício. Se operador informa data errada (ex: última promoção em vez de ingresso original), progsAteMes=0 → tabela vazia sem erro. Sempre oferecer postoDevidaFixo como override.",
     exemplo_errado: "Math.floor(diffMonths(posseDate, cursor) / 36) // depende 100% de posseDate",
     exemplo_correto: "modoFixo ? postoDevidaFixo : calcPostoDevido(cfg, listaPostos, postoInicial, progs)"
+  },
+  {
+    id: "V10",
+    severidade: "ALTA",
+    titulo: "Confusão entre posseDate e dataReferenciaIntersticio",
+    descricao: "posseDate = ingresso na corporação (ex: 2010). dataReferenciaIntersticio = data em que foi promovido ao posto ATUAL (ex: 2018). Usar posseDate para medir interstício faz o motor pular meses válidos. Caso real: pediu desde 2021, apareceu só 2023.",
+    exemplo_errado: "diffMonths(posseDate, cursor) // conta do ingresso na corporação, não da promoção ao posto",
+    exemplo_correto: "const dataRef = dataReferenciaIntersticio || posseDate; diffMonths(dataRef, cursor)"
   }
 ];
 
