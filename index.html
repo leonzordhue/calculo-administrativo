@@ -692,7 +692,7 @@
                   <option value="docente">🎓 Docente — Lei n.º 1.126/2007 (PCCR Magistério Municipal)</option>
                   <option value="admin">🗂️ Administrativo — Lei n.º 1.118/2007 (PCCR Administrativo SEMED)</option>
                 </select>
-                <span class="field-hint">Docente: refs A1-D2 | Administrativo: refs A1-L2 (24 níveis)</span>
+                <span class="field-hint">Docente: refs A1, B1, C1, D1, D2 | Administrativo: refs A1-L2 (24 níveis)</span>
               </div>
 
               <hr class="form-divider" />
@@ -701,7 +701,7 @@
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
                 <select id="m-ref">
                   <optgroup label="Docente (A1–D2)">
-                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option><option>D2</option>
+                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>D2</option>
                   </optgroup>
                   <optgroup label="Administrativo — E1–L2" id="m-ref-admin-opts" style="display:none">
                     <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
@@ -715,7 +715,7 @@
                 <select id="m-ref-inicial">
                   <option value="">Igual à Referência Atual</option>
                   <optgroup label="Docente (A1–D1)">
-                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option>
+                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option>
                   </optgroup>
                   <optgroup label="Administrativo — A1–K2" id="m-refinic-admin-opts" style="display:none">
                     <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
@@ -1527,7 +1527,7 @@ const REGRAS = {
     marco: new Date('2019-03-01'),
   },
   SEMED: {
-    referencias:  ['A1','A2','B1','B2','C1','C2','D1','D2'],
+    referencias:  ['A1','B1','C1','D1','D2'],
     multRefs:     { A1:1.000, A2:1.020, B1:1.150, B2:1.173, C1:1.322, C2:1.349, D1:1.520, D2:1.551 },
     intersticioUnico: 24,
   },
