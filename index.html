@@ -1531,21 +1531,18 @@ const REGRAS = {
     intersticioUnico: 24,
   },
   // SES/SUSAM: Lei n.º 3.469/2009
-  // Progressão bienal (+2% por referência dentro da classe, mudança de classe a cada 4 refs)
-  // Sup/Méd: A1→A2→A3→A4→B1→...→D4 (16 posições, 0-31+ anos)
-  // Aux I:   E1→E2→E3→E4→F1→...→H4 (16 posições, mesmos intervalos)
-  // Ambas as trilhas têm o mesmo multiplicador por posição (só a base difere pelo nível S/M/A)
+  // Tabela tempo de serviço: 0-3 anos=ref1, 3-5=ref2, 5-7=ref3, 7-9=ref4, 9-11=B/F1...
+  // INTERSTÍCIO NÃO UNIFORME: primeiro = 36 meses (3 anos), demais = 24 meses (2 anos)
+  // Breakpoints (meses de efetivo exercício a partir da posse):
+  //   ref1→ref2: 36m | ref2→ref3: 60m | ref3→ref4: 84m | ref4→próx.classe: 108m ...
   SES: {
     niveis: {
       S: 1.000,  // Nível Superior (Médico, Enfermeiro, Farmacêutico...)
       M: 0.3074, // Nível Médio (Técnico de Enfermagem...) — base ~R$1.516 / R$4.932
       A: 0.2553, // Nível Auxiliar — base ~R$1.259 / R$4.932
     },
-    // Trilha Sup/Méd (A1–D4) e Auxiliar I (E1–H4)
-    // Ambas mapeiam para os mesmos multiplicadores por posição (+2% a cada 2 anos)
     referenciasSM: ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4'],
     referenciasAI: ['E1','E2','E3','E4','F1','F2','F3','F4','G1','G2','G3','G4','H1','H2','H3','H4'],
-    // Multiplicadores: +2% por posição (mesmo para SM e AI)
     multRefs: {
       A1:1.000, A2:1.020, A3:1.040, A4:1.060,
       B1:1.080, B2:1.100, B3:1.120, B4:1.140,
@@ -1556,10 +1553,15 @@ const REGRAS = {
       G1:1.160, G2:1.180, G3:1.200, G4:1.220,
       H1:1.240, H2:1.260, H3:1.280, H4:1.300,
     },
-    // referencias: lista unificada para o motor (detecta trilha pelo prefixo)
     referencias: ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4',
                   'E1','E2','E3','E4','F1','F2','F3','F4','G1','G2','G3','G4','H1','H2','H3','H4'],
-    intersticioUnico: 24, // 2 anos por referência
+    // Breakpoints em meses desde a posse para cada progressão de posição
+    // pos[0]→pos[1] = 36m, pos[1]→pos[2] = 60m, ..., pos[k]→pos[k+1] = 36+24*k
+    // Ex: E1→E2=36m, E2→E3=60m, E3→E4=84m, E4→F1=108m, F1→F2=132m ...
+    breakpoints: [36, 60, 84, 108, 132, 156, 180, 204, 228, 252, 276, 300, 324, 348, 372],
+    // breakpoints[i] = meses a partir da posse para atingir a posição i+1
+    // posição 0 = ref1 (ingresso), posição 1 = ref2, ..., posição 15 = ref16 (D4/H4)
+    intersticioUnico: 24, // mantido apenas como fallback — NÃO usar para SES
   },
   // SEMSA: igual à estrutura SEMED (letra+número), interstício 2 anos
   SEMSA: {
@@ -2061,22 +2063,30 @@ function gerarDemonstrativoSES(params) {
   const { nome, matricula, cargo, posseDate, nivel, classeInicial, classeAtual,
           pctGTS, pctGAA, nQuinq, startDate, endDate, incluirExtras } = params;
 
-  // Detecta trilha pelo prefixo da classe informada
-  // SM = A-D (Sup/Méd), AI = E-H (Auxiliar I)
+  // Trilha pelo prefixo (SM = A-D, AI = E-H)
   const trilhaSM = ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4'];
   const trilhaAI = ['E1','E2','E3','E4','F1','F2','F3','F4','G1','G2','G3','G4','H1','H2','H3','H4'];
   const refList  = trilhaSM.includes(classeInicial) ? trilhaSM : trilhaAI;
 
-  // Cap automático de progressões (mesmo padrão do Educ — REV-14)
-  const progsMaximas = 1 + Math.floor(diffMonths(startDate, endDate) / 24);
-  const idxIni = refList.indexOf(classeInicial);
-  const idxCap = Math.min(idxIni + progsMaximas, refList.length - 1);
-  function classeComCap(base, nProgs) {
-    return refList[Math.min(refList.indexOf(base) + nProgs, idxCap)];
+  // ── PROGRESSÃO POR BREAKPOINTS (REV-17) ────────────────────────────────────
+  // A Lei 3.469/2009 tem interstício NÃO uniforme: 1ª progressão = 36 meses,
+  // demais = 24 meses. Breakpoints em meses desde a posse:
+  // ref1(0m) → ref2(36m) → ref3(60m) → ref4(84m) → próx.classe(108m) ...
+  const bps = REGRAS.SES.breakpoints; // [36, 60, 84, 108, ...]
+
+  function classeDevidaParaMes(mesesDeServico) {
+    const idxBase = refList.indexOf(classeInicial);
+    // conta quantos breakpoints o servidor já ultrapassou desde o idxBase
+    let progs = 0;
+    for (let i = 0; i < bps.length; i++) {
+      if (mesesDeServico >= bps[i]) progs = i + 1;
+      else break;
+    }
+    return refList[Math.min(idxBase + progs, refList.length - 1)];
   }
 
-  const progsDevidas = Math.floor(diffMonths(posseDate, endDate) / 24);
-  const classeDevida = classeComCap(classeInicial, progsDevidas);
+  const mesesTotalFim = diffMonths(posseDate, endDate);
+  const classeDevida  = classeDevidaParaMes(mesesTotalFim);
   const numProgressoesAtraso = Math.max(0, refList.indexOf(classeDevida) - refList.indexOf(classeAtual));
 
   const rows = [], erros = [];
@@ -2084,8 +2094,8 @@ function gerarDemonstrativoSES(params) {
   const endM = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
 
   while (cursor <= endM) {
-    const progsAteMes = Math.floor(diffMonths(posseDate, cursor) / 24);
-    const classeDevidaMes = classeComCap(classeInicial, progsAteMes);
+    const mesesAteCursor = diffMonths(posseDate, cursor);
+    const classeDevidaMes = classeDevidaParaMes(mesesAteCursor);
     if (classeDevidaMes === classeAtual) { cursor = addMonths(cursor,1); continue; }
 
     const recItem = calcVencimentoSES(nivel, classeAtual,    cursor, pctGTS, pctGAA, nQuinq);
@@ -3603,7 +3613,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-16"
+     data-versao-atual="REV-17"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3897,7 +3907,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-16 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-16" data-data="2026-03-24" data-status="ATUAL">
+  <div data-rev="REV-16" data-data="2026-03-24" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="EXTRAS_REF_ULTIMA_ROW">
       CORRIGIDO: 13º e 1/3 férias usavam classe diferente da mostrada nos
       meses do ano. Ex: DEZ/2021 mostrava E4 mas 13º 2021 mostrava F1.
@@ -3909,6 +3919,21 @@ document.addEventListener('DOMContentLoaded', () => {
       linhas mensais e linhas de 13º/férias.
       VICIO_EVITAR: nunca recalcular refDevida para 13º/férias a partir de
       posseDate — usar sempre a última row do ano (ultimaRow.refDevida).
+    </span>
+  </div>
+
+  <!-- ── REV-17 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-17" data-data="2026-03-24" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="SES_BREAKPOINTS_NAO_UNIFORMES">
+      CORRIGIDO: progressão SES usava interstício uniforme 24 meses. Errado.
+      Lei 3.469/2009: 1ª progressão = 36 meses (0→3 anos), demais = 24 meses.
+      Breakpoints reais: [36,60,84,108,132,156,180,204,228,252,276,300,324,348,372].
+      Caso real: Posse DEZ/2013, cap automático (1+floor(período/24)) travou
+      tudo em E4 quando deveria progredir para F1 (DEZ/2022) e F2 (DEZ/2024).
+      Fix: gerarDemonstrativoSES usa classeDevidaParaMes() com lookup nos
+      breakpoints reais. Cap automático do Educ NÃO se aplica ao SES.
+      VICIO_EVITAR: nunca assumir interstício uniforme para SES. Sempre usar
+      breakpoints da Lei 3.469/2009 ou campo específico na REGRAS.SES.
     </span>
   </div>
 
@@ -4219,10 +4244,20 @@ window._VERSION_LOG = [
   {
     rev: "REV-16",
     data: "2026-03-24",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "13º e férias usam refDevida da última row do ano — garantia de consistência total.",
     fixes: [
       { id: "EXTRAS_REF_ULTIMA_ROW", desc: "_appendExtras e gerarDemonstrativoEduc: refDevidaDez = ultimaRowAno.refDevida. Elimina recálculo via posseDate que ignorava o cap automático." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-17",
+    data: "2026-03-24",
+    status: "ATUAL",
+    descricao: "SES: breakpoints reais da Lei 3.469/2009 — interstício não uniforme (36m/24m).",
+    fixes: [
+      { id: "SES_BREAKPOINTS_NAO_UNIFORMES", desc: "classeDevidaParaMes() usa REGRAS.SES.breakpoints=[36,60,84,...]. Cap automático por período removido do SES — não se aplica a interstício variável." }
     ],
     bugs_pendentes: []
   }
@@ -4243,6 +4278,15 @@ window._VICIOS_CONHECIDOS = [
   { id:"V12", severidade:"CRITICA", titulo:"Inversão dinâmica insuficiente para autoDetectado", descricao:"Inversão por índice falha quando progsAteMes>=1 retorna postoDevidoMes=postoAtual. Usar branch autoDetectado com valores FIXOS.", exemplo_errado:"if (tIdxDevido < tIdxAtual) swap(); // falha para progs>=1", exemplo_correto:"if (autoDetectado) { postoRecebidoMes=postoInicial; postoDevidoMes=postoAtual; }" },
   { id:"V13", severidade:"ALTA", titulo:"posseDate mais antiga gera progs extras em SEDUC/SEMED", descricao:"Cap automático: progsMaximas = 1 + floor((endDate-startDate)/intersticio). Função refComCap() aplica o teto.", exemplo_errado:"refAposProgressoes(refInicial,refList,progsTotal) // sem teto", exemplo_correto:"refComCap(refInicial, progsTotal) // com idxCap automático" },
   { id:"V14", severidade:"CRITICA", titulo:"Recálculo de refDevida para 13º/férias ignora cap automático", descricao:"diffMonths(posseDate,dez)/24 ignora classeComCap → 13º salta além dos meses. Usar ultimaRowAno.refDevida.", exemplo_errado:"const progsAteDez=Math.floor(diffMonths(posseDate,dez)/24); refList[idx+progs]", exemplo_correto:"const ultimaRow=rowsDoAno[rowsDoAno.length-1]; const refDevidaDez=ultimaRow.refDevida;" }
+,
+  {
+    id: "V15",
+    severidade: "CRITICA",
+    titulo: "SES: interstício não é uniforme — nunca usar floor(meses/24)",
+    descricao: "Lei 3.469/2009: 1ª progressão=36 meses (0-3 anos), demais=24 meses. Breakpoints: [36,60,84,108,...]. Usar classeDevidaParaMes() com lookup nos breakpoints. Cap automático (1+floor(período/24)) é inválido para SES.",
+    exemplo_errado: "Math.floor(diffMonths(posseDate,cursor)/24) // ignora 1º interstício de 36m",
+    exemplo_correto: "classeDevidaParaMes(mesesAteCursor) // usa REGRAS.SES.breakpoints"
+  }
 ];
 
 /* ================================================================
