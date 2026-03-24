@@ -2001,8 +2001,12 @@ function gerarDemonstrativoEduc(params) {
       const dezembro1 = new Date(ano, 11, 1);
       if (dezembro1 > endDate) return;
 
-      const progsAteDez  = calcularProgressoesEduc(area, posseDate, dezembro1);
-      const refDevidaDez = refComCap(refInicial, progsAteDez);
+      // ── REV-16: usar refDevida da última row normal do ano (garante consistência) ──
+      const rowsDoAno  = rows.filter(r => r.ano === ano && r.tipo === 'normal');
+      const ultimaRow  = rowsDoAno[rowsDoAno.length - 1];
+      if (!ultimaRow) return;
+      const refDevidaDez = ultimaRow.refDevida;
+
       if (refDevidaDez === refInicial) return;
       const recDez = calcVencimentoEduc(areaUp, classe, refInicial,   dezembro1, pctLoc, pctReg, pctGAA);
       const devDez = calcVencimentoEduc(areaUp, classe, refDevidaDez, dezembro1, pctLoc, pctReg, pctGAA);
@@ -2010,8 +2014,6 @@ function gerarDemonstrativoEduc(params) {
       const diffDez = parseFloat((devDez.sal - recDez.sal).toFixed(2));
       if (diffDez <= 0) return;
 
-      // 13º proporcional por avos: conta meses com diferença no ano dentro do período
-      const rowsDoAno  = rows.filter(r => r.ano === ano && r.tipo === 'normal');
       const avos       = Math.min(rowsDoAno.length, 12);
       const diffDecimo = parseFloat((diffDez * avos / 12).toFixed(2));
       if (diffDecimo <= 0) return;
@@ -2102,9 +2104,9 @@ function gerarDemonstrativoSES(params) {
     cursor = addMonths(cursor, 1);
   }
 
-  _appendExtras(rows, incluirExtras, posseDate, (classeKey, dataRef) => {
+  _appendExtras(rows, incluirExtras, (classeKey, dataRef) => {
     return calcVencimentoSES(nivel, classeKey, dataRef, pctGTS, pctGAA, nQuinq);
-  }, refList, classeInicial, classeAtual, endDate);
+  }, endDate);
 
   const totalDiff      = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
   const totalCorrigido = parseFloat(rows.reduce((s,r) => s+(r.diffCorrigida||r.diffMensal), 0).toFixed(2));
@@ -2147,13 +2149,13 @@ function gerarDemonstrativoSEMSA(params) {
     cursor = addMonths(cursor, 1);
   }
 
-  _appendExtras(rows, incluirExtras, posseDate, (refKey, dataRef) => {
+  _appendExtras(rows, incluirExtras, (refKey, dataRef) => {
     const bi = getValorBase('SEMSA', dataRef);
     if (!bi) return null;
     const multN = REGRAS.SEMSA.niveis[nivel] ?? 1;
     const salB = parseFloat((bi.valorBase * multN * (REGRAS.SEMSA.multRefs[refKey] ?? 1)).toFixed(2));
     return { sal: salB, salBase: salB, lei: bi.lei };
-  }, refList, refInicial, refInicial, endDate);
+  }, endDate);
 
   const totalDiff      = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
   const totalCorrigido = parseFloat(rows.reduce((s,r) => s+(r.diffCorrigida||r.diffMensal), 0).toFixed(2));
@@ -2433,7 +2435,7 @@ function gerarDemonstrativoSeguranca(params) {
 }
 
 // Helper para adicionar linhas de 13º e férias (SES / SEMSA)
-function _appendExtras(rows, incluirExtras, posseDate, calcFn, refList, refInicial, refAtual, endDate) {
+function _appendExtras(rows, incluirExtras, calcFn, endDate) {
   if (!incluirExtras || rows.length === 0) return;
   const anos = [...new Set(rows.map(r=>r.ano))].sort();
   const extrasRows = [];
@@ -2442,8 +2444,15 @@ function _appendExtras(rows, incluirExtras, posseDate, calcFn, refList, refInici
     const dezembro1 = new Date(ano, 11, 1);
     if (endDate && dezembro1 > endDate) return;
 
-    const progsAteDez  = Math.floor(diffMonths(posseDate, dezembro1) / 24);
-    const refDevidaDez = refList[Math.min(refList.indexOf(refInicial) + progsAteDez, refList.length-1)];
+    // ── CORREÇÃO REV-16 ─────────────────────────────────────────────────────
+    // A refDevidaDez deve ser a mesma usada no último mês normal do ano nas rows,
+    // não recalculada via posseDate (que ignora o cap automático do loop mensal).
+    // Isso garante consistência entre linhas mensais e linhas de 13º/férias.
+    const rowsDoAno = rows.filter(r => r.ano === ano && r.tipo === 'normal');
+    const ultimaRowAno = rowsDoAno[rowsDoAno.length - 1];
+    if (!ultimaRowAno) return;  // nenhuma diferença neste ano
+    const refDevidaDez = ultimaRowAno.refDevida;
+
     if (refDevidaDez === refAtual) return;
     const recDez = calcFn(refAtual,     dezembro1);
     const devDez = calcFn(refDevidaDez, dezembro1);
@@ -2452,7 +2461,6 @@ function _appendExtras(rows, incluirExtras, posseDate, calcFn, refList, refInici
     if (diffDez <= 0) return;
 
     // Proporcionalidade por avos
-    const rowsDoAno  = rows.filter(r => r.ano === ano && r.tipo === 'normal');
     const avos       = Math.min(rowsDoAno.length, 12);
     const diffDecimo = parseFloat((diffDez * avos / 12).toFixed(2));
     if (diffDecimo <= 0) return;
@@ -3594,7 +3602,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-15"
+     data-versao-atual="REV-16"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3874,7 +3882,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-15 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-15" data-data="2026-03-24" data-status="ATUAL">
+  <div data-rev="REV-15" data-data="2026-03-24" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="SES_CLASSE_NOTACAO">
       CORRIGIDO: formulário SES usava Classe I–VIII (8 posições) em vez da
       notação oficial da Lei 3.469/2009 (A1–D4 para Sup/Méd, E1–H4 para Aux I).
@@ -3884,6 +3892,22 @@ document.addEventListener('DOMContentLoaded', () => {
       Função atualizarClasseInicialSES() filtra select de ingresso pela mesma trilha.
       Caso de uso direto: "está na E1, deveria estar na F2" — selecionar E1 em
       "Classe no Ingresso" e preencher período retroativo.
+    </span>
+  </div>
+
+  <!-- ── REV-16 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-16" data-data="2026-03-24" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="EXTRAS_REF_ULTIMA_ROW">
+      CORRIGIDO: 13º e 1/3 férias usavam classe diferente da mostrada nos
+      meses do ano. Ex: DEZ/2021 mostrava E4 mas 13º 2021 mostrava F1.
+      Causa raiz: _appendExtras e loop de extras do Educ recalculavam
+      refDevidaDez via diffMonths(posseDate, dezembro1) / 24, ignorando
+      o cap automático do loop mensal → saltavam para classe além do cap.
+      Fix: ambos os geradores agora buscam a refDevida da ÚLTIMA row normal
+      do ano nas rows já calculadas, garantindo consistência total entre
+      linhas mensais e linhas de 13º/férias.
+      VICIO_EVITAR: nunca recalcular refDevida para 13º/férias a partir de
+      posseDate — usar sempre a última row do ano (ultimaRow.refDevida).
     </span>
   </div>
 
@@ -4183,14 +4207,59 @@ window._VERSION_LOG = [
   {
     rev: "REV-15",
     data: "2026-03-24",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "SES reestruturado para notação A1-D4 / E1-H4 conforme Lei 3.469/2009.",
     fixes: [
       { id: "SES_CLASSE_NOTACAO",  desc: "REGRAS.SES.multRefs expandido para 32 chaves. Trilha SM (A-D) ou AI (E-H) detectada pelo prefixo. Cap automático de progs herdado da REV-14." },
       { id: "SES_FORM_SELECTS",    desc: "Selects se-classe e se-classe-inicial com optgroups A1-D4 e E1-H4. Função atualizarClasseInicialSES() filtra ingresso pela mesma trilha." }
     ],
     bugs_pendentes: []
+  },
+  {
+    rev: "REV-16",
+    data: "2026-03-24",
+    status: "ATUAL",
+    descricao: "13º e férias usam refDevida da última row do ano — garantia de consistência total.",
+    fixes: [
+      { id: "EXTRAS_REF_ULTIMA_ROW", desc: "_appendExtras e gerarDemonstrativoEduc: refDevidaDez = ultimaRowAno.refDevida. Elimina recálculo via posseDate que ignorava o cap automático." }
+    ],
+    bugs_pendentes: []
   }
 ];
 
-window._VICIOS_CONHECIDOS
+window._VICIOS_CONHECIDOS = [
+  { id:"V01", severidade:"CRITICA", titulo:"Direção de progressão em objetos ordenados", descricao:"Object.keys(cfg.postos/cargos) está ordenado do MAIOR para o MENOR posto. Promoção = SUBTRAÇÃO de índice. Nunca somar. Usar calcPostoDevido().", exemplo_errado:"listaPostos[Math.min(idxInicial+nProgs,length-1)]", exemplo_correto:"calcPostoDevido(cfg, listaPostos, postoInicial, nProgs)" },
+  { id:"V02", severidade:"CRITICA", titulo:"Cruzamento de trilhas de carreira PCAM/PMAM", descricao:"PCAM e PMAM têm carreiras independentes. Nunca tratar lista de cargos como escada única. Usar getTrilhaProgresso() + calcPostoDevido().", exemplo_errado:"listaPostos[Math.max(idxInicial-nProgs,0)]", exemplo_correto:"calcPostoDevido(cfg, listaPostos, postoInicial, nProgs)" },
+  { id:"V03", severidade:"ALTA", titulo:"Contagem de progressões sem proteção de negativos", descricao:"numProgressoesAtraso pode ser negativo. Sempre proteger com Math.max(0,...).", exemplo_errado:"refList.indexOf(refDevida)-refList.indexOf(refAtual)", exemplo_correto:"Math.max(0, refList.indexOf(refDevida)-refList.indexOf(refAtual))" },
+  { id:"V04", severidade:"ALTA", titulo:"Validações assimétricas entre áreas", descricao:"Regras como bloqueio de data futura e prescrição quinquenal devem estar em TODAS as funções _coletar*.", exemplo_errado:"Validação só em _coletarEduc", exemplo_correto:"Validação em _coletarEduc/_coletarSES/_coletarSEMSA/_coletarPMAM/_coletarPCAM" },
+  { id:"V05", severidade:"MEDIA", titulo:"Chaves de área inconsistentes", descricao:"res.area pode ser 'seduc', 'SEDUC_ADMIN', etc. Usar areaKey = res.area || area e cobrir todos os casos.", exemplo_errado:"if (area === 'seduc')", exemplo_correto:"const areaKey = res.area||area; if (areaKey==='seduc'||areaKey==='SEDUC_ADMIN'...)" },
+  { id:"V06", severidade:"MEDIA", titulo:"Falsy check em valores monetários", descricao:"r.valor ? é falso para 0. Usar != null.", exemplo_errado:"r.vencRecebido ? fmtMoeda(r.vencRecebido) : '—'", exemplo_correto:"r.vencRecebido != null ? fmtMoeda(r.vencRecebido) : '—'" },
+  { id:"V07", severidade:"BAIXA", titulo:"Identificadores JS com caracteres especiais", descricao:"Nunca usar acentos em nomes de variáveis.", exemplo_errado:"let alertaPrescrição = ...", exemplo_correto:"let alertaPrescricao = ..." },
+  { id:"V08", severidade:"BAIXA", titulo:"Dead code acumulado", descricao:"Remover variáveis/funções declaradas e nunca usadas.", exemplo_errado:"let AREA_ATUAL = null;", exemplo_correto:"Remover ou documentar em bugs_pendentes" },
+  { id:"V09", severidade:"ALTA", titulo:"Dependência exclusiva de posseDate no motor PMAM/PCAM", descricao:"Motor calcula postoDevido via posseDate+N×interstício. Oferecer postoDevidaFixo como override.", exemplo_errado:"Math.floor(diffMonths(posseDate,cursor)/36)", exemplo_correto:"modoFixo ? postoDevidaFixo : calcPostoDevido(cfg,listaPostos,postoInicial,progs)" },
+  { id:"V10", severidade:"ALTA", titulo:"Confusão entre posseDate e dataReferenciaIntersticio", descricao:"posseDate=ingresso na corporação. dataReferenciaIntersticio=data da promoção ao posto atual. Usar campo pm-data-promocao.", exemplo_errado:"diffMonths(posseDate, cursor)", exemplo_correto:"const dataRef = dataReferenciaIntersticio||posseDate; diffMonths(dataRef,cursor)" },
+  { id:"V11", severidade:"CRITICA", titulo:"diffMonths negativo destrói índice de array", descricao:"Se cursor < dataRef, diffMonths retorna negativo → trilha[-1] = undefined → crash. Sempre: if (mesesAteAgora < 0) continue; e if (nProgs <= 0) return postoInicial.", exemplo_errado:"Math.floor(diffMonths(dataRef,cursor)/36) // pode ser negativo", exemplo_correto:"if (mesesAteAgora < 0) continue;" },
+  { id:"V12", severidade:"CRITICA", titulo:"Inversão dinâmica insuficiente para autoDetectado", descricao:"Inversão por índice falha quando progsAteMes>=1 retorna postoDevidoMes=postoAtual. Usar branch autoDetectado com valores FIXOS.", exemplo_errado:"if (tIdxDevido < tIdxAtual) swap(); // falha para progs>=1", exemplo_correto:"if (autoDetectado) { postoRecebidoMes=postoInicial; postoDevidoMes=postoAtual; }" },
+  { id:"V13", severidade:"ALTA", titulo:"posseDate mais antiga gera progs extras em SEDUC/SEMED", descricao:"Cap automático: progsMaximas = 1 + floor((endDate-startDate)/intersticio). Função refComCap() aplica o teto.", exemplo_errado:"refAposProgressoes(refInicial,refList,progsTotal) // sem teto", exemplo_correto:"refComCap(refInicial, progsTotal) // com idxCap automático" },
+  { id:"V14", severidade:"CRITICA", titulo:"Recálculo de refDevida para 13º/férias ignora cap automático", descricao:"diffMonths(posseDate,dez)/24 ignora classeComCap → 13º salta além dos meses. Usar ultimaRowAno.refDevida.", exemplo_errado:"const progsAteDez=Math.floor(diffMonths(posseDate,dez)/24); refList[idx+progs]", exemplo_correto:"const ultimaRow=rowsDoAno[rowsDoAno.length-1]; const refDevidaDez=ultimaRow.refDevida;" }
+];
+
+/* ================================================================
+   CONSOLE — exibe ao carregar (formato v2)
+   ================================================================ */
+(function() {
+  const atual = window._VERSION_LOG.find(v => v.status === 'ATUAL') || window._VERSION_LOG[window._VERSION_LOG.length - 1];
+  console.groupCollapsed("%c LAADV " + atual.rev + " ", "background:#0B4A44;color:#C9A93E;font-weight:bold;padding:2px 8px;border-radius:3px;font-size:12px");
+  console.log("%cVersão: " + atual.rev + " (" + atual.data + ")", "color:#0B4A44;font-weight:bold");
+  console.log("%c" + atual.descricao, "color:#3D4F63");
+  if (atual.fixes?.length) { console.log("%cFixes:", "color:#2E7D32;font-weight:bold"); atual.fixes.forEach(f => console.log("  ✅ [" + f.id + "] " + f.desc)); }
+  if (atual.bugs_pendentes?.length) { console.log("%cBugs pendentes:", "color:#C0392B;font-weight:bold"); atual.bugs_pendentes.forEach(b => console.log("  ⚠️ [" + b.id + "] " + b.desc)); }
+  const criticos = window._VICIOS_CONHECIDOS.filter(v => v.severidade === 'CRITICA');
+  console.log("%cVícios CRÍTICOS (" + criticos.length + "/" + window._VICIOS_CONHECIDOS.length + "):", "color:#7B1FA2;font-weight:bold");
+  criticos.forEach(v => console.log("  🚫 [" + v.id + "] " + v.titulo));
+  console.log("%cConsulte: window._VERSION_LOG | window._VICIOS_CONHECIDOS", "color:#8899AA;font-size:11px");
+  console.groupEnd();
+})();
+</script>
+</body>
+</html>
