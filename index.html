@@ -2451,7 +2451,8 @@ function _appendExtras(rows, incluirExtras, calcFn, endDate) {
     const rowsDoAno = rows.filter(r => r.ano === ano && r.tipo === 'normal');
     const ultimaRowAno = rowsDoAno[rowsDoAno.length - 1];
     if (!ultimaRowAno) return;  // nenhuma diferença neste ano
-    const refDevidaDez = ultimaRowAno.refDevida;
+    const refDevidaDez  = ultimaRowAno.refDevida;
+    const refAtual      = ultimaRowAno.refRecebida;  // o que o servidor recebe (sem parâmetro externo)
 
     if (refDevidaDez === refAtual) return;
     const recDez = calcFn(refAtual,     dezembro1);
