@@ -692,7 +692,7 @@
                   <option value="docente">🎓 Docente — Lei n.º 1.126/2007 (PCCR Magistério Municipal)</option>
                   <option value="admin">🗂️ Administrativo — Lei n.º 1.118/2007 (PCCR Administrativo SEMED)</option>
                 </select>
-                <span class="field-hint">Docente: refs A1, B1, C1, D1, D2 | Administrativo: refs A1-L2 (24 níveis)</span>
+                <span class="field-hint">Docente: refs A1-D2 | Administrativo: refs A1-L2 (24 níveis)</span>
               </div>
 
               <hr class="form-divider" />
@@ -701,7 +701,7 @@
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
                 <select id="m-ref">
                   <optgroup label="Docente (A1–D2)">
-                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>D2</option>
+                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option><option>D2</option>
                   </optgroup>
                   <optgroup label="Administrativo — E1–L2" id="m-ref-admin-opts" style="display:none">
                     <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
@@ -715,7 +715,7 @@
                 <select id="m-ref-inicial">
                   <option value="">Igual à Referência Atual</option>
                   <optgroup label="Docente (A1–D1)">
-                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option>
+                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option>
                   </optgroup>
                   <optgroup label="Administrativo — A1–K2" id="m-refinic-admin-opts" style="display:none">
                     <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
@@ -762,25 +762,89 @@
                 </select>
                 <span class="field-hint">Define o vencimento base conforme PCCR da SES/AM</span>
               </div>
-              <div class="field"><label class="field-label">Classe Atual <span class="req">*</span></label>
-                <select id="se-classe">
+              <div class="field"><label class="field-label">Classe / Referência Atual <span class="req">*</span></label>
+                <select id="se-classe" onchange="atualizarClasseInicialSES()">
                   <option value="">Selecione...</option>
-                  <option value="I">Classe I — Ingresso</option>
-                  <option value="II">Classe II — 2 anos de efetivo exercício</option>
-                  <option value="III">Classe III — 4 anos</option>
-                  <option value="IV">Classe IV — 6 anos</option>
-                  <option value="V">Classe V — 8 anos</option>
-                  <option value="VI">Classe VI — 10 anos</option>
-                  <option value="VII">Classe VII — 12 anos</option>
-                  <option value="VIII">Classe VIII — 14 anos</option>
+                  <optgroup label="Sup/Méd — Classe A (0 a 9 anos)">
+                    <option value="A1">A-1 — 0 a 2 anos</option>
+                    <option value="A2">A-2 — 2 a 4 anos</option>
+                    <option value="A3">A-3 — 4 a 6 anos</option>
+                    <option value="A4">A-4 — 6 a 8 anos</option>
+                  </optgroup>
+                  <optgroup label="Sup/Méd — Classe B (9 a 17 anos)">
+                    <option value="B1">B-1 — 8 a 10 anos</option>
+                    <option value="B2">B-2 — 10 a 12 anos</option>
+                    <option value="B3">B-3 — 12 a 14 anos</option>
+                    <option value="B4">B-4 — 14 a 16 anos</option>
+                  </optgroup>
+                  <optgroup label="Sup/Méd — Classe C (17 a 25 anos)">
+                    <option value="C1">C-1 — 16 a 18 anos</option>
+                    <option value="C2">C-2 — 18 a 20 anos</option>
+                    <option value="C3">C-3 — 20 a 22 anos</option>
+                    <option value="C4">C-4 — 22 a 24 anos</option>
+                  </optgroup>
+                  <optgroup label="Sup/Méd — Classe D (25+ anos)">
+                    <option value="D1">D-1 — 24 a 26 anos</option>
+                    <option value="D2">D-2 — 26 a 28 anos</option>
+                    <option value="D3">D-3 — 28 a 30 anos</option>
+                    <option value="D4">D-4 — 31+ anos</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — Classe E (0 a 9 anos)">
+                    <option value="E1">E-1 — 0 a 2 anos</option>
+                    <option value="E2">E-2 — 2 a 4 anos</option>
+                    <option value="E3">E-3 — 4 a 6 anos</option>
+                    <option value="E4">E-4 — 6 a 8 anos</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — Classe F (9 a 17 anos)">
+                    <option value="F1">F-1 — 8 a 10 anos</option>
+                    <option value="F2">F-2 — 10 a 12 anos</option>
+                    <option value="F3">F-3 — 12 a 14 anos</option>
+                    <option value="F4">F-4 — 14 a 16 anos</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — Classe G (17 a 25 anos)">
+                    <option value="G1">G-1 — 16 a 18 anos</option>
+                    <option value="G2">G-2 — 18 a 20 anos</option>
+                    <option value="G3">G-3 — 20 a 22 anos</option>
+                    <option value="G4">G-4 — 22 a 24 anos</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — Classe H (25+ anos)">
+                    <option value="H1">H-1 — 24 a 26 anos</option>
+                    <option value="H2">H-2 — 26 a 28 anos</option>
+                    <option value="H3">H-3 — 28 a 30 anos</option>
+                    <option value="H4">H-4 — 31+ anos</option>
+                  </optgroup>
                 </select>
-                <span class="field-hint">Classe constante no ato de nomeação/portaria atual</span>
+                <span class="field-hint">Classe e referência constantes na portaria ou contracheque atual</span>
               </div>
-              <div class="field"><label class="field-label">Classe no Ingresso (se diferente)</label>
+              <div class="field"><label class="field-label">Classe / Referência no Ingresso (se diferente)</label>
                 <select id="se-classe-inicial">
                   <option value="">Igual à Classe Atual</option>
-                  <option value="I">Classe I</option><option value="II">Classe II</option><option value="III">Classe III</option><option value="IV">Classe IV</option>
+                  <optgroup label="Sup/Méd — A">
+                    <option value="A1">A-1</option><option value="A2">A-2</option><option value="A3">A-3</option><option value="A4">A-4</option>
+                  </optgroup>
+                  <optgroup label="Sup/Méd — B">
+                    <option value="B1">B-1</option><option value="B2">B-2</option><option value="B3">B-3</option><option value="B4">B-4</option>
+                  </optgroup>
+                  <optgroup label="Sup/Méd — C">
+                    <option value="C1">C-1</option><option value="C2">C-2</option><option value="C3">C-3</option><option value="C4">C-4</option>
+                  </optgroup>
+                  <optgroup label="Sup/Méd — D">
+                    <option value="D1">D-1</option><option value="D2">D-2</option><option value="D3">D-3</option><option value="D4">D-4</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — E">
+                    <option value="E1">E-1</option><option value="E2">E-2</option><option value="E3">E-3</option><option value="E4">E-4</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — F">
+                    <option value="F1">F-1</option><option value="F2">F-2</option><option value="F3">F-3</option><option value="F4">F-4</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — G">
+                    <option value="G1">G-1</option><option value="G2">G-2</option><option value="G3">G-3</option><option value="G4">G-4</option>
+                  </optgroup>
+                  <optgroup label="Auxiliar I — H">
+                    <option value="H1">H-1</option><option value="H2">H-2</option><option value="H3">H-3</option><option value="H4">H-4</option>
+                  </optgroup>
                 </select>
+                <span class="field-hint">Deixe em branco se ingressou na mesma classe atual. Ex: E1 → F2 = selecione E1 aqui</span>
               </div>
 
               <hr class="form-divider" />
@@ -892,6 +956,11 @@
               <hr class="form-divider" />
               <div class="form-section-title">📊 Dados Funcionais — PMAM (Lei n.º 3.725/2012 | CHOA — QOAPM)</div>
               <div class="field"><label class="field-label">Data de Ingresso na Corporação <span class="req">*</span></label><input type="date" id="pm-posse" /></div>
+              <div class="field">
+                <label class="field-label">Data da Última Promoção ao Posto Atual</label>
+                <input type="date" id="pm-data-promocao" />
+                <span class="field-hint">⚠️ Preencha se o ingresso na corporação for diferente do ingresso no posto atual. O interstício é contado a partir desta data. Ex: entrou em 2010, virou Sgt2 em 2018 → informe 2018.</span>
+              </div>
               <div class="field"><label class="field-label">Posto / Graduação Atual <span class="req">*</span></label>
                 <select id="pm-posto">
                   <option value="">Selecione...</option>
@@ -922,9 +991,9 @@
                 </select>
                 <span class="field-hint">Posto/Graduação constante na portaria de nomeação atual</span>
               </div>
-              <div class="field"><label class="field-label">Posto / Graduação no Ingresso</label>
+              <div class="field"><label class="field-label">Posto / Graduação no Início do Retroativo</label>
                 <select id="pm-posto-inicial">
-                  <option value="">Igual ao atual</option>
+                  <option value="">Igual ao atual (sem mudança de posto)</option>
                   <option value="aluno">Aluno-Soldado</option>
                   <option value="soldado2">Soldado de 2.ª Classe</option>
                   <option value="soldado1">Soldado de 1.ª Classe</option>
@@ -936,7 +1005,7 @@
                   <option value="tenente2_qoapm">2.º Tenente QOAPM (CHOA)</option>
                   <option value="tenente1_qoapm">1.º Tenente QOAPM</option>
                 </select>
-                <span class="field-hint">Se o caso envolver CHOA: selecione "Subtenente" como ingresso</span>
+                <span class="field-hint">Informe o posto que o servidor RECEBIA no início do período reivindicado. Ex: estava como Sgt2 e deveria ser Sgt1 → informe Sgt2. Se ingressou como Aluno e agora é Sgt1, informe Aluno-Soldado. Para CHOA: selecione Subtenente.</span>
               </div>
               <div class="field"><label class="field-label">Posto que <strong>Deveria Estar</strong> (Devida)</label>
                 <select id="pm-posto-devida">
@@ -1023,6 +1092,11 @@
               <hr class="form-divider" />
               <div class="form-section-title">📊 Dados Funcionais — PCAM (Lei n.º 2.875/2004 | Lei n.º 4.059/2014)</div>
               <div class="field"><label class="field-label">Data de Ingresso no Cargo <span class="req">*</span></label><input type="date" id="pc-posse" /></div>
+              <div class="field">
+                <label class="field-label">Data da Última Promoção ao Cargo Atual</label>
+                <input type="date" id="pc-data-promocao" />
+                <span class="field-hint">⚠️ Preencha se o ingresso na carreira for anterior à última promoção. O interstício é contado a partir desta data.</span>
+              </div>
               <div class="field"><label class="field-label">Cargo / Quadro <span class="req">*</span></label>
                 <select id="pc-quadro">
                   <option value="">Selecione...</option>
@@ -1245,72 +1319,6 @@
 </footer>
 
 <script>
-// ╔══════════════════════════════════════════════════════════════════════════════╗
-// ║  AKE — AXIOMATIC KERNEL ENGINE · UNIFIED FIELD THEORY                       ║
-// ║  Protocolo: UFT-1.0 · Arquivo Soberano · Motor de Cálculo Jurídico         ║
-// ╠══════════════════════════════════════════════════════════════════════════════╣
-// ║  @domain    Direito Administrativo — Diferenças Salariais (Servidores/AM)   ║
-// ║  @author    Paulo Esteves Fernandes Neto                                     ║
-// ║  @client    LAADV — Luís Albert Advocacia                                    ║
-// ║  @version   2.0.0-ake                                                       ║
-// ║  @build     GENESIS_RETROFIT                                                ║
-// ║  @created   2026-03-24                                                      ║
-// ║                                                                              ║
-// ║  CLASSIFICAÇÃO AKE:                                                          ║
-// ║    Perfil:        Soberano (Library interna: tabelas salariais + SELIC)      ║
-// ║    Camada 1 (Library):   SELIC_MENSAL{} — 87 meses BCB (2019-01 a 2026-03) ║
-// ║                          TABELAS_SALARIAIS{} — SEDUC, SEMED, SES, SEMSA,   ║
-// ║                          PM, PC com vigências e bases legais                 ║
-// ║                          TABELAS_APOIO_SUPERIOR/FUNDAMENTAL — SEDUC Apoio   ║
-// ║    Camada 2 (Logic):     fatorSelicAcumulado() — EC 113/2021 (juros comp.)  ║
-// ║                          calcular() — Motor principal de apuração           ║
-// ║                          detectarCarreiraSeduc() — Classificação de cargo   ║
-// ║    Camada 3 (Metadata):  JSDoc com base legal por axioma                    ║
-// ║    Camada 4 (Log):       AKE_BUILD_LOG ativo                                ║
-// ║    Camada 6 (UI):        Formulário, tabela de resultados, PDF, exportação  ║
-// ║                                                                              ║
-// ║  BASE LEGAL EMBUTIDA:                                                        ║
-// ║    - Lei n.º 3.951/2013 (PCCR SEDUC/AM)                                     ║
-// ║    - Lei n.º 4.836/2019 (Reestruturação SEDUC)                              ║
-// ║    - Lei n.º 3.469/2009 (Reajustes servidores)                              ║
-// ║    - EC 113/2021 (Correção monetária pela SELIC)                            ║
-// ║    - STJ Tema 1075 (Prescrição quinquenal)                                  ║
-// ║                                                                              ║
-// ║  DEPENDÊNCIAS EXTERNAS (somente persistência opcional, não cálculo):        ║
-// ║    - Google Sheets API (salvar/carregar processos — não crítico)             ║
-// ║    - Google Fonts: Outfit                                                    ║
-// ║                                                                              ║
-// ║  O motor de cálculo é 100% soberano. Opera offline.                         ║
-// ╚══════════════════════════════════════════════════════════════════════════════╝
-
-// ============================================================================
-// CAMADA 4 — LOG ENGINE
-// ============================================================================
-const AKE_BUILD_LOG = Object.freeze([{
-  build: "2.0.0-ake",
-  data: "2026-03-24T11:00:00-04:00",
-  autor: "Paulo Esteves Fernandes Neto",
-  ia_assistente: "Claude Opus 4.6",
-  tipo: "GENESIS_RETROFIT",
-  descricao: "Retrofit AKE no motor de cálculo de diferenças salariais LAADV v2.0. Soberano — toda a base legal e tabelas SELIC embutidas.",
-  estado_pre_retrofit: { linhas: 3732, dados: "SELIC 87 meses + 6 tabelas salariais + Apoio SEDUC" },
-  axiomas_identificados: [
-    "CORE_RULES{} — Prescrição 60 meses, índice SELIC EC113, marco temporal SEDUC 2019-03",
-    "SELIC_MENSAL{} — 87 taxas efetivas mensais BCB (2019-01 a 2026-03)",
-    "fatorSelicAcumulado() — Juros compostos mês a mês conforme EC 113/2021",
-    "TABELAS_SALARIAIS{} — 6 carreiras: SEDUC, SEMED, SES, SEMSA, PM, PC",
-    "detectarCarreiraSeduc() — Classificação Professor vs Apoio (Superior/Fundamental)",
-    "getValorBaseApoio() — Lookup de vencimento base por subtipo e data de referência",
-    "calcular() — Motor principal: gera linhas mensais com diferença, fator SELIC, total corrigido"
-  ],
-  tentativas_falhas: [],
-  erros_corrigidos: []
-}]);
-
-// ============================================================================
-// CAMADA 1 — THE LIBRARY (Conhecimento Estático — Soberano)
-// ============================================================================
-
 // =============================================================
 // LAADV v2.0 — Sistema Completo de Cálculo Administrativo
 // Educação (SEDUC/SEMED) | Saúde (SES/SEMSA) | Segurança (PM/PC)
@@ -1321,11 +1329,6 @@ const AKE_BUILD_LOG = Object.freeze([{
 // 1. BASE DE DADOS SALARIAL COMPLETA
 // ─────────────────────────────────────────
 
-/**
- * @meta Regras-núcleo do motor de cálculo
- * @source STJ Tema 1075 (prescrição) | EC 113/2021 (SELIC) | Lei 4.836/2019 (marco SEDUC)
- * @ake_rule AKE-LIB-001
- */
 // ─────────────────────────────────────────
 // CONFIG GLOBAL (JSON v5.0 — LAADV 2026)
 // ─────────────────────────────────────────
@@ -1336,17 +1339,13 @@ const CORE_RULES = {
 };
 
 // ─────────────────────────────────────────
-/**
- * @meta Tabela SELIC Mensal — EC 113/2021
- * @source BCB — Banco Central do Brasil (taxas efetivas mensais)
- * @url https://www.bcb.gov.br/estatisticas/tabelahistoricataxaselic
- * @coverage 2019-01 a 2026-03 (87 meses)
- * @precision 4 casas decimais
- * @update_frequency Mensal — inserir conforme publicação BCB
- * @warning Valores de 2025-04 em diante devem ser conferidos mensalmente
- * @sovereignty SOBERANO — dados embutidos
- * @ake_rule AKE-LIB-001
- */
+// TABELA SELIC MENSAL — EC 113/2021
+// Fonte: BCB (taxas efetivas mensais, arredondadas em 4 casas)
+// Atualizada até março/2026 — inserir mensalmente conforme BCB
+// ATENÇÃO: valores de 2025-04 em diante devem ser conferidos mensalmente
+// em https://www.bcb.gov.br/estatisticas/tabelahistoricataxaselic
+// Qualquer divergência impacta diretamente os totais corrigidos por SELIC.
+// ─────────────────────────────────────────
 const SELIC_MENSAL = {
   '2019-01':0.0054,'2019-02':0.0054,'2019-03':0.0057,'2019-04':0.0052,
   '2019-05':0.0054,'2019-06':0.0052,'2019-07':0.0057,'2019-08':0.0050,
@@ -1527,20 +1526,40 @@ const REGRAS = {
     marco: new Date('2019-03-01'),
   },
   SEMED: {
-    referencias:  ['A1','B1','C1','D1','D2'],
+    referencias:  ['A1','A2','B1','B2','C1','C2','D1','D2'],
     multRefs:     { A1:1.000, A2:1.020, B1:1.150, B2:1.173, C1:1.322, C2:1.349, D1:1.520, D2:1.551 },
     intersticioUnico: 24,
   },
-  // SES: 8 classes (I–VIII), interstício bienal (2 anos), progressão horizontal +2% por classe
+  // SES/SUSAM: Lei n.º 3.469/2009
+  // Progressão bienal (+2% por referência dentro da classe, mudança de classe a cada 4 refs)
+  // Sup/Méd: A1→A2→A3→A4→B1→...→D4 (16 posições, 0-31+ anos)
+  // Aux I:   E1→E2→E3→E4→F1→...→H4 (16 posições, mesmos intervalos)
+  // Ambas as trilhas têm o mesmo multiplicador por posição (só a base difere pelo nível S/M/A)
   SES: {
-    // Multiplicadores do vencimento base (Nível S) por nível de habilitação
-    niveis: { S: 1.000, M: 0.3074, A: 0.2553 },
-    // Base nível M: R$ 1.516,02 → 1516.02/4931.52 = 0.3074
-    // Base nível A: R$ 1.258,90 → 1258.90/4931.52 = 0.2553
-    referencias: ['I','II','III','IV','V','VI','VII','VIII'],
-    // +2% por classe (bienal)
-    multRefs: { I:1.000, II:1.020, III:1.040, IV:1.060, V:1.080, VI:1.100, VII:1.120, VIII:1.140 },
-    intersticioUnico: 24, // 2 anos
+    niveis: {
+      S: 1.000,  // Nível Superior (Médico, Enfermeiro, Farmacêutico...)
+      M: 0.3074, // Nível Médio (Técnico de Enfermagem...) — base ~R$1.516 / R$4.932
+      A: 0.2553, // Nível Auxiliar — base ~R$1.259 / R$4.932
+    },
+    // Trilha Sup/Méd (A1–D4) e Auxiliar I (E1–H4)
+    // Ambas mapeiam para os mesmos multiplicadores por posição (+2% a cada 2 anos)
+    referenciasSM: ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4'],
+    referenciasAI: ['E1','E2','E3','E4','F1','F2','F3','F4','G1','G2','G3','G4','H1','H2','H3','H4'],
+    // Multiplicadores: +2% por posição (mesmo para SM e AI)
+    multRefs: {
+      A1:1.000, A2:1.020, A3:1.040, A4:1.060,
+      B1:1.080, B2:1.100, B3:1.120, B4:1.140,
+      C1:1.160, C2:1.180, C3:1.200, C4:1.220,
+      D1:1.240, D2:1.260, D3:1.280, D4:1.300,
+      E1:1.000, E2:1.020, E3:1.040, E4:1.060,
+      F1:1.080, F2:1.100, F3:1.120, F4:1.140,
+      G1:1.160, G2:1.180, G3:1.200, G4:1.220,
+      H1:1.240, H2:1.260, H3:1.280, H4:1.300,
+    },
+    // referencias: lista unificada para o motor (detecta trilha pelo prefixo)
+    referencias: ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4',
+                  'E1','E2','E3','E4','F1','F2','F3','F4','G1','G2','G3','G4','H1','H2','H3','H4'],
+    intersticioUnico: 24, // 2 anos por referência
   },
   // SEMSA: igual à estrutura SEMED (letra+número), interstício 2 anos
   SEMSA: {
@@ -1716,6 +1735,30 @@ function toggleSEMEDAdmin() {
   const adminInic  = document.getElementById('m-refinic-admin-opts');
   if (adminOpts) adminOpts.style.display = isAdmin ? '' : 'none';
   if (adminInic) adminInic.style.display = isAdmin ? '' : 'none';
+}
+
+/**
+ * Ao selecionar Classe Atual no SES, filtra o select de Classe no Ingresso
+ * para mostrar apenas a mesma trilha (SM: A-D, ou AI: E-H).
+ */
+function atualizarClasseInicialSES() {
+  const atual = document.getElementById('se-classe')?.value;
+  const sel   = document.getElementById('se-classe-inicial');
+  if (!sel || !atual) return;
+  const trilhaSM = ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4'];
+  const isSM = trilhaSM.includes(atual);
+  // Mostrar/ocultar optgroups pela letra inicial
+  Array.from(sel.querySelectorAll('optgroup')).forEach(grp => {
+    const labelLetra = grp.label.trim().charAt(0);
+    const letrasSM = ['A','B','C','D'];
+    const letrasAI = ['E','F','G','H'];
+    if (isSM) grp.style.display = letrasSM.includes(labelLetra) ? '' : 'none';
+    else       grp.style.display = letrasAI.includes(labelLetra) ? '' : 'none';
+  });
+  // Resetar seleção se incompatível
+  const classeInicOpts = Array.from(sel.options).map(o => o.value).filter(Boolean);
+  const trilhaAtual = isSM ? trilhaSM : ['E1','E2','E3','E4','F1','F2','F3','F4','G1','G2','G3','G4','H1','H2','H3','H4'];
+  if (sel.value && !trilhaAtual.includes(sel.value)) sel.value = '';
 }
 
 // Estado global
@@ -1903,8 +1946,26 @@ function gerarDemonstrativoEduc(params) {
   // GAA Admin: SEDUC admin = 30% fixo; SEMED admin = sem GAA
   const pctGAA  = (isAdmin && area === 'seduc') ? (pctGAA_admin || REGRAS.SEDUC_ADMIN.gaa) : 0;
 
+  // ── CAP AUTOMÁTICO DE PROGRESSÕES ─────────────────────────────────────────
+  // O número máximo de progressões exigíveis é determinado automaticamente:
+  // 1 progressão que já era devida no início do retroativo (startDate)
+  // + quantas progressões cabem dentro do período (startDate → endDate).
+  // Isso evita que posseDate mais antiga do que o ingresso real na carreira
+  // gere progressões extras além do juridicamente possível.
+  // Exemplo: A1, startDate=MAR/2023, endDate=MAR/2026, interstício=24 meses
+  //   → 1 + floor(36/24) = 2 progs → teto C1 (correto)
+  const intersticioUnico = cfg.intersticioUnico || cfg.intersticioNovo || 24;
+  const progsMaximasPeriodo = 1 + Math.floor(diffMonths(startDate, endDate) / intersticioUnico);
+  const idxRefInicial = refList.indexOf(refInicial);
+  const idxCap        = Math.min(idxRefInicial + progsMaximasPeriodo, refList.length - 1);
+
+  function refComCap(refBase, nProgs) {
+    const idxBase = refList.indexOf(refBase);
+    return refList[Math.min(idxBase + nProgs, idxCap)];
+  }
+
   const progsTotal = calcularProgressoesEduc(area, posseDate, endDate);
-  const refDevida  = refAposProgressoes(refInicial, refList, progsTotal);
+  const refDevida  = refComCap(refInicial, progsTotal);
   const numProgressoesAtraso = Math.max(0, refList.indexOf(refDevida) - refList.indexOf(refInicial));
 
   const rows = [], erros = [];
@@ -1913,7 +1974,7 @@ function gerarDemonstrativoEduc(params) {
 
   while (cursor <= endM) {
     const progsAteMes  = calcularProgressoesEduc(area, posseDate, cursor);
-    const refDevidaMes = refAposProgressoes(refInicial, refList, progsAteMes);
+    const refDevidaMes = refComCap(refInicial, progsAteMes);
     if (refDevidaMes === refInicial) { cursor = addMonths(cursor, 1); continue; }
 
     const recItem = calcVencimentoEduc(areaUp, classe, refInicial,   cursor, pctLoc, pctReg, pctGAA);
@@ -1941,7 +2002,7 @@ function gerarDemonstrativoEduc(params) {
       if (dezembro1 > endDate) return;
 
       const progsAteDez  = calcularProgressoesEduc(area, posseDate, dezembro1);
-      const refDevidaDez = refAposProgressoes(refInicial, refList, progsAteDez);
+      const refDevidaDez = refComCap(refInicial, progsAteDez);
       if (refDevidaDez === refInicial) return;
       const recDez = calcVencimentoEduc(areaUp, classe, refInicial,   dezembro1, pctLoc, pctReg, pctGAA);
       const devDez = calcVencimentoEduc(areaUp, classe, refDevidaDez, dezembro1, pctLoc, pctReg, pctGAA);
@@ -1997,11 +2058,23 @@ function gerarDemonstrativoEduc(params) {
 function gerarDemonstrativoSES(params) {
   const { nome, matricula, cargo, posseDate, nivel, classeInicial, classeAtual,
           pctGTS, pctGAA, nQuinq, startDate, endDate, incluirExtras } = params;
-  const refList = REGRAS.SES.referencias;
 
-  // Progressões em atraso: servidor está em classeAtual mas possivelmente deveria ter avançado mais
+  // Detecta trilha pelo prefixo da classe informada
+  // SM = A-D (Sup/Méd), AI = E-H (Auxiliar I)
+  const trilhaSM = ['A1','A2','A3','A4','B1','B2','B3','B4','C1','C2','C3','C4','D1','D2','D3','D4'];
+  const trilhaAI = ['E1','E2','E3','E4','F1','F2','F3','F4','G1','G2','G3','G4','H1','H2','H3','H4'];
+  const refList  = trilhaSM.includes(classeInicial) ? trilhaSM : trilhaAI;
+
+  // Cap automático de progressões (mesmo padrão do Educ — REV-14)
+  const progsMaximas = 1 + Math.floor(diffMonths(startDate, endDate) / 24);
+  const idxIni = refList.indexOf(classeInicial);
+  const idxCap = Math.min(idxIni + progsMaximas, refList.length - 1);
+  function classeComCap(base, nProgs) {
+    return refList[Math.min(refList.indexOf(base) + nProgs, idxCap)];
+  }
+
   const progsDevidas = Math.floor(diffMonths(posseDate, endDate) / 24);
-  const classeDevida = refList[Math.min(refList.indexOf(classeInicial) + progsDevidas, refList.length-1)];
+  const classeDevida = classeComCap(classeInicial, progsDevidas);
   const numProgressoesAtraso = Math.max(0, refList.indexOf(classeDevida) - refList.indexOf(classeAtual));
 
   const rows = [], erros = [];
@@ -2010,7 +2083,7 @@ function gerarDemonstrativoSES(params) {
 
   while (cursor <= endM) {
     const progsAteMes = Math.floor(diffMonths(posseDate, cursor) / 24);
-    const classeDevidaMes = refList[Math.min(refList.indexOf(classeInicial) + progsAteMes, refList.length-1)];
+    const classeDevidaMes = classeComCap(classeInicial, progsAteMes);
     if (classeDevidaMes === classeAtual) { cursor = addMonths(cursor,1); continue; }
 
     const recItem = calcVencimentoSES(nivel, classeAtual,    cursor, pctGTS, pctGAA, nQuinq);
@@ -2113,6 +2186,7 @@ function getTrilhaProgresso(cfg, postoKey) {
  * - Se não: usa listaPostos global (fallback, compatível com sistemas sem trilhas)
  */
 function calcPostoDevido(cfg, listaPostos, postoInicial, nProgs) {
+  if (nProgs <= 0) return postoInicial;  // sem progressão ainda — retorna posto atual
   const trilha = getTrilhaProgresso(cfg, postoInicial);
   if (trilha) {
     const idxT = trilha.indexOf(postoInicial);
@@ -2126,15 +2200,18 @@ function calcPostoDevido(cfg, listaPostos, postoInicial, nProgs) {
 function gerarDemonstrativoSeguranca(params) {
   const { area, nome, matricula, cargo, posseDate, postoAtual, postoInicial,
           incluirAdicional, incluirChoa, startDate, endDate, incluirExtras,
-          postoDevidaFixo } = params;                      // ← campo opcional (REV-6)
+          postoDevidaFixo, dataReferenciaIntersticio } = params;
   const cfg = REGRAS[area.toUpperCase()];
   const listaPostos = Object.keys(area === 'pmam' ? cfg.postos : cfg.cargos);
 
+  // ── DATA DE REFERÊNCIA PARA INTERSTÍCIO ───────────────────────────────────
+  // dataReferenciaIntersticio = data em que o militar foi promovido ao postoInicial.
+  // DIFERENTE de posseDate (data de ingresso na corporação).
+  // Um PM que entrou em 2010 e virou Sgt2 em 2018: posseDate=2010, dataRef=2018.
+  // Quando não informado, usa posseDate como fallback (comportamento anterior).
+  const dataRef = dataReferenciaIntersticio || posseDate;
+
   // ── MODO POSTO DEVIDA FIXO ────────────────────────────────────────────────
-  // Quando o operador preenche "Posto que deveria estar", usamos esse valor
-  // diretamente para todos os meses, sem calcular via posseDate + interstício.
-  // Resolve o caso de PM/PC que JÁ foi promovido mas quer retroativo do atraso,
-  // ou quando a data de ingresso informada não é a data original na corporação.
   const modoFixo = !!(postoDevidaFixo && postoDevidaFixo !== postoAtual);
 
   // ── MODO CHOA (PMAM) ──────────────────────────────────────────────────────
@@ -2157,7 +2234,7 @@ function gerarDemonstrativoSeguranca(params) {
   // impedindo que agentes "progridam" para delegado ou praças para oficiais.
   const idxAtual   = listaPostos.indexOf(postoAtual);
   const idxInicial = listaPostos.indexOf(postoInicial);
-  const mesesTotal = diffMonths(posseDate, endDate);
+  const mesesTotal = diffMonths(dataRef, endDate);
 
   let postoDevido;
   if (modoFixo) {
@@ -2167,6 +2244,37 @@ function gerarDemonstrativoSeguranca(params) {
   } else {
     const progsDevidas = Math.floor(mesesTotal / (cfg.intersticioPromo || 36));
     postoDevido = calcPostoDevido(cfg, listaPostos, postoInicial, progsDevidas);
+  }
+
+  // ── AUTO-DETECÇÃO CENÁRIO A ───────────────────────────────────────────────
+  // Se o postoDevido calculado === postoAtual, significa que o servidor já foi
+  // promovido ao posto correto, mas quer o retroativo do período em que estava
+  // no posto inferior. Neste caso, elevamos automaticamente postoDevido para o
+  // próximo posto da trilha acima de postoAtual, e usamos postoAtual como
+  // "recebido" (o que ele recebeu durante o atraso).
+  // Exemplo: sgt2 → devia ser sgt1 desde mês 36, só foi promovido no mês 48.
+  // Período retroativo: mês 36 a 48. postoAtual=sgt1, postoInicial=sgt2.
+  // O sistema calcularia postoDevido=sgt1=postoAtual → sem diferença.
+  // Com auto-detecção: postoDevido=sgt1 (já é o posto correto), postoAtual
+  // passa a ser tratado como o ANTERIOR (sgt2) durante o período.
+  // NOTA: isso só se aplica quando postoInicial < postoAtual na trilha,
+  // indicando que houve promoção — e o retroativo é sobre o atraso dessa promoção.
+  let autoDetectado = false;
+  let postoAnteriorAutoDetect = null;
+  if (!modoFixo) {
+    const trilhaAuto = getTrilhaProgresso(cfg, postoAtual);
+    if (trilhaAuto) {
+      const tIdxAtual   = trilhaAuto.indexOf(postoAtual);
+      const tIdxInicial = trilhaAuto.indexOf(postoInicial);
+      // Auto-detecção: postoInicial está ABAIXO de postoAtual na trilha
+      // → servidor foi promovido; retroativo sobre o período de atraso
+      if (tIdxInicial >= 0 && tIdxInicial < tIdxAtual) {
+        autoDetectado = true;
+        postoAnteriorAutoDetect = postoInicial;
+        // postoDevido já é o calculado; no loop a inversão dinâmica
+        // garante postoRecebidoMes = postoDevidoMes e postoDevidoMes = postoAtual
+      }
+    }
   }
   // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha
   const trilhaRef = getTrilhaProgresso(cfg, modoFixo ? postoAtual : postoInicial);
@@ -2184,26 +2292,46 @@ function gerarDemonstrativoSeguranca(params) {
   const endM = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
 
   while (cursor <= endM) {
-    const mesesAteAgora = diffMonths(posseDate, cursor);
+    const mesesAteAgora = diffMonths(dataRef, cursor);
+    if (mesesAteAgora < 0) { cursor = addMonths(cursor, 1); continue; }
     let postoDevidoMes;
+    let postoRecebidoMes; // = postoAtual normalmente, mas = postoInicial no modo autoDetectado
     if (modoFixo) {
-      postoDevidoMes = postoDevidaFixo;           // posto fixo — mesmo valor todos os meses
+      postoDevidoMes   = postoDevidaFixo;
+      postoRecebidoMes = postoAtual;
+    } else if (autoDetectado) {
+      // Modo retroativo de promoção: servidor estava em postoInicial, deveria estar em postoAtual.
+      // Fixo para TODO o período — progs intermediárias são irrelevantes para este cálculo.
+      postoRecebidoMes = postoAnteriorAutoDetect; // postoInicial (o que recebia)
+      postoDevidoMes   = postoAtual;              // o que deveria ter recebido
     } else if (area === 'pmam' && incluirChoa) {
-      postoDevidoMes = postoDevidoCHOA(postoInicial, mesesAteAgora);
+      postoDevidoMes   = postoDevidoCHOA(postoInicial, mesesAteAgora);
+      postoRecebidoMes = postoAtual;
     } else {
       const progsAteMes = Math.floor(mesesAteAgora / (cfg.intersticioPromo || 36));
-      postoDevidoMes = calcPostoDevido(cfg, listaPostos, postoInicial, progsAteMes);
+      postoDevidoMes   = calcPostoDevido(cfg, listaPostos, postoInicial, progsAteMes);
+      postoRecebidoMes = postoAtual;
+      // Inversão residual: caso não-autoDetectado onde postoDevidoMes < postoAtual
+      const trilhaInv = getTrilhaProgresso(cfg, postoAtual);
+      if (trilhaInv && postoDevidoMes !== postoAtual) {
+        const tIdxAtual  = trilhaInv.indexOf(postoAtual);
+        const tIdxDevido = trilhaInv.indexOf(postoDevidoMes);
+        if (tIdxDevido >= 0 && tIdxDevido < tIdxAtual) {
+          postoRecebidoMes = postoDevidoMes;
+          postoDevidoMes   = postoAtual;
+        }
+      }
     }
-    if (postoDevidoMes === postoAtual) { cursor = addMonths(cursor,1); continue; }
+    if (postoDevidoMes === postoRecebidoMes) { cursor = addMonths(cursor,1); continue; }
 
-    const recItem = calcVencimentoSeguranca(area, postoAtual,    cursor, incluirAdicional);
-    const devItem = calcVencimentoSeguranca(area, postoDevidoMes, cursor, incluirAdicional);
+    const recItem = calcVencimentoSeguranca(area, postoRecebidoMes, cursor, incluirAdicional);
+    const devItem = calcVencimentoSeguranca(area, postoDevidoMes,   cursor, incluirAdicional);
     if (!recItem || !devItem) { erros.push('Vigência não encontrada: '+fmtMes(cursor)); cursor = addMonths(cursor,1); continue; }
 
     const diff = parseFloat((devItem.sal - recItem.sal).toFixed(2));
     if (diff <= 0) { cursor = addMonths(cursor,1); continue; }
 
-    rows.push({ competencia: fmtMes(cursor), refRecebida: postoAtual, vencRecebido: recItem.sal,
+    rows.push({ competencia: fmtMes(cursor), refRecebida: postoRecebidoMes, vencRecebido: recItem.sal,
       refDevida: postoDevidoMes, vencDevido: devItem.sal, lei: devItem.lei,
       diffMensal: diff, extras: 0, totalLinha: diff,
       fatorSelic: fatorSelicAcumulado(cursor),
@@ -2218,19 +2346,36 @@ function gerarDemonstrativoSeguranca(params) {
     anos.forEach(ano => {
       const dezembro1 = new Date(ano, 11, 1);
       if (dezembro1 > endDate) return;
-      const mesesDez = diffMonths(posseDate, dezembro1);
-      let postoDez;
+      const mesesDez = diffMonths(dataRef, dezembro1);
+      if (mesesDez < 0) return;
+      let postoDez, postoRecDez;
       if (modoFixo) {
-        postoDez = postoDevidaFixo;
+        postoDez    = postoDevidaFixo;
+        postoRecDez = postoAtual;
+      } else if (autoDetectado) {
+        postoDez    = postoAtual;
+        postoRecDez = postoAnteriorAutoDetect;
       } else if (area === 'pmam' && incluirChoa) {
-        postoDez = postoDevidoCHOA(postoInicial, mesesDez);
+        postoDez    = postoDevidoCHOA(postoInicial, mesesDez);
+        postoRecDez = postoAtual;
       } else {
         const progsDez = Math.floor(mesesDez / (cfg.intersticioPromo || 36));
-        postoDez = calcPostoDevido(cfg, listaPostos, postoInicial, progsDez);
+        postoDez    = calcPostoDevido(cfg, listaPostos, postoInicial, progsDez);
+        postoRecDez = postoAtual;
+        // Inversão residual
+        const trilhaInvDez = getTrilhaProgresso(cfg, postoAtual);
+        if (trilhaInvDez && postoDez !== postoAtual) {
+          const tIdxA = trilhaInvDez.indexOf(postoAtual);
+          const tIdxD = trilhaInvDez.indexOf(postoDez);
+          if (tIdxD >= 0 && tIdxD < tIdxA) {
+            postoRecDez = postoDez;
+            postoDez    = postoAtual;
+          }
+        }
       }
-      if (postoDez === postoAtual) return;
-      const recDez = calcVencimentoSeguranca(area, postoAtual, dezembro1, incluirAdicional);
-      const devDez = calcVencimentoSeguranca(area, postoDez,   dezembro1, incluirAdicional);
+      if (postoDez === postoRecDez) return;
+      const recDez = calcVencimentoSeguranca(area, postoRecDez, dezembro1, incluirAdicional);
+      const devDez = calcVencimentoSeguranca(area, postoDez,    dezembro1, incluirAdicional);
       if (!recDez || !devDez) return;
       const diffDez = parseFloat((devDez.sal - recDez.sal).toFixed(2));
       if (diffDez <= 0) return;
@@ -2241,7 +2386,7 @@ function gerarDemonstrativoSeguranca(params) {
       if (diffDecimo <= 0) return;
 
       extrasRows.push({ competencia: '13º SAL. '+ano+(avos<12?` (${avos}/12 avos)`:''),
-        refRecebida:postoAtual, vencRecebido:recDez.sal,
+        refRecebida:postoRecDez, vencRecebido:recDez.sal,
         refDevida:postoDez, vencDevido:devDez.sal, lei:devDez.lei,
         diffMensal:diffDecimo, extras:diffDecimo,
         totalLinha:diffDecimo,
@@ -2250,7 +2395,7 @@ function gerarDemonstrativoSeguranca(params) {
         tipo:'13o', ano, mes:13 });
       const diffFer = parseFloat((diffDecimo/3).toFixed(2));
       extrasRows.push({ competencia:'1/3 FÉRIAS '+ano+(avos<12?` (${avos}/12 avos)`:''),
-        refRecebida:postoAtual,
+        refRecebida:postoRecDez,
         vencRecebido:parseFloat((recDez.sal/3).toFixed(2)), vencDevido:parseFloat((devDez.sal/3).toFixed(2)),
         refDevida:postoDez, lei:devDez.lei, diffMensal:diffFer, extras:0, totalLinha:diffFer,
         fatorSelic: fatorSelicAcumulado(dezembro1),
@@ -2267,9 +2412,24 @@ function gerarDemonstrativoSeguranca(params) {
   const totalDiff      = parseFloat(rows.reduce((s,r) => s+r.diffMensal, 0).toFixed(2));
   const totalCorrigido = parseFloat(rows.reduce((s,r) => s+(r.diffCorrigida||r.diffMensal), 0).toFixed(2));
   const nMeses         = rows.filter(r=>r.tipo==='normal').length;
+
+  // ── ALERTA: linhas descartadas antes da primeira diferença ───────────────
+  // Detecta quando startDate foi informado antes do primeiro interstício calculado,
+  // ou seja, o sistema está ignorando meses que o operador pensava que seriam incluídos.
+  // Causa: dataRef (data de promoção ao posto) é posterior a startDate.
+  const primeiraCompetencia = rows.find(r => r.tipo === 'normal');
+  const alertaLinhasDescartadas = !modoFixo && primeiraCompetencia
+    && diffMonths(startDate, new Date(primeiraCompetencia.ano, primeiraCompetencia.mes, 1)) > 0;
+  // Data do primeiro interstício calculado
+  const dataCalculadaPrimeiraProgressao = !modoFixo
+    ? new Date(dataRef.getFullYear(), dataRef.getMonth() + (cfg.intersticioPromo || 36), 1)
+    : null;
+
   return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial: postoAtual, refDevida: postoDevido,
     area, nome, matricula, cargo, posseDate, startDate, endDate, incluirExtras,
-    postoAtual, postoInicial, postoDevido, incluirAdicional, dataCalculo: new Date() };
+    postoAtual, postoInicial, postoDevido, incluirAdicional, dataCalculo: new Date(),
+    alertaLinhasDescartadas, dataCalculadaPrimeiraProgressao, dataReferenciaIntersticio: dataRef,
+    autoDetectado, postoAnteriorAutoDetect };
 }
 
 // Helper para adicionar linhas de 13º e férias (SES / SEMSA)
@@ -2429,8 +2589,28 @@ function calcular() {
   }
 
   if (resultado.rows.length === 0 && (!resultado.erros || resultado.erros.length === 0)) {
-    errEl.textContent = 'Nenhuma diferença encontrada no período. Verifique os dados informados.';
-    errEl.className = 'alert alert-info';
+    const area = AREA_FORM;
+    let msgExtra = '';
+    if (area === 'pmam' || area === 'pcam') {
+      const labelDevida  = area === 'pmam' ? '"Posto que Deveria Estar (Devida)"' : '"Cargo / Classe que Deveria Estar (Devida)"';
+      const labelPromoc  = area === 'pmam' ? '"Data da Última Promoção ao Posto Atual"' : '"Data da Última Promoção ao Cargo Atual"';
+      const idDevida     = area === 'pmam' ? 'pm-posto-devida'    : 'pc-quadro-devida';
+      const idPromocao   = area === 'pmam' ? 'pm-data-promocao'   : 'pc-data-promocao';
+      const devidaVal    = document.getElementById(idDevida)?.value;
+      const promocaoVal  = document.getElementById(idPromocao)?.value;
+      if (!devidaVal && !promocaoVal) {
+        msgExtra = `<br><br><strong>Como resolver:</strong><br>`
+          + `<strong>Opção 1 (recomendada):</strong> Preencha o campo ${labelDevida} com o posto/cargo que o servidor deveria ocupar. `
+          + `O sistema irá calcular a diferença diretamente, sem precisar da data de promoção.<br>`
+          + `<strong>Opção 2:</strong> Preencha ${labelPromoc} com a data em que o servidor foi promovido ao posto atual. `
+          + `O sistema usará essa data para contar o interstício de 36 meses corretamente.`;
+      } else if (!devidaVal && promocaoVal) {
+        msgExtra = `<br><br>A data de promoção foi informada (${promocaoVal}), mas o interstício de 36 meses ainda não se completou dentro do período retroativo. `
+          + `Verifique se a data está correta, ou preencha ${labelDevida} para forçar o posto devida diretamente.`;
+      }
+    }
+    errEl.innerHTML = '⚠️ Nenhuma diferença salarial encontrada no período informado.' + msgExtra;
+    errEl.className = 'alert alert-warn';
     errEl.classList.remove('hidden');
     return;
   }
@@ -2653,6 +2833,7 @@ function _coletarPMAM() {
   const matricula    = v('pm-matricula');
   const cargo        = v('pm-cargo') || '';
   const posseStr     = v('pm-posse');
+  const dataPromocaoStr = v('pm-data-promocao');   // data da última promoção ao posto (REV-7)
   const postoAtual   = v('pm-posto');
   const postoInicStr = v('pm-posto-inicial');
   const postoDevidaStr = v('pm-posto-devida');    // campo opcional REV-6
@@ -2668,13 +2849,14 @@ function _coletarPMAM() {
   if (!postoAtual) throw new Error('Selecione o posto/graduação atual.');
   if (!inicioStr) throw new Error('Informe a data de início do retroativo.');
   if (!fimStr) throw new Error('Informe a data de fim do retroativo.');
-
   const posseDate  = parseDate(posseStr);
   const startDate  = parseDate(inicioStr);
   const endDate    = parseDate(fimStr);
+  const dataPromocao_pm = dataPromocaoStr ? parseDate(dataPromocaoStr) : null;
+  const dataReferenciaIntersticio_pm = dataPromocao_pm || posseDate;
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
-
+  if (dataPromocao_pm && dataPromocao_pm > endDate) throw new Error('A data da última promoção não pode ser posterior ao fim do período.');
   // Bloquear data fim futura
   const hoje_pm = new Date(); hoje_pm.setHours(0,0,0,0);
   if (endDate > hoje_pm) throw new Error('A data de fim não pode ser uma data futura. Use a data de hoje ou a data de regularização.');
@@ -2717,7 +2899,8 @@ function _coletarPMAM() {
 
   const resultado_pm = gerarDemonstrativoSeguranca({ area:'pmam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGT, incluirChoa,
-    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr || null });
+    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr || null,
+    dataReferenciaIntersticio: dataReferenciaIntersticio_pm });
   resultado_pm.alertaPrescricao = alertaPrescricao_pm;
   resultado_pm.cincoAnos = cincoAnos_pm;
   return resultado_pm;
@@ -2730,6 +2913,7 @@ function _coletarPCAM() {
   const matricula  = v('pc-matricula');
   const cargo      = v('pc-cargo') || '';
   const posseStr   = v('pc-posse');
+  const dataPromocaoStr_pc = v('pc-data-promocao');  // data última promoção (REV-7)
   const postoAtual = v('pc-quadro');
   const postoInicStr = v('pc-quadro-inicial');
   const postoDevidaStr_pc = v('pc-quadro-devida');   // campo opcional REV-6
@@ -2748,8 +2932,11 @@ function _coletarPCAM() {
   const posseDate  = parseDate(posseStr);
   const startDate  = parseDate(inicioStr);
   const endDate    = parseDate(fimStr);
+  const dataPromocao_pc = dataPromocaoStr_pc ? parseDate(dataPromocaoStr_pc) : null;
+  const dataReferenciaIntersticio_pc = dataPromocao_pc || posseDate;
   if (startDate >= endDate) throw new Error('Data de início deve ser anterior à data de fim.');
   if (posseDate > startDate) throw new Error('Data de ingresso deve ser anterior ou igual ao início do retroativo.');
+  if (dataPromocao_pc && dataPromocao_pc > endDate) throw new Error('A data da última promoção não pode ser posterior ao fim do período.');
 
   // Bloquear data fim futura
   const hoje_pc = new Date(); hoje_pc.setHours(0,0,0,0);
@@ -2787,7 +2974,8 @@ function _coletarPCAM() {
 
   const resultado_pc = gerarDemonstrativoSeguranca({ area:'pcam', nome, matricula, cargo, posseDate,
     postoAtual, postoInicial, incluirAdicional: incluirGEP,
-    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr_pc || null });
+    startDate, endDate, incluirExtras: extras, postoDevidaFixo: postoDevidaStr_pc || null,
+    dataReferenciaIntersticio: dataReferenciaIntersticio_pc });
   resultado_pc.alertaPrescricao = alertaPrescricao_pc;
   resultado_pc.cincoAnos = cincoAnos_pc;
   return resultado_pc;
@@ -2810,6 +2998,21 @@ function renderizarResultados(res) {
       + `Verifique antes de apresentar ao tribunal.`;
     errEl.className = 'alert alert-warn';
     errEl.classList.remove('hidden');
+  }
+
+  // Alerta de linhas descartadas (PMAM/PCAM): startDate anterior ao primeiro interstício calculado
+  if (res.alertaLinhasDescartadas && res.dataCalculadaPrimeiraProgressao) {
+    const alertaDesc = document.createElement('div');
+    alertaDesc.className = 'alert alert-warn';
+    alertaDesc.innerHTML = `⚠️ <strong>Atenção — Período parcialmente calculado:</strong> `
+      + `O sistema calculou o primeiro interstício a partir de <strong>${fmtData(res.dataReferenciaIntersticio)}</strong> `
+      + `(data de referência informada). A primeira progressão devida só foi identificada a partir de `
+      + `<strong>${fmtData(res.dataCalculadaPrimeiraProgressao)}</strong>, `
+      + `mas o início do retroativo informado foi <strong>${fmtData(startDate)}</strong>. `
+      + `<br>Se o servidor foi promovido ao posto atual antes da data de ingresso informada, preencha o campo `
+      + `<strong>"Data da Última Promoção ao Posto Atual"</strong> com a data correta `
+      + `ou use o campo <strong>"Posto que Deveria Estar"</strong> para forçar o posto devida.`;
+    errEl.parentNode.insertBefore(alertaDesc, errEl.nextSibling);
   }
 
   // Labels e fundamento por área
@@ -2854,6 +3057,18 @@ function renderizarResultados(res) {
     addInfo = res.incluirAdicional ? ' | G.T. incluída' : ' | G.T. não incluída';
   } else if (areaKey === 'pcam') {
     addInfo = res.incluirAdicional ? ' | GEP: +100%' : ' | GEP não incluída';
+  }
+
+  // Banner informativo quando modo auto-detectado foi ativado
+  if (res.autoDetectado && res.postoAnteriorAutoDetect) {
+    const bannerAuto = document.createElement('div');
+    bannerAuto.className = 'alert alert-info';
+    bannerAuto.style.marginBottom = '1rem';
+    bannerAuto.innerHTML = `ℹ️ <strong>Cálculo automático de retroativo de promoção:</strong> `
+      + `O sistema identificou que o servidor já está no posto <strong>${escH(res.postoAtual)}</strong> (posto devida), `
+      + `mas o período retroativo cobre o atraso em que recebia como <strong>${escH(res.postoAnteriorAutoDetect)}</strong>. `
+      + `A diferença calculada corresponde ao período em que a promoção deveria ter sido efetivada.`;
+    errEl.parentNode.insertBefore(bannerAuto, errEl.nextSibling);
   }
 
   // escHtml para proteger dados do usuário contra XSS
@@ -3207,7 +3422,7 @@ const PREVIEW_FIELDS = {
     { section: '📊 Dados Funcionais' },
     { id:'se-posse',      label:'Data de Posse',       obs:'Início do vínculo',                    type:'date',   req:true },
     { id:'se-nivel',      label:'Nível',               obs:'S / M / A',                            type:'select', req:true },
-    { id:'se-classe',     label:'Classe Atual',        obs:'I a VIII',                             type:'select', req:true },
+    { id:'se-classe',     label:'Classe/Ref. Atual',   obs:'A1–D4 (Sup/Méd) | E1–H4 (Aux I)',     type:'select', req:true },
     { id:'se-gts',        label:'GTS',                 obs:'% sobre vencimento base',              type:'select', req:false },
     { id:'se-gaa',        label:'GAA',                 obs:'Atividade Assistencial',               type:'select', req:false },
     { section: '📅 Período' },
@@ -3232,6 +3447,7 @@ const PREVIEW_FIELDS = {
     { id:'pm-matricula',  label:'RG Funcional',        obs:'Número funcional PMAM',                type:'text',   req:true },
     { section: '📊 Dados Funcionais' },
     { id:'pm-posse',      label:'Data de Ingresso',    obs:'Na corporação',                        type:'date',   req:true },
+    { id:'pm-data-promocao', label:'Data Última Promoção', obs:'Ao posto atual (se diferente)',     type:'date',   req:false },
     { id:'pm-posto',      label:'Posto/Graduação',     obs:'Atual',                                type:'select', req:true },
     { id:'pm-posto-devida', label:'Posto Devida',      obs:'Preencher se conhecido',               type:'select', req:false },
     { name:'pm-gt',       label:'Grat. de Tropa',      obs:'% sobre o subsídio',                   type:'radio',  req:true },
@@ -3245,6 +3461,7 @@ const PREVIEW_FIELDS = {
     { id:'pc-matricula',  label:'Matrícula',           obs:'Número funcional PCAM',                type:'text',   req:true },
     { section: '📊 Dados Funcionais' },
     { id:'pc-posse',      label:'Data de Ingresso',    obs:'No cargo',                             type:'date',   req:true },
+    { id:'pc-data-promocao', label:'Data Última Promoção', obs:'Ao cargo atual (se diferente)',    type:'date',   req:false },
     { id:'pc-quadro',     label:'Cargo/Classe',        obs:'Atual',                                type:'select', req:true },
     { id:'pc-quadro-devida', label:'Cargo Devida',     obs:'Preencher se conhecido',               type:'select', req:false },
     { name:'pc-gep',      label:'GEP',                 obs:'100% sobre venc. base',                type:'radio',  req:true },
@@ -3329,8 +3546,8 @@ function bindPreviewListeners() {
     'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-inicio','m-fim','m-categoria',
     'se-nome','se-matricula','se-cargo','se-posse','se-nivel','se-classe','se-classe-inicial','se-gts','se-gaa','se-quinquenio','se-inicio','se-fim',
     'sa-nome','sa-matricula','sa-cargo','sa-posse','sa-nivel','sa-ref','sa-ref-inicial','sa-inicio','sa-fim',
-    'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-posto','pm-posto-inicial','pm-posto-devida','pm-inicio','pm-fim',
-    'pc-nome','pc-matricula','pc-cargo','pc-posse','pc-quadro','pc-quadro-inicial','pc-quadro-devida','pc-inicio','pc-fim',
+    'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-data-promocao','pm-posto','pm-posto-inicial','pm-posto-devida','pm-inicio','pm-fim',
+    'pc-nome','pc-matricula','pc-cargo','pc-posse','pc-data-promocao','pc-quadro','pc-quadro-inicial','pc-quadro-devida','pc-inicio','pc-fim',
   ];
   allIds.forEach(id => {
     const el = document.getElementById(id);
@@ -3377,7 +3594,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-6"
+     data-versao-atual="REV-15"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3518,7 +3735,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-6 ─────────────────────────────────────────────────── -->
-  <div data-rev="REV-6" data-data="2026-03-19" data-status="ATUAL">
+  <div data-rev="REV-6" data-data="2026-03-19" data-status="SUPERADA">
     <span data-tipo="FIX" data-bug="PMAM-PCAM-tabela-vazia-data-ingresso">
       CORRIGIDO: "Nenhuma diferença encontrada" para PMAM/PCAM quando o
       operador não sabe/não informa a data de ingresso original, ou quando
@@ -3539,6 +3756,134 @@ document.addEventListener('DOMContentLoaded', () => {
       Adicionados ao allIds do live preview e ao PREVIEW_FIELDS.
       Parâmetro postoDevidaFixo propagado por gerarDemonstrativoSeguranca,
       loop mensal e loop de extras (13º/férias).
+    </span>
+  </div>
+
+  <!-- ── REV-7 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-7" data-data="2026-03-19" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="PMAM-PCAM-periodo-incompleto-intersticio">
+      CORRIGIDO: cálculo iniciava somente após o primeiro interstício medido
+      desde posseDate (data de ingresso na corporação). Para PM promovido há
+      anos ao posto atual (ex: sgt2 em 2018 mas ingresso em 2010), o motor
+      calculava 36 meses a partir de 2010, gerando primeira diferença em 2013
+      — mas se o retroativo foi pedido a partir de 2021, os meses de 2021 a
+      2022 eram descartados silenciosamente. Caso real: Johnny Bronson pediu
+      desde 2021, apareceu só 2023.
+      Solução: campo "Data da Última Promoção ao Posto Atual" (pm-data-promocao /
+      pc-data-promocao). Quando preenchido, o motor usa essa data como
+      dataReferenciaIntersticio em vez de posseDate para medir o interstício.
+      Adicionado alerta visual quando linhas foram descartadas antes do startDate.
+      Vício V10 documentado.
+    </span>
+  </div>
+
+  <!-- ── REV-8 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-8" data-data="2026-03-20" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="vigencia-nao-encontrada-mesesAteAgora-negativo">
+      CORRIGIDO: erro "Vigência não encontrada" para todos os meses entre
+      startDate e dataReferenciaIntersticio quando dataRef > startDate.
+      Causa: diffMonths(dataRef, cursor) retorna negativo quando cursor
+      está antes de dataRef. Math.floor(-5/36) = -1 → calcPostoDevido
+      recebia nProgs=-1 → trilha[idxT-1] = trilha[-1] = undefined →
+      calcVencimentoSeguranca(area, undefined, ...) → cfg.postos[undefined]
+      = undefined → retorna null → erro "Vigência não encontrada" para
+      cada mês até dataRef.
+      Fixes: (1) calcPostoDevido protegido — nProgs menor ou igual a 0
+      retorna postoInicial imediatamente; (2) loop mensal pula meses
+      onde mesesAteAgora < 0 (cursor antes de dataRef); (3) loop de
+      extras (13º/férias) com mesma proteção.
+    </span>
+  </div>
+
+  <!-- ── REV-9 ─────────────────────────────────────────────────── -->
+  <div data-rev="REV-9" data-data="2026-03-20" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="mensagem-nenhuma-diferenca-generica">
+      CORRIGIDO: mensagem "Nenhuma diferença encontrada" era genérica e não
+      orientava o operador. Para PMAM e PCAM, o sistema agora detecta a causa
+      provável e exibe orientação específica: se nenhum campo auxiliar foi
+      preenchido (pm-posto-devida / pm-data-promocao), orienta o operador a
+      usar a Opção 1 (posto devida) ou Opção 2 (data da promoção). Se a data
+      de promoção foi preenchida mas o interstício não completou, informa isso
+      explicitamente com o valor informado e sugere alternativa.
+    </span>
+  </div>
+
+  <!-- ── REV-10 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-10" data-data="2026-03-20" data-status="SUPERADA">
+    <span data-tipo="FIX" data-bug="auto-deteccao-cenario-retroativo-promocao">
+      CORRIGIDO: "Nenhuma diferença" quando servidor já foi promovido e quer
+      retroativo do período de atraso. Sistema agora detecta automaticamente:
+      se postoDevido calculado === postoAtual E postoInicial está abaixo na
+      trilha, ativa modoAutoDetectado — trata postoInicial como "recebido"
+      e postoAtual como "devida" para todos os meses do período.
+      Elimina necessidade de campo manual "Posto que Deveria Estar" na
+      maioria dos casos. Banner informativo exibido na tela de resultados
+      quando auto-detecção foi ativada.
+    </span>
+  </div>
+
+  <div data-rev="REV-11" data-data="2026-03-20" data-status="SUPERADA">
+    <span data-tipo="FIX" data-id="INVERSAO_DINAMICA">
+      Fix parcial de inversão automática. Falha quando progsAteMes >= 1 retorna
+      postoDevidoMes = postoAtual — inversão não dispara. VICIO_EVITAR: inversão
+      dinâmica por comparação de índice NÃO é suficiente quando postoDevidoMes
+      pode igualar postoAtual. Use o branch autoDetectado com valores fixos.
+    </span>
+  </div>
+
+  <!-- ── REV-12 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-12" data-data="2026-03-20" data-status="SUPERADA">
+    <span data-tipo="FIX" data-id="AUTODETECT_BYPASS_PROGS">
+      CORRIGIDO: "só 2023 pra cá" mesmo sem pm-data-promocao.
+      Causa raiz: loop usava inversão dinâmica que falha quando progsAteMes≥1
+      retorna postoDevidoMes=postoAtual → inversão não dispara → ambos sgt1 → skip.
+      Fix: branch autoDetectado bypassa completamente o cálculo de progs.
+      Quando postoInicial menor que postoAtual na trilha: recebido=postoInicial,
+      devida=postoAtual para TODOS os meses do período.
+      VICIO_EVITAR: inversão dinâmica é insuficiente quando postoDevidoMes pode
+      igualar postoAtual em algum mês. Sempre usar branch autoDetectado com
+      postoRecebidoMes/postoDevidoMes fixos quando retroativo de promoção.
+    </span>
+    <span data-tipo="IMPL" data-id="NOVO_LOG_FORMAT">
+      Sistema de log migrado para formato estruturado com data-id em cada span,
+      fixes como objetos {id,desc} no _VERSION_LOG JS, console aprimorado.
+    </span>
+  </div>
+
+  <!-- ── REV-13 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-13" data-data="2026-03-24" data-status="SUPERADA">
+    <span data-tipo="FIX" data-id="REF_MAX_CAP">
+      Fix com campo manual s-ref-max / m-ref-max. Descartado — contrário ao
+      princípio de automação. Substituído por cap automático na REV-14.
+      VICIO_EVITAR: não criar campos manuais para informações que o sistema
+      pode calcular com os dados já disponíveis.
+    </span>
+  </div>
+
+  <!-- ── REV-14 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-14" data-data="2026-03-24" data-status="SUPERADA">
+    <span data-tipo="FIX" data-id="CAP_AUTOMATICO_PROGS">
+      CORRIGIDO: progressões além do devido sem campo manual.
+      Cap automático: progsMaximas = 1 + floor((endDate - startDate) / intersticio).
+      O "1" representa a progressão já devida no início do retroativo.
+      As demais representam quantas cabem dentro do período.
+      Campos manuais s-ref-max / m-ref-max removidos.
+      Verificação: A1, MAR/2023→MAR/2026, intersticio=24
+      → 1 + floor(36/24) = 2 progs → teto C1 ✓
+    </span>
+  </div>
+
+  <!-- ── REV-15 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-15" data-data="2026-03-24" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="SES_CLASSE_NOTACAO">
+      CORRIGIDO: formulário SES usava Classe I–VIII (8 posições) em vez da
+      notação oficial da Lei 3.469/2009 (A1–D4 para Sup/Méd, E1–H4 para Aux I).
+      Reestruturação: REGRAS.SES.multRefs expandido para 32 chaves (16 SM + 16 AI),
+      cada uma com +2% por posição. Trilha detectada automaticamente pelo prefixo.
+      Motor usa classeComCap() com cap automático por período (herda padrão REV-14).
+      Função atualizarClasseInicialSES() filtra select de ingresso pela mesma trilha.
+      Caso de uso direto: "está na E1, deveria estar na F2" — selecionar E1 em
+      "Classe no Ingresso" e preencher período retroativo.
     </span>
   </div>
 
@@ -3599,6 +3944,26 @@ document.addEventListener('DOMContentLoaded', () => {
       do ingresso original), progsAteMes = 0 → tabela vazia sem erro.
       SEMPRE oferecer campo postoDevidaFixo como override. Quando preenchido,
       usar esse valor diretamente (modoFixo = true), ignorando posseDate.
+    </span>
+    <span data-vicio="V10" data-severidade="ALTA">
+      VÍCIO V10 — CONFUSÃO ENTRE posseDate E dataReferenciaIntersticio:
+      posseDate = data de ingresso na corporação (ex: 2010).
+      dataReferenciaIntersticio = data em que o militar foi promovido ao
+      posto ATUAL — que é o ponto de partida real do interstício (ex: 2018).
+      Usar posseDate para medir interstício faz o motor pular meses válidos.
+      SEMPRE oferecer campo pm-data-promocao / pc-data-promocao. Quando
+      preenchido, usar parseDate desse campo como dataRef, não posseDate.
+    </span>
+    <span data-vicio="V11" data-severidade="CRITICA">
+      VÍCIO V11 — diffMonths NEGATIVO DESTRÓI ARRAY INDEX:
+      Se cursor está antes de dataRef, diffMonths(dataRef, cursor) é negativo.
+      Math.floor(negativo/36) ainda é negativo. calcPostoDevido recebe nProgs
+      negativo → trilha[idxT + negativo] = trilha[-1] = undefined → passa
+      undefined para calcVencimentoSeguranca → retorna null → "Vigência não
+      encontrada" para cada mês afetado.
+      SEMPRE proteger: (1) calcPostoDevido com guard nProgs <= 0 → return postoInicial;
+      (2) loop mensal com if (mesesAteAgora < 0) continue;
+      (3) loop extras com if (mesesDez < 0) return.
     </span>
   </div>
 
@@ -3699,7 +4064,7 @@ window._VERSION_LOG = [
   {
     rev: "REV-6",
     data: "2026-03-19",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Campo postoDevidaFixo em PMAM/PCAM. Resolve 'Nenhuma diferença encontrada' por data de ingresso errada.",
     fixes: [
       "PMAM: adicionado campo pm-posto-devida (Posto que Deveria Estar). Quando preenchido, motor usa valor fixo em todos os meses, eliminando dependência de posseDate.",
@@ -3710,98 +4075,122 @@ window._VERSION_LOG = [
       "Vício V09 documentado: dependência exclusiva de posseDate no motor PMAM/PCAM."
     ],
     bugs_pendentes: []
+  },
+  {
+    rev: "REV-7",
+    data: "2026-03-19",
+    status: "SUPERADA",
+    descricao: "Fix crítico PMAM/PCAM: período incompleto por confusão posseDate vs dataReferenciaIntersticio.",
+    fixes: [
+      "Causa raiz: motor usava posseDate (ingresso na corporação) para medir interstício. PM promovido ao posto atual em 2018 mas com ingresso em 2010 gerava interstício contado de 2010, pulando anos válidos. Caso real: Johnny Bronson pediu desde 2021, apareceu só 2023.",
+      "PMAM: adicionado campo pm-data-promocao ('Data da Última Promoção ao Posto Atual'). Quando preenchido, o motor usa essa data como dataReferenciaIntersticio em vez de posseDate.",
+      "PCAM: adicionado campo pc-data-promocao com mesma lógica.",
+      "gerarDemonstrativoSeguranca: aceita parâmetro dataReferenciaIntersticio. Usado em mesesTotal, loop mensal e loop de extras (13º/férias).",
+      "Alerta visual adicionado à tela de resultados quando linhas foram descartadas antes do startDate informado (detecta e avisa o operador).",
+      "Campos adicionados ao allIds do live preview e ao PREVIEW_FIELDS (PMAM e PCAM).",
+      "Vício V10 documentado: distinção obrigatória entre posseDate e dataReferenciaIntersticio."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-8",
+    data: "2026-03-20",
+    status: "SUPERADA",
+    descricao: "Fix crítico: 'Vigência não encontrada' causado por diffMonths negativo destruindo índice de array.",
+    fixes: [
+      "calcPostoDevido: adicionado guard 'if (nProgs <= 0) return postoInicial'. Nenhuma progressão negativa pode entrar na função.",
+      "Loop mensal: 'if (mesesAteAgora < 0) continue' — meses antes de dataRef são pulados silenciosamente.",
+      "Loop extras (13º/férias): 'if (mesesDez < 0) return' — dezembro antes de dataRef não gera extras.",
+      "Vício V11 documentado: diffMonths negativo → índice negativo de array → undefined → crash silencioso."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-9",
+    data: "2026-03-20",
+    status: "SUPERADA",
+    descricao: "UX fix: mensagem diagnóstica específica quando rows.length=0 em PMAM/PCAM.",
+    fixes: [
+      "Mensagem 'Nenhuma diferença encontrada' substituída por diagnóstico contextual para PMAM/PCAM.",
+      "Detecta qual campo está faltando (pm-posto-devida ou pm-data-promocao) e orienta o operador com instruções específicas.",
+      "Caso 1: nenhum campo auxiliar preenchido → mostra Opção 1 (posto devida) e Opção 2 (data promoção).",
+      "Caso 2: data de promoção preenchida mas interstício não completo → informa data informada e sugere usar campo devida.",
+      "Para outras áreas (SEDUC/SEMED/SES/SEMSA): mantém mensagem genérica de verificação."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-10",
+    data: "2026-03-20",
+    status: "SUPERADA",
+    descricao: "Auto-detecção de retroativo de promoção: elimina necessidade do campo manual 'Posto que Deveria Estar' na maioria dos casos.",
+    fixes: [
+      "Auto-detecção Cenário A: se postoDevido calculado === postoAtual E postoInicial está abaixo na trilha, ativa modoAutoDetectado.",
+      "modoAutoDetectado: postoInicial = 'recebido' (o que recebia durante o atraso), postoAtual = 'devida' (o que deveria ter sido).",
+      "Loop mensal refatorado: usa postoRecebidoMes em vez de hardcoded postoAtual.",
+      "Loop extras (13º/férias): usa postoRecDez em vez de hardcoded postoAtual.",
+      "Banner informativo na tela de resultados explica o que o sistema detectou.",
+      "Campo 'Posto que Deveria Estar' permanece disponível para casos que a auto-detecção não cobre."
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-11",
+    data: "2026-03-20",
+    status: "SUPERADA",
+    descricao: "Fix parcial de inversão. Falha quando progsAteMes>=1 retorna postoDevidoMes=postoAtual.",
+    fixes: [
+      { id: "INVERSAO_DINAMICA", desc: "Inversão dinâmica por índice de trilha — funcionava só para progs=0." }
+    ],
+    bugs_pendentes: [
+      { id: "AUTODETECT_BYPASS_PROGS", desc: "autoDetectado não bypassa progs: para progs>=1 postoDevidoMes=postoAtual, inversão não dispara, meses pulados." }
+    ]
+  },
+  {
+    rev: "REV-12",
+    data: "2026-03-20",
+    status: "SUPERADA",
+    descricao: "Fix definitivo: autoDetectado bypassa cálculo de progs, usa postoInicial/postoAtual fixos para todo o período.",
+    fixes: [
+      { id: "AUTODETECT_BYPASS_PROGS", desc: "Loop mensal: branch autoDetectado usa postoRecebidoMes=postoInicial, postoDevidoMes=postoAtual fixos. Progs intermediárias ignoradas para retroativo de promoção." },
+      { id: "EXTRAS_AUTODETECT",       desc: "Loop extras (13º/férias): mesmo bypass aplicado com autoDetectado." },
+      { id: "NOVO_LOG_FORMAT",         desc: "fixes[] migrado para objetos {id,desc}. Console aprimorado com novo formato do sistema de versionamento." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-13",
+    data: "2026-03-24",
+    status: "SUPERADA",
+    descricao: "Campo Referência Máxima Devida (teto) para SEDUC/SEMED — impede progressões além do juridicamente correto.",
+    fixes: [
+      { id: "REF_MAX_CAP",    desc: "gerarDemonstrativoEduc aceita refMax. Função refComCap() trava idx em Math.min(idxBase+nProgs, idxMax). Aplicado no loop mensal e extras." },
+      { id: "CAMPO_REF_MAX",  desc: "s-ref-max (SEDUC) e m-ref-max (SEMED) adicionados ao formulário. Coletados em _coletarEduc e passados ao gerador." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-14",
+    data: "2026-03-24",
+    status: "SUPERADA",
+    descricao: "Cap automático de progressões SEDUC/SEMED — sem campo manual.",
+    fixes: [
+      { id: "CAP_AUTOMATICO_PROGS", desc: "progsMaximas = 1 + floor((endDate-startDate)/intersticio). Cap via refComCap() aplicado no loop mensal e extras. Campos manuais s-ref-max/m-ref-max removidos." },
+      { id: "SEM_CAMPO_MANUAL",     desc: "Campos manuais descartados — sistema calcula automaticamente com startDate e endDate já disponíveis." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-15",
+    data: "2026-03-24",
+    status: "ATUAL",
+    descricao: "SES reestruturado para notação A1-D4 / E1-H4 conforme Lei 3.469/2009.",
+    fixes: [
+      { id: "SES_CLASSE_NOTACAO",  desc: "REGRAS.SES.multRefs expandido para 32 chaves. Trilha SM (A-D) ou AI (E-H) detectada pelo prefixo. Cap automático de progs herdado da REV-14." },
+      { id: "SES_FORM_SELECTS",    desc: "Selects se-classe e se-classe-inicial com optgroups A1-D4 e E1-H4. Função atualizarClasseInicialSES() filtra ingresso pela mesma trilha." }
+    ],
+    bugs_pendentes: []
   }
 ];
 
-window._VICIOS_CONHECIDOS = [
-  {
-    id: "V01",
-    severidade: "CRITICA",
-    titulo: "Direção de progressão em objetos ordenados",
-    descricao: "Object.keys(cfg.postos/cargos) está ordenado do MAIOR para o MENOR posto. Promoção = SUBTRAÇÃO de índice. Nunca somar. Usar calcPostoDevido().",
-    exemplo_errado: "listaPostos[Math.min(idxInicial + nProgs, length-1)]",
-    exemplo_correto: "calcPostoDevido(cfg, listaPostos, postoInicial, nProgs)"
-  },
-  {
-    id: "V02",
-    severidade: "CRITICA",
-    titulo: "Cruzamento de trilhas de carreira PCAM/PMAM",
-    descricao: "PCAM e PMAM têm carreiras independentes. Nunca tratar lista de cargos como escada única. Usar getTrilhaProgresso() + calcPostoDevido().",
-    exemplo_errado: "listaPostos[Math.max(idxInicial - nProgs, 0)] // cruza Agente→Delegado",
-    exemplo_correto: "calcPostoDevido(cfg, listaPostos, postoInicial, nProgs) // respeita trilha"
-  },
-  {
-    id: "V03",
-    severidade: "ALTA",
-    titulo: "Contagem de progressões sem proteção de negativos",
-    descricao: "numProgressoesAtraso pode ser negativo em cenários edge-case. Sempre proteger com Math.max(0, ...).",
-    exemplo_errado: "const n = refList.indexOf(refDevida) - refList.indexOf(refAtual)",
-    exemplo_correto: "const n = Math.max(0, refList.indexOf(refDevida) - refList.indexOf(refAtual))"
-  },
-  {
-    id: "V04",
-    severidade: "ALTA",
-    titulo: "Validações assimétricas entre áreas",
-    descricao: "Regras como bloqueio de data futura e prescrição quinquenal devem estar em TODAS as funções _coletar*. Ao adicionar validação, revisar todas as 5+.",
-    exemplo_errado: "Validação só em _coletarEduc, ausente em _coletarPMAM/_coletarPCAM",
-    exemplo_correto: "Validação replicada em _coletarEduc/_coletarSES/_coletarSEMSA/_coletarPMAM/_coletarPCAM"
-  },
-  {
-    id: "V05",
-    severidade: "MEDIA",
-    titulo: "Chaves de área inconsistentes",
-    descricao: "res.area pode ser 'seduc', 'SEDUC_ADMIN', 'SEDUC_APOIO_SUPERIOR' etc. Nunca comparar sem cobrir todas as variantes. Usar areaKey = res.area || area.",
-    exemplo_errado: "if (area === 'seduc') // não cobre SEDUC_ADMIN",
-    exemplo_correto: "const areaKey = res.area || area; if (areaKey === 'seduc' || areaKey === 'SEDUC_ADMIN' ...)"
-  },
-  {
-    id: "V06",
-    severidade: "MEDIA",
-    titulo: "Falsy check em valores monetários",
-    descricao: "r.valor ? é falso para 0 (zero). Usar != null para checar existência de números.",
-    exemplo_errado: "r.vencRecebido ? fmtMoeda(r.vencRecebido) : '—'",
-    exemplo_correto: "r.vencRecebido != null ? fmtMoeda(r.vencRecebido) : '—'"
-  },
-  {
-    id: "V07",
-    severidade: "BAIXA",
-    titulo: "Identificadores JS com caracteres especiais",
-    descricao: "Nunca usar acentos ou cedilha em nomes de variáveis/propriedades. Quebra em minificadores e cópia manual.",
-    exemplo_errado: "let alertaPrescrição = ...",
-    exemplo_correto: "let alertaPrescricao = ..."
-  },
-  {
-    id: "V08",
-    severidade: "BAIXA",
-    titulo: "Dead code acumulado",
-    descricao: "Variáveis/funções declaradas e nunca usadas confundem manutenção e auditoria. Remover ao identificar.",
-    exemplo_errado: "let AREA_ATUAL = null; // nunca lida",
-    exemplo_correto: "Remover declaração ou documentar uso pendente em bugs_pendentes"
-  },
-  {
-    id: "V09",
-    severidade: "ALTA",
-    titulo: "Dependência exclusiva de posseDate no motor PMAM/PCAM",
-    descricao: "Motor calcula postoDevido via posseDate + N×interstício. Se operador informa data errada (ex: última promoção em vez de ingresso original), progsAteMes=0 → tabela vazia sem erro. Sempre oferecer postoDevidaFixo como override.",
-    exemplo_errado: "Math.floor(diffMonths(posseDate, cursor) / 36) // depende 100% de posseDate",
-    exemplo_correto: "modoFixo ? postoDevidaFixo : calcPostoDevido(cfg, listaPostos, postoInicial, progs)"
-  }
-];
-
-(function() {
-  const atual = window._VERSION_LOG.find(v => v.status === 'ATUAL') || window._VERSION_LOG[window._VERSION_LOG.length - 1];
-  console.groupCollapsed(
-    "%c LAADV " + atual.rev + " ",
-    "background:#0B4A44;color:#C9A93E;font-weight:bold;padding:2px 8px;border-radius:3px;font-size:12px"
-  );
-  console.log("%cVersão atual: " + atual.rev + " — " + atual.data, "color:#0B4A44;font-weight:bold");
-  console.log("%c" + atual.descricao, "color:#3D4F63");
-  console.log("Fixes desta versão:", atual.fixes);
-  console.log("Bugs pendentes:", atual.bugs_pendentes.length ? atual.bugs_pendentes : "✅ Nenhum");
-  console.log("%cVícios conhecidos (" + window._VICIOS_CONHECIDOS.length + "):", "color:#9E8130;font-weight:bold", window._VICIOS_CONHECIDOS.map(v => v.id + ' ' + v.severidade + ': ' + v.titulo));
-  console.log("%cConsulte: window._VERSION_LOG | window._VICIOS_CONHECIDOS", "color:#8899AA;font-size:11px");
-  console.groupEnd();
-})();
-</script>
-</body>
-</html>
+window._VICIOS_CONHECIDOS
