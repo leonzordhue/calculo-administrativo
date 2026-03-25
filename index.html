@@ -692,7 +692,7 @@
                   <option value="docente">🎓 Docente — Lei n.º 1.126/2007 (PCCR Magistério Municipal)</option>
                   <option value="admin">🗂️ Administrativo — Lei n.º 1.118/2007 (PCCR Administrativo SEMED)</option>
                 </select>
-                <span class="field-hint">Docente: refs A1-D2 | Administrativo: refs A1-L2 (24 níveis)</span>
+                <span class="field-hint">Docente: refs A1, B1, C1, D1 | Administrativo: refs A1–L2 (24 níveis)</span>
               </div>
 
               <hr class="form-divider" />
@@ -700,8 +700,8 @@
               <div class="field"><label class="field-label">Data de Posse / Ingresso <span class="req">*</span></label><input type="date" id="m-posse" /></div>
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
                 <select id="m-ref">
-                  <optgroup label="Docente (A1–D2)">
-                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option><option>D2</option>
+                  <optgroup label="Docente (A1–D1)">
+                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option>
                   </optgroup>
                   <optgroup label="Administrativo — E1–L2" id="m-ref-admin-opts" style="display:none">
                     <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
@@ -715,7 +715,7 @@
                 <select id="m-ref-inicial">
                   <option value="">Igual à Referência Atual</option>
                   <optgroup label="Docente (A1–D1)">
-                    <option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>C1</option><option>C2</option><option>D1</option>
+                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option>
                   </optgroup>
                   <optgroup label="Administrativo — A1–K2" id="m-refinic-admin-opts" style="display:none">
                     <option>E1</option><option>E2</option><option>F1</option><option>F2</option>
@@ -725,7 +725,6 @@
                   </optgroup>
                 </select>
               </div>
-              <div class="field"></div>
 
               <hr class="form-divider" />
               <div class="form-section-title">📅 Período do Retroativo</div>
@@ -1525,9 +1524,12 @@ const REGRAS = {
     intersticioNovo:   36,
     marco: new Date('2019-03-01'),
   },
+  // SEMED: Lei n.º 1.126/2007 — PCCR Magistério Municipal
+  // Docente: apenas A1, B1, C1, D1 (uma referência por classe, sem A2/B2/C2/D2)
+  // Interstício: 24 meses por classe (A1→B1=24m, B1→C1=24m, C1→D1=24m)
   SEMED: {
-    referencias:  ['A1','A2','B1','B2','C1','C2','D1','D2'],
-    multRefs:     { A1:1.000, A2:1.020, B1:1.150, B2:1.173, C1:1.322, C2:1.349, D1:1.520, D2:1.551 },
+    referencias:  ['A1','B1','C1','D1'],
+    multRefs:     { A1:1.000, B1:1.150, C1:1.322, D1:1.520 },
     intersticioUnico: 24,
   },
   // SES/SUSAM: Lei n.º 3.469/2009
@@ -3604,7 +3606,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-18"
+     data-versao-atual="REV-19"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3929,7 +3931,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-18 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-18" data-data="2026-03-25" data-status="ATUAL">
+  <div data-rev="REV-18" data-data="2026-03-25" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="REMOVE_CAP_AUTOMATICO">
       CORRIGIDO: cap automático REV-14 limitava progressões ao teto
       1+floor(período/24), travando todo o período no mesmo teto mesmo
@@ -3940,6 +3942,19 @@ document.addEventListener('DOMContentLoaded', () => {
       A posseDate correta já determina o número exato de progressões.
       VICIO_EVITAR: nunca limitar progressões por fórmula baseada no período
       retroativo — isso é independente da posseDate real do servidor.
+    </span>
+  </div>
+
+  <!-- ── REV-19 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-19" data-data="2026-03-25" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="SEMED_REFS_CORRETAS">
+      CORRIGIDO: SEMED docente tinha A2, B2, C2, D2 no select e na refList,
+      mas o PCCR Lei 1.126/2007 define apenas A1, B1, C1, D1 (uma referência
+      por classe). A2/B2/C2/D2 não existem no plano de carreira SEMED.
+      Fix: REGRAS.SEMED.referencias = ['A1','B1','C1','D1'], multRefs com
+      apenas as 4 chaves válidas. Selects m-ref e m-ref-inicial atualizados.
+      VICIO_EVITAR: nunca assumir que SEMED tem a mesma estrutura A1/A2/B1/B2
+      do SEDUC. São PCCRs distintos com leis diferentes.
     </span>
   </div>
 
@@ -4270,10 +4285,20 @@ window._VERSION_LOG = [
   {
     rev: "REV-18",
     data: "2026-03-25",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Remoção do cap automático de progressões SEDUC/SEMED — confia na posseDate correta.",
     fixes: [
       { id: "REMOVE_CAP_AUTOMATICO", desc: "Cap 1+floor(período/24) removido de gerarDemonstrativoEduc. refComCap() agora chama refAposProgressoes() sem teto. posseDate=MAR/2018 → MAR/2026=C1 correto." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-19",
+    data: "2026-03-25",
+    status: "ATUAL",
+    descricao: "SEMED docente corrigido para A1, B1, C1, D1 — PCCR Lei 1.126/2007 não tem A2/B2/C2/D2.",
+    fixes: [
+      { id: "SEMED_REFS_CORRETAS", desc: "REGRAS.SEMED.referencias=['A1','B1','C1','D1']. multRefs com 4 chaves. Selects m-ref e m-ref-inicial atualizados. interstício=24m por classe." }
     ],
     bugs_pendentes: []
   }
@@ -4311,6 +4336,15 @@ window._VICIOS_CONHECIDOS = [
     descricao: "1+floor(período/24) limita todas as progressões ao mesmo teto independente da posseDate. Ex: MAR/2018→2026 (96m=4progs=C1) capado em B1 (2progs). Nunca limitar por período — posseDate correta determina progressões.",
     exemplo_errado: "const cap = 1+Math.floor(diffMonths(start,end)/24); refList[min(idx+n, cap)]",
     exemplo_correto: "refAposProgressoes(refBase, refList, nProgs) // sem cap, confia na posseDate"
+  }
+,
+  {
+    id: "V17",
+    severidade: "CRITICA",
+    titulo: "SEMED docente: A2/B2/C2/D2 não existem no PCCR",
+    descricao: "Lei 1.126/2007 SEMED define apenas A1, B1, C1, D1 para docente. Nunca incluir A2/B2/C2/D2 na refList ou no select. SEDUC é diferente (tem A/B/C/D sem número, ou com subdivisões próprias).",
+    exemplo_errado: "referencias: ['A1','A2','B1','B2','C1','C2','D1','D2']",
+    exemplo_correto: "referencias: ['A1','B1','C1','D1'] // SEMED docente"
   }
 ];
 
