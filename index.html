@@ -1525,12 +1525,12 @@ const REGRAS = {
     marco: new Date('2019-03-01'),
   },
   // SEMED: Lei n.º 1.126/2007 — PCCR Magistério Municipal
-  // Docente: apenas A1, B1, C1, D1 (uma referência por classe, sem A2/B2/C2/D2)
-  // Interstício: 24 meses por classe (A1→B1=24m, B1→C1=24m, C1→D1=24m)
+  // Docente: A1, B1, C1, D1 — progressão QUADRIENAL (4 anos / 48 meses por classe)
+  // A1→B1=48m, B1→C1=48m, C1→D1=48m
   SEMED: {
     referencias:  ['A1','B1','C1','D1'],
     multRefs:     { A1:1.000, B1:1.150, C1:1.322, D1:1.520 },
-    intersticioUnico: 24,
+    intersticioUnico: 48,
   },
   // SES/SUSAM: Lei n.º 3.469/2009
   // Tabela tempo de serviço: 0-3 anos=ref1, 3-5=ref2, 5-7=ref3, 7-9=ref4, 9-11=B/F1...
@@ -3606,7 +3606,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-19"
+     data-versao-atual="REV-20"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3946,7 +3946,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-19 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-19" data-data="2026-03-25" data-status="ATUAL">
+  <div data-rev="REV-19" data-data="2026-03-25" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="SEMED_REFS_CORRETAS">
       CORRIGIDO: SEMED docente tinha A2, B2, C2, D2 no select e na refList,
       mas o PCCR Lei 1.126/2007 define apenas A1, B1, C1, D1 (uma referência
@@ -3955,6 +3955,21 @@ document.addEventListener('DOMContentLoaded', () => {
       apenas as 4 chaves válidas. Selects m-ref e m-ref-inicial atualizados.
       VICIO_EVITAR: nunca assumir que SEMED tem a mesma estrutura A1/A2/B1/B2
       do SEDUC. São PCCRs distintos com leis diferentes.
+    </span>
+  </div>
+
+  <!-- ── REV-20 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-20" data-data="2026-03-25" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="SEMED_INTERSTICIO_48M">
+      CORRIGIDO: SEMED docente usava intersticioUnico=24 (bienal). Errado.
+      PCCR Lei 1.126/2007 define progressão QUADRIENAL (4 anos = 48 meses).
+      Evidência por dois casos confirmados:
+      (1) posseDate=MAR/2019, B1 em MAR/2023 (48m) ✓, C1 só em MAR/2027 ✓
+      (2) posseDate=MAR/2018, B1 em MAR/2022 (48m) ✓, C1 em MAR/2026 (96m) ✓
+      Com 24m ambos os casos geravam progs extras (C1 em MAR/2024 quando
+      deveria ser MAR/2026). Fix: intersticioUnico: 48.
+      VICIO_EVITAR: SEMED docente = 48m por classe. Nunca 24m. Diferente
+      do SEMED_ADMIN e do SEDUC que têm regras próprias.
     </span>
   </div>
 
@@ -4295,10 +4310,20 @@ window._VERSION_LOG = [
   {
     rev: "REV-19",
     data: "2026-03-25",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "SEMED docente corrigido para A1, B1, C1, D1 — PCCR Lei 1.126/2007 não tem A2/B2/C2/D2.",
     fixes: [
       { id: "SEMED_REFS_CORRETAS", desc: "REGRAS.SEMED.referencias=['A1','B1','C1','D1']. multRefs com 4 chaves. Selects m-ref e m-ref-inicial atualizados. interstício=24m por classe." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-20",
+    data: "2026-03-25",
+    status: "ATUAL",
+    descricao: "SEMED docente: interstício corrigido para 48 meses (4 anos) — PCCR Lei 1.126/2007 é quadrienal.",
+    fixes: [
+      { id: "SEMED_INTERSTICIO_48M", desc: "intersticioUnico 24→48. Evidência: posseDate=MAR/2018→B1 MAR/2022 (48m)✓, C1 MAR/2026 (96m)✓. Com 24m gerava C1 em MAR/2024 indevidamente." }
     ],
     bugs_pendentes: []
   }
@@ -4345,6 +4370,15 @@ window._VICIOS_CONHECIDOS = [
     descricao: "Lei 1.126/2007 SEMED define apenas A1, B1, C1, D1 para docente. Nunca incluir A2/B2/C2/D2 na refList ou no select. SEDUC é diferente (tem A/B/C/D sem número, ou com subdivisões próprias).",
     exemplo_errado: "referencias: ['A1','A2','B1','B2','C1','C2','D1','D2']",
     exemplo_correto: "referencias: ['A1','B1','C1','D1'] // SEMED docente"
+  }
+,
+  {
+    id: "V18",
+    severidade: "CRITICA",
+    titulo: "SEMED docente: interstício é 48 meses (4 anos), nunca 24 meses",
+    descricao: "PCCR Lei 1.126/2007 SEMED define progressão quadrienal. intersticioUnico=24 gera progs extras. Sempre usar 48m para SEMED docente. SEMED_ADMIN pode ter regra diferente.",
+    exemplo_errado: "intersticioUnico: 24 // SEMED docente — ERRADO",
+    exemplo_correto: "intersticioUnico: 48 // SEMED docente — 4 anos por classe"
   }
 ];
 
