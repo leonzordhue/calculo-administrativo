@@ -1948,22 +1948,13 @@ function gerarDemonstrativoEduc(params) {
   // GAA Admin: SEDUC admin = 30% fixo; SEMED admin = sem GAA
   const pctGAA  = (isAdmin && area === 'seduc') ? (pctGAA_admin || REGRAS.SEDUC_ADMIN.gaa) : 0;
 
-  // ── CAP AUTOMÁTICO DE PROGRESSÕES ─────────────────────────────────────────
-  // O número máximo de progressões exigíveis é determinado automaticamente:
-  // 1 progressão que já era devida no início do retroativo (startDate)
-  // + quantas progressões cabem dentro do período (startDate → endDate).
-  // Isso evita que posseDate mais antiga do que o ingresso real na carreira
-  // gere progressões extras além do juridicamente possível.
-  // Exemplo: A1, startDate=MAR/2023, endDate=MAR/2026, interstício=24 meses
-  //   → 1 + floor(36/24) = 2 progs → teto C1 (correto)
-  const intersticioUnico = cfg.intersticioUnico || cfg.intersticioNovo || 24;
-  const progsMaximasPeriodo = 1 + Math.floor(diffMonths(startDate, endDate) / intersticioUnico);
-  const idxRefInicial = refList.indexOf(refInicial);
-  const idxCap        = Math.min(idxRefInicial + progsMaximasPeriodo, refList.length - 1);
-
+  // ── CAP: usar refAposProgressoes sem teto artificial ──────────────────────
+  // O cap automático (REV-14) foi removido (REV-18): ele limitava progressões
+  // baseado no período retroativo, mas isso quebrava cálculos corretos quando
+  // posseDate é antiga e gera muitas progressões legítimas dentro do período.
+  // A posseDate correta já determina o número certo de progressões.
   function refComCap(refBase, nProgs) {
-    const idxBase = refList.indexOf(refBase);
-    return refList[Math.min(idxBase + nProgs, idxCap)];
+    return refAposProgressoes(refBase, refList, nProgs); // sem teto — confia na posseDate
   }
 
   const progsTotal = calcularProgressoesEduc(area, posseDate, endDate);
@@ -3613,7 +3604,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-17"
+     data-versao-atual="REV-18"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3923,7 +3914,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-17 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-17" data-data="2026-03-24" data-status="ATUAL">
+  <div data-rev="REV-17" data-data="2026-03-24" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="SES_BREAKPOINTS_NAO_UNIFORMES">
       CORRIGIDO: progressão SES usava interstício uniforme 24 meses. Errado.
       Lei 3.469/2009: 1ª progressão = 36 meses (0→3 anos), demais = 24 meses.
@@ -3934,6 +3925,21 @@ document.addEventListener('DOMContentLoaded', () => {
       breakpoints reais. Cap automático do Educ NÃO se aplica ao SES.
       VICIO_EVITAR: nunca assumir interstício uniforme para SES. Sempre usar
       breakpoints da Lei 3.469/2009 ou campo específico na REGRAS.SES.
+    </span>
+  </div>
+
+  <!-- ── REV-18 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-18" data-data="2026-03-25" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="REMOVE_CAP_AUTOMATICO">
+      CORRIGIDO: cap automático REV-14 limitava progressões ao teto
+      1+floor(período/24), travando todo o período no mesmo teto mesmo
+      com posseDate correta. Ex: posseDate=MAR/2018, período 36m → cap=2
+      → B1 máximo, mas MAR/2026 deveria ser C1 (4 progs desde 2018).
+      O cap resolvia symptoma (posseDate errada) destruindo cálculos corretos.
+      Fix: removido o cap. refComCap() agora chama refAposProgressoes() direto.
+      A posseDate correta já determina o número exato de progressões.
+      VICIO_EVITAR: nunca limitar progressões por fórmula baseada no período
+      retroativo — isso é independente da posseDate real do servidor.
     </span>
   </div>
 
@@ -4254,10 +4260,20 @@ window._VERSION_LOG = [
   {
     rev: "REV-17",
     data: "2026-03-24",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "SES: breakpoints reais da Lei 3.469/2009 — interstício não uniforme (36m/24m).",
     fixes: [
       { id: "SES_BREAKPOINTS_NAO_UNIFORMES", desc: "classeDevidaParaMes() usa REGRAS.SES.breakpoints=[36,60,84,...]. Cap automático por período removido do SES — não se aplica a interstício variável." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-18",
+    data: "2026-03-25",
+    status: "ATUAL",
+    descricao: "Remoção do cap automático de progressões SEDUC/SEMED — confia na posseDate correta.",
+    fixes: [
+      { id: "REMOVE_CAP_AUTOMATICO", desc: "Cap 1+floor(período/24) removido de gerarDemonstrativoEduc. refComCap() agora chama refAposProgressoes() sem teto. posseDate=MAR/2018 → MAR/2026=C1 correto." }
     ],
     bugs_pendentes: []
   }
@@ -4286,6 +4302,15 @@ window._VICIOS_CONHECIDOS = [
     descricao: "Lei 3.469/2009: 1ª progressão=36 meses (0-3 anos), demais=24 meses. Breakpoints: [36,60,84,108,...]. Usar classeDevidaParaMes() com lookup nos breakpoints. Cap automático (1+floor(período/24)) é inválido para SES.",
     exemplo_errado: "Math.floor(diffMonths(posseDate,cursor)/24) // ignora 1º interstício de 36m",
     exemplo_correto: "classeDevidaParaMes(mesesAteCursor) // usa REGRAS.SES.breakpoints"
+  }
+,
+  {
+    id: "V16",
+    severidade: "CRITICA",
+    titulo: "Cap automático por período retroativo destrói cálculos corretos",
+    descricao: "1+floor(período/24) limita todas as progressões ao mesmo teto independente da posseDate. Ex: MAR/2018→2026 (96m=4progs=C1) capado em B1 (2progs). Nunca limitar por período — posseDate correta determina progressões.",
+    exemplo_errado: "const cap = 1+Math.floor(diffMonths(start,end)/24); refList[min(idx+n, cap)]",
+    exemplo_correto: "refAposProgressoes(refBase, refList, nProgs) // sem cap, confia na posseDate"
   }
 ];
 
