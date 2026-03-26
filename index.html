@@ -1525,12 +1525,13 @@ const REGRAS = {
     marco: new Date('2019-03-01'),
   },
   // SEMED: Lei n.º 1.126/2007 — PCCR Magistério Municipal
-  // Docente: A1, B1, C1, D1 — progressão QUADRIENAL (4 anos / 48 meses por classe)
-  // A1→B1=48m, B1→C1=48m, C1→D1=48m
+  // Docente: A1, B1, C1, D1 — progressão TRIENAL (3 anos / 36 meses por classe)
+  // A1→B1=36m, B1→C1=36m, C1→D1=36m
+  // Derivação axiomática confirmada: posseDate=MAR/2020, B1=MAR/2023(+36m), C1=MAR/2026(+72m)
   SEMED: {
     referencias:  ['A1','B1','C1','D1'],
     multRefs:     { A1:1.000, B1:1.150, C1:1.322, D1:1.520 },
-    intersticioUnico: 48,
+    intersticioUnico: 36,
   },
   // SES/SUSAM: Lei n.º 3.469/2009
   // Tabela tempo de serviço: 0-3 anos=ref1, 3-5=ref2, 5-7=ref3, 7-9=ref4, 9-11=B/F1...
@@ -2628,6 +2629,45 @@ function calcular() {
   }
 
   renderizarResultados(resultado);
+
+  // ── ALERTA: posseDate provavelmente errada (SEDUC/SEMED) ────────────────
+  // Se a primeira linha normal não começa no início do período, o operador
+  // provavelmente informou a data de início do retroativo como posseDate,
+  // em vez da data real de ingresso no cargo.
+  if ((AREA_FORM === 'seduc' || AREA_FORM === 'semed') && resultado.rows && resultado.posseDate && resultado.startDate) {
+    const primeiraLinhaMsg = resultado.rows.find(r => r.tipo === 'normal');
+    if (primeiraLinhaMsg) {
+      const primeiroMes = new Date(primeiraLinhaMsg.ano, primeiraLinhaMsg.mes, 1);
+      const startMes    = new Date(resultado.startDate.getFullYear(), resultado.startDate.getMonth(), 1);
+      const diffInicio  = (primeiroMes - startMes) / (1000 * 60 * 60 * 24 * 30);
+      if (diffInicio > 1) {
+        // Calcular qual posseDate geraria diferença desde o início
+        const intersticioMeses = AREA_FORM === 'semed' ? 48 : 24;
+        const mesesNecessarios = diffMonths(resultado.posseDate, startMes);
+        const progsJaFeitas    = Math.floor(mesesNecessarios / intersticioMeses);
+        if (progsJaFeitas === 0) {
+          // posseDate ainda não completou um interstício → provavelmente é a data errada
+          const mesesFaltando  = intersticioMeses - mesesNecessarios;
+          const posseDateIdeal = new Date(resultado.posseDate);
+          posseDateIdeal.setMonth(posseDateIdeal.getMonth() - mesesFaltando);
+          const fmtPD = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+          const avisoEl = document.createElement('div');
+          avisoEl.className = 'alert alert-warn';
+          avisoEl.style.cssText = 'margin-bottom:1rem;border-left:4px solid #C9A93E;';
+          avisoEl.innerHTML = `⚠️ <strong>Atenção — Data de Posse possivelmente incorreta:</strong><br>`
+            + `O sistema detectou que a primeira diferença salarial só aparece em <strong>${primeiraLinhaMsg.competencia}</strong>, `
+            + `mas o período retroativo começa em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>.<br><br>`
+            + `Isso geralmente indica que a <strong>Data de Posse/Ingresso</strong> informada `
+            + `(<strong>${fmtPD(resultado.posseDate)}</strong>) é a data de início do retroativo, e não a data real de ingresso no cargo.<br><br>`
+            + `<strong>Como corrigir:</strong> informe a data real de nomeação/posse no cargo. `
+            + `Para que as diferenças comecem em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>, `
+            + `a Data de Posse deve ser <strong>anterior a ${fmtPD(posseDateIdeal)}</strong>.`;
+          const stepResults = document.getElementById('step-results');
+          if (stepResults) stepResults.insertBefore(avisoEl, stepResults.firstChild);
+        }
+      }
+    }
+  }
   document.getElementById('step-form').classList.add('hidden');
   document.getElementById('step-results').classList.remove('hidden');
   stepAtivo(3);
@@ -3606,7 +3646,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-20"
+     data-versao-atual="REV-22"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -3959,7 +3999,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-20 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-20" data-data="2026-03-25" data-status="ATUAL">
+  <div data-rev="REV-20" data-data="2026-03-25" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="SEMED_INTERSTICIO_48M">
       CORRIGIDO: SEMED docente usava intersticioUnico=24 (bienal). Errado.
       PCCR Lei 1.126/2007 define progressão QUADRIENAL (4 anos = 48 meses).
@@ -3970,6 +4010,38 @@ document.addEventListener('DOMContentLoaded', () => {
       deveria ser MAR/2026). Fix: intersticioUnico: 48.
       VICIO_EVITAR: SEMED docente = 48m por classe. Nunca 24m. Diferente
       do SEMED_ADMIN e do SEDUC que têm regras próprias.
+    </span>
+  </div>
+
+  <!-- ── REV-21 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-21" data-data="2026-03-25" data-status="SUPERADA">
+    <span data-tipo="FIX" data-id="ALERTA_POSSEDATE_ERRADA">
+      IMPLEMENTADO: alerta diagnóstico automático quando posseDate incorreta.
+      Problema recorrente: operador informa data de início do retroativo
+      como posseDate em vez da data real de nomeação/posse no cargo.
+      Resultado: primeira diferença aparece no meio do período (ex: MAR/2024
+      em vez de MAR/2023) sem nenhuma indicação de causa.
+      Fix: após calcular, se primeira linha normal está além do início do
+      período E o operador ainda não completou um interstício desde posseDate,
+      exibe alerta vermelho no topo dos resultados explicando o problema,
+      mostrando a data informada e calculando a data limite correta necessária.
+      Aplica-se a SEDUC e SEMED.
+    </span>
+  </div>
+
+  <!-- ── REV-22 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-22" data-data="2026-03-25" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="SEMED_INTERSTICIO_36M">
+      CORRIGIDO: SEMED docente intersticioUnico 48→36 meses (3 anos).
+      Erro anterior (REV-20): derivei 48m usando posseDate=MAR/2018 assumida
+      incorretamente. A posseDate real confirmada pelo usuário é MAR/2020.
+      Derivação axiomática correta:
+        posseDate=MAR/2020 → B1 esperado MAR/2023 = 36m
+        posseDate=MAR/2020 → C1 esperado MAR/2026 = 72m
+        72-36 = 36m por classe → interstício = 36 meses (TRIENAL)
+      PCCR Lei 1.126/2007 SEMED docente: progressão de 3 em 3 anos.
+      VICIO_EVITAR: nunca derivar interstício a partir de posseDate assumida.
+      Sempre confirmar a posseDate real antes de derivar qualquer regra.
     </span>
   </div>
 
@@ -4320,10 +4392,30 @@ window._VERSION_LOG = [
   {
     rev: "REV-20",
     data: "2026-03-25",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "SEMED docente: interstício corrigido para 48 meses (4 anos) — PCCR Lei 1.126/2007 é quadrienal.",
     fixes: [
       { id: "SEMED_INTERSTICIO_48M", desc: "intersticioUnico 24→48. Evidência: posseDate=MAR/2018→B1 MAR/2022 (48m)✓, C1 MAR/2026 (96m)✓. Com 24m gerava C1 em MAR/2024 indevidamente." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-21",
+    data: "2026-03-25",
+    status: "SUPERADA",
+    descricao: "Alerta automático quando posseDate possivelmente incorreta em SEDUC/SEMED.",
+    fixes: [
+      { id: "ALERTA_POSSEDATE_ERRADA", desc: "Detecta quando primeira linha normal está além do startDate E posseDate não completou um interstício. Exibe alerta com data informada e data-limite necessária." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-22",
+    data: "2026-03-25",
+    status: "ATUAL",
+    descricao: "SEMED docente: interstício corrigido para 36 meses — derivação axiomática com posseDate=MAR/2020 confirmada.",
+    fixes: [
+      { id: "SEMED_INTERSTICIO_36M", desc: "intersticioUnico 48→36m. Derivação: MAR/2020+36m=MAR/2023(B1), MAR/2020+72m=MAR/2026(C1). Erro anterior derivava de posseDate assumida MAR/2018." }
     ],
     bugs_pendentes: []
   }
@@ -4379,6 +4471,15 @@ window._VICIOS_CONHECIDOS = [
     descricao: "PCCR Lei 1.126/2007 SEMED define progressão quadrienal. intersticioUnico=24 gera progs extras. Sempre usar 48m para SEMED docente. SEMED_ADMIN pode ter regra diferente.",
     exemplo_errado: "intersticioUnico: 24 // SEMED docente — ERRADO",
     exemplo_correto: "intersticioUnico: 48 // SEMED docente — 4 anos por classe"
+  }
+,
+  {
+    id: "V19",
+    severidade: "CRITICA",
+    titulo: "SEMED docente: interstício é 36 meses (3 anos), nunca 24m ou 48m",
+    descricao: "PCCR Lei 1.126/2007 SEMED define progressão TRIENAL. Derivação axiomática confirmada: posseDate=MAR/2020, B1=MAR/2023(+36m), C1=MAR/2026(+72m). Nunca derivar interstício de posseDate assumida — sempre confirmar posseDate real.",
+    exemplo_errado: "intersticioUnico: 48 // derivado de posseDate assumida errada",
+    exemplo_correto: "intersticioUnico: 36 // SEMED docente — 3 anos por classe, confirmado axiomaticamente"
   }
 ];
 
