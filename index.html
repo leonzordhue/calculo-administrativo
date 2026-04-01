@@ -621,6 +621,9 @@
               <div class="field" id="s-classe-wrap"><label class="field-label">Classe Atual <span class="req">*</span></label>
                 <select id="s-classe"><option value="">Selecione...</option><option value="3ª">3ª Classe</option><option value="2ª">2ª Classe</option><option value="1ª">1ª Classe</option><option value="4ª">4ª Classe (extinção)</option></select>
               </div>
+              <div class="field" id="s-classe-apoio-hint" style="display:none">
+                <span class="field-hint" style="display:block;padding:0.5rem 0.75rem;background:var(--blue-bg);border:1px solid var(--blue-brd);border-radius:8px;color:var(--blue);font-size:0.78rem;">ℹ️ Apoio Específico não possui estrutura de classes. O cálculo usa apenas a <strong>Referência (A–E)</strong> conforme Anexo IV/V da Lei n.º 3.951/2013.</span>
+              </div>
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
                 <select id="s-ref"><option value="">Selecione...</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select>
                 <span class="field-hint">Referência constante na folha de pagamento</span>
@@ -1700,6 +1703,10 @@ function toggleSEDUCAdmin() {
   const classeWrap = document.getElementById('s-classe-wrap');
   if (classeWrap) classeWrap.style.display = (isAdmin || isApoio) ? 'none' : '';
 
+  // Hint informativo para apoio (explica por que a classe sumiu)
+  const classeHint = document.getElementById('s-classe-apoio-hint');
+  if (classeHint) classeHint.style.display = isApoio ? '' : 'none';
+
   // Regência: apenas docente
   const regWrap = document.getElementById('seduc-reg-wrap');
   if (regWrap) regWrap.classList.toggle('hidden', isAdmin || isApoio);
@@ -1934,7 +1941,7 @@ function calcVencimentoSeguranca(area, postoKey, dataRef, incluirGT_ou_GEP) {
 
 function gerarDemonstrativoEduc(params) {
   const { area, nome, matricula, cargo, posseDate, classe,
-          refInicial, startDate, endDate, incluirExtras,
+          refInicial, refAtual, startDate, endDate, incluirExtras,
           municipio, pctLocalidade, incluirRegencia,
           categoria, pctGAA_admin } = params;
   // ── Determina chave de regras (admin usa sub-tabela própria) ──
@@ -2781,7 +2788,7 @@ function _coletarEduc(area) {
   const alertaPrescricao = startDate < cincoAnos;
 
   const resultado = gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
-    refInicial, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
+    refInicial, refAtual, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
     incluirRegencia: regencia, categoria, pctGAA_admin });
 
   resultado.alertaPrescricao = alertaPrescricao;
@@ -3641,6 +3648,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   bindPreviewListeners();
+
+  // Inicializar estado dos formulários de acordo com a categoria padrão
+  // (sem isso, troca de categoria sem recarregar pode deixar campos incorretos)
+  toggleSEDUCAdmin();
+  toggleSEMEDAdmin();
 });
 </script>
 
@@ -3652,8 +3664,8 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-23"
-     data-data-atual="2026-03-19">
+     data-versao-atual="REV-24"
+     data-data-atual="2026-04-01">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
   <div data-rev="REV-1" data-data="2026-03-19" data-status="SUPERADA">
@@ -4052,7 +4064,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-23 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-23" data-data="2026-03-30" data-status="ATUAL">
+  <div data-rev="REV-23" data-data="2026-03-30" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="RECEBIDA_FIXADO_REFINICIAL">
       CORRIGIDO: gerarDemonstrativoEduc usava refInicial hardcoded como
       recebida em TODOS os meses, mesmo quando refAtual maior que refInicial.
@@ -4066,6 +4078,39 @@ document.addEventListener('DOMContentLoaded', () => {
       13º e férias: usam refRecebida da última row do ano (já correto via REV-16).
       VICIO_EVITAR: nunca usar refInicial como proxy de "o que recebe". refInicial
       é o ponto de partida do cálculo de progressão, não o salário atual.
+    </span>
+  </div>
+
+  <!-- ── REV-24 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-24" data-data="2026-04-01" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="REFATUAL_PARAM_AUSENTE">
+      CORRIGIDO (CRÍTICO): gerarDemonstrativoEduc usava refAtual nas linhas
+      de cálculo (numProgressoesAtraso, idxAtualRef) mas refAtual NÃO estava
+      incluído na desestruturação de params nem passado pela chamada
+      em _coletarEduc. Resultado: ReferenceError "refAtual is not defined"
+      ao clicar em "Gerar Cálculo" para QUALQUER servidor SEDUC/SEMED.
+      Fix (2 pontos): (1) adicionado refAtual à desestruturação de params
+      em gerarDemonstrativoEduc; (2) adicionado refAtual ao objeto passado
+      em _coletarEduc → gerarDemonstrativoEduc.
+      VICIO_EVITAR: ao adicionar parâmetros a funções de motor, sempre
+      verificar AMBOS os pontos — desestruturação E chamada.
+    </span>
+    <span data-tipo="FIX" data-id="TOGGLE_SEM_INIT">
+      CORRIGIDO: toggleSEDUCAdmin() e toggleSEMEDAdmin() não eram chamadas
+      no DOMContentLoaded. Ao carregar a página, o estado inicial dos campos
+      (classe visível/oculta, refs populadas) ficava inconsistente com a
+      categoria padrão selecionada no select.
+      Fix: chamadas de toggleSEDUCAdmin() e toggleSEMEDAdmin() adicionadas
+      ao final do DOMContentLoaded.
+    </span>
+    <span data-tipo="FIX" data-id="CLASSE_APOIO_UX">
+      MELHORIA UX: quando categoria SEDUC = apoio_fundamental ou apoio_superior,
+      o campo "Classe Atual" some sem explicação. Usuários reportaram confusão
+      pensando que o formulário estava quebrado.
+      Fix: adicionado elemento #s-classe-apoio-hint (display:none por padrão)
+      que exibe mensagem informativa ao selecionar apoio, explicando que Apoio
+      Específico não usa classes e o cálculo usa apenas Referência A–E.
+      toggleSEDUCAdmin() atualizado para mostrar/ocultar o hint.
     </span>
   </div>
 
@@ -4446,10 +4491,22 @@ window._VERSION_LOG = [
   {
     rev: "REV-23",
     data: "2026-03-30",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Fix crítico: recebidaMes corrigido para min(progressão,refAtual) — refInicial era usado indevidamente.",
     fixes: [
       { id: "RECEBIDA_FIXADO_REFINICIAL", desc: "refRecebidaMes = refList[min(idxDevidaMes, idxAtualRef)]. numProgressoesAtraso = refDevida - refAtual. Extras usam refRecebida da última row (REV-16 mantido)." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-24",
+    data: "2026-04-01",
+    status: "ATUAL",
+    descricao: "Fix crítico SEDUC/SEMED: ReferenceError 'refAtual is not defined' ao gerar cálculo. Fix de inicialização de toggles. Melhoria UX campo classe para Apoio Específico.",
+    fixes: [
+      { id: "REFATUAL_PARAM_AUSENTE", desc: "CRÍTICO: refAtual ausente na desestruturação de params em gerarDemonstrativoEduc E no objeto passado por _coletarEduc. Qualquer cálculo SEDUC/SEMED crashava com ReferenceError. Fix duplo: desestruturação + chamada." },
+      { id: "TOGGLE_SEM_INIT", desc: "toggleSEDUCAdmin() e toggleSEMEDAdmin() não chamadas no DOMContentLoaded. Estado inicial de campos (classe/refs) inconsistente com categoria padrão do select. Fix: chamadas adicionadas ao final do DOMContentLoaded." },
+      { id: "CLASSE_APOIO_UX", desc: "Campo 'Classe Atual' some sem explicação ao selecionar apoio_fundamental/superior. Usuários confundiam com bug. Fix: hint informativo #s-classe-apoio-hint exibido quando apoio selecionado, explicando ausência de classes no Apoio Específico." }
     ],
     bugs_pendentes: []
   }
@@ -4523,6 +4580,22 @@ window._VICIOS_CONHECIDOS = [
     descricao: "refInicial é o ponto de partida do cálculo de progressão. O que o servidor RECEBE por mês é min(progressão_calculada_do_refInicial, refAtual). Usar refInicial hardcoded como recebida gera diff errada (A→F em vez de D→F).",
     exemplo_errado: "const recItem = calcVencimentoEduc(..., refInicial, ...) // sempre A",
     exemplo_correto: "const refRecebidaMes = refList[Math.min(idxDevidaMes, idxAtualRef)]; calcVencimentoEduc(..., refRecebidaMes, ...)"
+  },
+  {
+    id: "V21",
+    severidade: "CRITICA",
+    titulo: "Parâmetro adicionado ao motor mas não passado na chamada — dupla verificação obrigatória",
+    descricao: "Ao adicionar parâmetros a funções de motor (ex: gerarDemonstrativoEduc), sempre verificar DOIS pontos: (1) desestruturação de params na definição da função, (2) objeto de argumentos no ponto de chamada. Omitir qualquer um resulta em ReferenceError silencioso ou undefined.",
+    exemplo_errado: "gerarDemonstrativoEduc({refInicial, ...}) // refAtual omitido na chamada → ReferenceError no motor",
+    exemplo_correto: "gerarDemonstrativoEduc({refInicial, refAtual, ...}) // ambos os pontos verificados"
+  },
+  {
+    id: "V22",
+    severidade: "MEDIA",
+    titulo: "Funções de toggle de UI não chamadas no DOMContentLoaded — estado inicial inconsistente",
+    descricao: "toggleSEDUCAdmin() e similares só eram acionadas via onchange. Ao carregar a página, o estado inicial dos campos ficava divergente da categoria padrão do select. Sempre chamar todas as funções de toggle no DOMContentLoaded.",
+    exemplo_errado: "// DOMContentLoaded sem toggleSEDUCAdmin() → s-classe visível mesmo para apoio",
+    exemplo_correto: "document.addEventListener('DOMContentLoaded', () => { ...; toggleSEDUCAdmin(); toggleSEMEDAdmin(); });"
   }
 ];
 
