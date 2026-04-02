@@ -621,15 +621,12 @@
               <div class="field" id="s-classe-wrap"><label class="field-label">Classe Atual <span class="req">*</span></label>
                 <select id="s-classe"><option value="">Selecione...</option><option value="3ª">3ª Classe</option><option value="2ª">2ª Classe</option><option value="1ª">1ª Classe</option><option value="4ª">4ª Classe (extinção)</option></select>
               </div>
-              <div class="field" id="s-classe-apoio-hint" style="display:none">
-                <span class="field-hint" style="display:block;padding:0.5rem 0.75rem;background:var(--blue-bg);border:1px solid var(--blue-brd);border-radius:8px;color:var(--blue);font-size:0.78rem;">ℹ️ Apoio Específico não possui estrutura de classes. O cálculo usa apenas a <strong>Referência (A–E)</strong> conforme Anexo IV/V da Lei n.º 3.951/2013.</span>
-              </div>
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
-                <select id="s-ref"><option value="">Selecione...</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select>
+                <select id="s-ref"><option value="">Selecione...</option><option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>E1</option><option>F1</option><option>G1</option><option>H1</option></select>
                 <span class="field-hint">Referência constante na folha de pagamento</span>
               </div>
               <div class="field"><label class="field-label">Referência no Ingresso (se diferente)</label>
-                <select id="s-ref-inicial"><option value="">Igual à Referência Atual</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select>
+                <select id="s-ref-inicial"><option value="">Igual à Referência Atual</option><option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>E1</option><option>F1</option><option>G1</option><option>H1</option></select>
               </div>
 
               <hr class="form-divider" />
@@ -1519,10 +1516,14 @@ function getValorBaseApoio(subtipo, dataRef) {
 }
 
 const REGRAS = {
+  // SEDUC: Lei n.º 3.951/2013 — PCCR Magistério Estadual
+  // Docente (magistério): referências A1, B1, C1, D1, E1, F1, G1, H1 (sufixo "1")
+  // Interstício: antes de MAR/2019 = 48 meses; a partir de MAR/2019 = 36 meses
+  // Multiplicadores: +2% por referência (mesmo multiplicador para todas as classes)
   SEDUC: {
-    classes:    { '1ª': 1.25, '2ª': 1.10, '3ª': 1.00, '4ª': 0.89 }, // 4ª = classes em extinção (Lic.Curta/Magistério)
-    referencias: ['A','B','C','D','E','F','G','H'],
-    multRefs:   { A:1.000, B:1.020, C:1.040, D:1.060, E:1.080, F:1.100, G:1.120, H:1.140 },
+    classes:    { '1ª': 1.25, '2ª': 1.10, '3ª': 1.00, '4ª': 0.89 },
+    referencias: ['A1','B1','C1','D1','E1','F1','G1','H1'],
+    multRefs:   { A1:1.000, B1:1.020, C1:1.040, D1:1.060, E1:1.080, F1:1.100, G1:1.120, H1:1.140 },
     intersticioAntigo: 48,
     intersticioNovo:   36,
     marco: new Date('2019-03-01'),
@@ -1703,10 +1704,6 @@ function toggleSEDUCAdmin() {
   const classeWrap = document.getElementById('s-classe-wrap');
   if (classeWrap) classeWrap.style.display = (isAdmin || isApoio) ? 'none' : '';
 
-  // Hint informativo para apoio (explica por que a classe sumiu)
-  const classeHint = document.getElementById('s-classe-apoio-hint');
-  if (classeHint) classeHint.style.display = isApoio ? '' : 'none';
-
   // Regência: apenas docente
   const regWrap = document.getElementById('seduc-reg-wrap');
   if (regWrap) regWrap.classList.toggle('hidden', isAdmin || isApoio);
@@ -1715,9 +1712,9 @@ function toggleSEDUCAdmin() {
   const gaaWrap = document.getElementById('seduc-gaa-wrap');
   if (gaaWrap) gaaWrap.classList.toggle('hidden', !isAdmin);
 
-  // Referências: A–E para apoio, A–H para docente/admin
+  // Referências: A–E para apoio, A1–H1 para docente/admin magistério
   const refsApoio  = ['A','B','C','D','E'];
-  const refsMagist = ['A','B','C','D','E','F','G','H'];
+  const refsMagist = ['A1','B1','C1','D1','E1','F1','G1','H1'];
   const refs = isApoio ? refsApoio : refsMagist;
   ['s-ref','s-ref-inicial'].forEach(id => {
     const sel = document.getElementById(id);
@@ -1941,7 +1938,7 @@ function calcVencimentoSeguranca(area, postoKey, dataRef, incluirGT_ou_GEP) {
 
 function gerarDemonstrativoEduc(params) {
   const { area, nome, matricula, cargo, posseDate, classe,
-          refInicial, refAtual, startDate, endDate, incluirExtras,
+          refInicial, startDate, endDate, incluirExtras,
           municipio, pctLocalidade, incluirRegencia,
           categoria, pctGAA_admin } = params;
   // ── Determina chave de regras (admin usa sub-tabela própria) ──
@@ -2788,7 +2785,7 @@ function _coletarEduc(area) {
   const alertaPrescricao = startDate < cincoAnos;
 
   const resultado = gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
-    refInicial, refAtual, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
+    refInicial, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
     incluirRegencia: regencia, categoria, pctGAA_admin });
 
   resultado.alertaPrescricao = alertaPrescricao;
@@ -3648,11 +3645,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   bindPreviewListeners();
-
-  // Inicializar estado dos formulários de acordo com a categoria padrão
-  // (sem isso, troca de categoria sem recarregar pode deixar campos incorretos)
-  toggleSEDUCAdmin();
-  toggleSEMEDAdmin();
 });
 </script>
 
@@ -3665,7 +3657,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
      data-versao-atual="REV-24"
-     data-data-atual="2026-04-01">
+     data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
   <div data-rev="REV-1" data-data="2026-03-19" data-status="SUPERADA">
@@ -4082,35 +4074,15 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-24 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-24" data-data="2026-04-01" data-status="ATUAL">
-    <span data-tipo="FIX" data-id="REFATUAL_PARAM_AUSENTE">
-      CORRIGIDO (CRÍTICO): gerarDemonstrativoEduc usava refAtual nas linhas
-      de cálculo (numProgressoesAtraso, idxAtualRef) mas refAtual NÃO estava
-      incluído na desestruturação de params nem passado pela chamada
-      em _coletarEduc. Resultado: ReferenceError "refAtual is not defined"
-      ao clicar em "Gerar Cálculo" para QUALQUER servidor SEDUC/SEMED.
-      Fix (2 pontos): (1) adicionado refAtual à desestruturação de params
-      em gerarDemonstrativoEduc; (2) adicionado refAtual ao objeto passado
-      em _coletarEduc → gerarDemonstrativoEduc.
-      VICIO_EVITAR: ao adicionar parâmetros a funções de motor, sempre
-      verificar AMBOS os pontos — desestruturação E chamada.
-    </span>
-    <span data-tipo="FIX" data-id="TOGGLE_SEM_INIT">
-      CORRIGIDO: toggleSEDUCAdmin() e toggleSEMEDAdmin() não eram chamadas
-      no DOMContentLoaded. Ao carregar a página, o estado inicial dos campos
-      (classe visível/oculta, refs populadas) ficava inconsistente com a
-      categoria padrão selecionada no select.
-      Fix: chamadas de toggleSEDUCAdmin() e toggleSEMEDAdmin() adicionadas
-      ao final do DOMContentLoaded.
-    </span>
-    <span data-tipo="FIX" data-id="CLASSE_APOIO_UX">
-      MELHORIA UX: quando categoria SEDUC = apoio_fundamental ou apoio_superior,
-      o campo "Classe Atual" some sem explicação. Usuários reportaram confusão
-      pensando que o formulário estava quebrado.
-      Fix: adicionado elemento #s-classe-apoio-hint (display:none por padrão)
-      que exibe mensagem informativa ao selecionar apoio, explicando que Apoio
-      Específico não usa classes e o cálculo usa apenas Referência A–E.
-      toggleSEDUCAdmin() atualizado para mostrar/ocultar o hint.
+  <div data-rev="REV-24" data-data="2026-04-02" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="SEDUC_REFS_A1_H1">
+      CORRIGIDO: SEDUC docente usava referências A–H (letra isolada). O PCCR
+      Lei 3.951/2013 e folha de pagamento usam A1, B1, C1, D1, E1, F1, G1, H1.
+      Fix: REGRAS.SEDUC.referencias=['A1'...'H1'], multRefs com chaves A1–H1.
+      toggleSEDUCAdmin atualizado: refsMagist=['A1','B1','C1','D1','E1','F1','G1','H1'].
+      Selects s-ref e s-ref-inicial atualizados com opções A1–H1.
+      VICIO_EVITAR: SEDUC magistério usa sufixo "1" nas referências (A1, não A).
+      Não confundir com SEDUC_APOIO que usa A, B, C, D, E (sem sufixo).
     </span>
   </div>
 
@@ -4500,13 +4472,11 @@ window._VERSION_LOG = [
   },
   {
     rev: "REV-24",
-    data: "2026-04-01",
+    data: "2026-04-02",
     status: "ATUAL",
-    descricao: "Fix crítico SEDUC/SEMED: ReferenceError 'refAtual is not defined' ao gerar cálculo. Fix de inicialização de toggles. Melhoria UX campo classe para Apoio Específico.",
+    descricao: "SEDUC magistério corrigido para notação A1–H1 — PCCR Lei 3.951/2013.",
     fixes: [
-      { id: "REFATUAL_PARAM_AUSENTE", desc: "CRÍTICO: refAtual ausente na desestruturação de params em gerarDemonstrativoEduc E no objeto passado por _coletarEduc. Qualquer cálculo SEDUC/SEMED crashava com ReferenceError. Fix duplo: desestruturação + chamada." },
-      { id: "TOGGLE_SEM_INIT", desc: "toggleSEDUCAdmin() e toggleSEMEDAdmin() não chamadas no DOMContentLoaded. Estado inicial de campos (classe/refs) inconsistente com categoria padrão do select. Fix: chamadas adicionadas ao final do DOMContentLoaded." },
-      { id: "CLASSE_APOIO_UX", desc: "Campo 'Classe Atual' some sem explicação ao selecionar apoio_fundamental/superior. Usuários confundiam com bug. Fix: hint informativo #s-classe-apoio-hint exibido quando apoio selecionado, explicando ausência de classes no Apoio Específico." }
+      { id: "SEDUC_REFS_A1_H1", desc: "REGRAS.SEDUC.referencias=['A1'...'H1'], multRefs com chaves A1–H1. toggleSEDUCAdmin e selects s-ref/s-ref-inicial atualizados." }
     ],
     bugs_pendentes: []
   }
@@ -4580,22 +4550,15 @@ window._VICIOS_CONHECIDOS = [
     descricao: "refInicial é o ponto de partida do cálculo de progressão. O que o servidor RECEBE por mês é min(progressão_calculada_do_refInicial, refAtual). Usar refInicial hardcoded como recebida gera diff errada (A→F em vez de D→F).",
     exemplo_errado: "const recItem = calcVencimentoEduc(..., refInicial, ...) // sempre A",
     exemplo_correto: "const refRecebidaMes = refList[Math.min(idxDevidaMes, idxAtualRef)]; calcVencimentoEduc(..., refRecebidaMes, ...)"
-  },
+  }
+,
   {
     id: "V21",
     severidade: "CRITICA",
-    titulo: "Parâmetro adicionado ao motor mas não passado na chamada — dupla verificação obrigatória",
-    descricao: "Ao adicionar parâmetros a funções de motor (ex: gerarDemonstrativoEduc), sempre verificar DOIS pontos: (1) desestruturação de params na definição da função, (2) objeto de argumentos no ponto de chamada. Omitir qualquer um resulta em ReferenceError silencioso ou undefined.",
-    exemplo_errado: "gerarDemonstrativoEduc({refInicial, ...}) // refAtual omitido na chamada → ReferenceError no motor",
-    exemplo_correto: "gerarDemonstrativoEduc({refInicial, refAtual, ...}) // ambos os pontos verificados"
-  },
-  {
-    id: "V22",
-    severidade: "MEDIA",
-    titulo: "Funções de toggle de UI não chamadas no DOMContentLoaded — estado inicial inconsistente",
-    descricao: "toggleSEDUCAdmin() e similares só eram acionadas via onchange. Ao carregar a página, o estado inicial dos campos ficava divergente da categoria padrão do select. Sempre chamar todas as funções de toggle no DOMContentLoaded.",
-    exemplo_errado: "// DOMContentLoaded sem toggleSEDUCAdmin() → s-classe visível mesmo para apoio",
-    exemplo_correto: "document.addEventListener('DOMContentLoaded', () => { ...; toggleSEDUCAdmin(); toggleSEMEDAdmin(); });"
+    titulo: "SEDUC magistério: referências são A1–H1, nunca A–H",
+    descricao: "PCCR Lei 3.951/2013 e folha de pagamento SEDUC usam sufixo '1' (A1, B1, etc). SEDUC_APOIO usa A–E sem sufixo. Nunca misturar as notações — multRefs['A'] é undefined quando referência passada é 'A1'.",
+    exemplo_errado: "referencias: ['A','B','C','D','E','F','G','H']",
+    exemplo_correto: "referencias: ['A1','B1','C1','D1','E1','F1','G1','H1'] // SEDUC magistério"
   }
 ];
 
