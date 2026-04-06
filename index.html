@@ -622,11 +622,27 @@
                 <select id="s-classe"><option value="">Selecione...</option><option value="3ª">3ª Classe</option><option value="2ª">2ª Classe</option><option value="1ª">1ª Classe</option><option value="4ª">4ª Classe (extinção)</option></select>
               </div>
               <div class="field"><label class="field-label">Referência Atual (sendo paga) <span class="req">*</span></label>
-                <select id="s-ref"><option value="">Selecione...</option><option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>E1</option><option>F1</option><option>G1</option><option>H1</option></select>
+                <select id="s-ref">
+                  <option value="">Selecione...</option>
+                  <optgroup label="Notação A1, B1, C1... (PCCR / folha de pagamento)">
+                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>E1</option><option>F1</option><option>G1</option><option>H1</option>
+                  </optgroup>
+                  <optgroup label="Notação A, B, C... (alternativa)">
+                    <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option>
+                  </optgroup>
+                </select>
                 <span class="field-hint">Referência constante na folha de pagamento</span>
               </div>
               <div class="field"><label class="field-label">Referência no Ingresso (se diferente)</label>
-                <select id="s-ref-inicial"><option value="">Igual à Referência Atual</option><option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>E1</option><option>F1</option><option>G1</option><option>H1</option></select>
+                <select id="s-ref-inicial">
+                  <option value="">Igual à Referência Atual</option>
+                  <optgroup label="Notação A1, B1, C1...">
+                    <option>A1</option><option>B1</option><option>C1</option><option>D1</option><option>E1</option><option>F1</option><option>G1</option><option>H1</option>
+                  </optgroup>
+                  <optgroup label="Notação A, B, C...">
+                    <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option>
+                  </optgroup>
+                </select>
               </div>
 
               <hr class="form-divider" />
@@ -1517,13 +1533,16 @@ function getValorBaseApoio(subtipo, dataRef) {
 
 const REGRAS = {
   // SEDUC: Lei n.º 3.951/2013 — PCCR Magistério Estadual
-  // Docente (magistério): referências A1, B1, C1, D1, E1, F1, G1, H1 (sufixo "1")
+  // Docente: referências A1–H1 (notação da folha de pagamento e PCCR)
+  // Notação alternativa A–H (sem sufixo) também aceita — aliases com mesmo multiplicador
   // Interstício: antes de MAR/2019 = 48 meses; a partir de MAR/2019 = 36 meses
-  // Multiplicadores: +2% por referência (mesmo multiplicador para todas as classes)
   SEDUC: {
     classes:    { '1ª': 1.25, '2ª': 1.10, '3ª': 1.00, '4ª': 0.89 },
-    referencias: ['A1','B1','C1','D1','E1','F1','G1','H1'],
-    multRefs:   { A1:1.000, B1:1.020, C1:1.040, D1:1.060, E1:1.080, F1:1.100, G1:1.120, H1:1.140 },
+    referencias: ['A','B','C','D','E','F','G','H','A1','B1','C1','D1','E1','F1','G1','H1'],
+    multRefs:   {
+      A1:1.000, B1:1.020, C1:1.040, D1:1.060, E1:1.080, F1:1.100, G1:1.120, H1:1.140,
+      A: 1.000, B: 1.020, C: 1.040, D: 1.060, E: 1.080, F: 1.100, G: 1.120, H: 1.140,
+    },
     intersticioAntigo: 48,
     intersticioNovo:   36,
     marco: new Date('2019-03-01'),
@@ -1712,9 +1731,9 @@ function toggleSEDUCAdmin() {
   const gaaWrap = document.getElementById('seduc-gaa-wrap');
   if (gaaWrap) gaaWrap.classList.toggle('hidden', !isAdmin);
 
-  // Referências: A–E para apoio, A1–H1 para docente/admin magistério
+  // Referências: A–E para apoio; A1–H1 e A–H (ambas) para docente/admin
   const refsApoio  = ['A','B','C','D','E'];
-  const refsMagist = ['A1','B1','C1','D1','E1','F1','G1','H1'];
+  const refsMagist = ['A1','B1','C1','D1','E1','F1','G1','H1','A','B','C','D','E','F','G','H'];
   const refs = isApoio ? refsApoio : refsMagist;
   ['s-ref','s-ref-inicial'].forEach(id => {
     const sel = document.getElementById(id);
@@ -1723,7 +1742,18 @@ function toggleSEDUCAdmin() {
     const firstOpt = id === 's-ref-inicial'
       ? '<option value="">Igual à Referência Atual</option>'
       : '<option value="">Selecione...</option>';
-    sel.innerHTML = firstOpt + refs.map(r => `<option value="${r}">${r}</option>`).join('');
+    if (isApoio) {
+      sel.innerHTML = firstOpt + refsApoio.map(r => `<option value="${r}">${r}</option>`).join('');
+    } else {
+      const magist1 = ['A1','B1','C1','D1','E1','F1','G1','H1'];
+      const magistA = ['A','B','C','D','E','F','G','H'];
+      sel.innerHTML = firstOpt
+        + `<optgroup label="Notação A1, B1, C1... (PCCR / folha de pagamento)">`
+        + magist1.map(r => `<option value="${r}">${r}</option>`).join('')
+        + `</optgroup><optgroup label="Notação A, B, C... (alternativa)">`
+        + magistA.map(r => `<option value="${r}">${r}</option>`).join('')
+        + `</optgroup>`;
+    }
     if (refs.includes(current)) sel.value = current;
   });
 
@@ -1938,7 +1968,7 @@ function calcVencimentoSeguranca(area, postoKey, dataRef, incluirGT_ou_GEP) {
 
 function gerarDemonstrativoEduc(params) {
   const { area, nome, matricula, cargo, posseDate, classe,
-          refInicial, startDate, endDate, incluirExtras,
+          refInicial, refAtual, startDate, endDate, incluirExtras,
           municipio, pctLocalidade, incluirRegencia,
           categoria, pctGAA_admin } = params;
   // ── Determina chave de regras (admin usa sub-tabela própria) ──
@@ -2785,7 +2815,7 @@ function _coletarEduc(area) {
   const alertaPrescricao = startDate < cincoAnos;
 
   const resultado = gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
-    refInicial, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
+    refInicial, refAtual, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
     incluirRegencia: regencia, categoria, pctGAA_admin });
 
   resultado.alertaPrescricao = alertaPrescricao;
@@ -3656,7 +3686,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-24"
+     data-versao-atual="REV-26"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -4074,7 +4104,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-24 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-24" data-data="2026-04-02" data-status="ATUAL">
+  <div data-rev="REV-24" data-data="2026-04-02" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="SEDUC_REFS_A1_H1">
       CORRIGIDO: SEDUC docente usava referências A–H (letra isolada). O PCCR
       Lei 3.951/2013 e folha de pagamento usam A1, B1, C1, D1, E1, F1, G1, H1.
@@ -4084,6 +4114,131 @@ document.addEventListener('DOMContentLoaded', () => {
       VICIO_EVITAR: SEDUC magistério usa sufixo "1" nas referências (A1, não A).
       Não confundir com SEDUC_APOIO que usa A, B, C, D, E (sem sufixo).
     </span>
+  </div>
+
+  <!-- ── REV-25 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-25" data-data="2026-04-06" data-status="SUPERADA">
+    <span data-tipo="FIX" data-id="REFATUAL_NAO_PASSADO_AO_GERADOR">
+      CORRIGIDO: refAtual not defined — foi adicionado ao uso interno do
+      gerarDemonstrativoEduc (REV-23) mas jamais incluído no destructuring
+      de params nem na chamada em _coletarEduc. Referência presente em
+      linhas 1970 e 1975 sem declaração local = ReferenceError em runtime.
+      Fix: adicionado refAtual ao destructuring e à chamada do gerador.
+      VICIO_EVITAR: ao adicionar nova variável ao corpo de uma função que
+      recebe params, SEMPRE adicionar simultaneamente ao destructuring E
+      à chamada do caller. São 3 pontos atômicos: uso, destructuring, chamada.
+    </span>
+    <span data-tipo="FIX" data-id="SEDUC_DUAL_NOTACAO">
+      IMPLEMENTADO: SEDUC aceita ambas notações A1/B1... e A/B...
+      multRefs expandido com aliases A–H com mesmos multiplicadores.
+      referencias expandida para incluir ambas notações.
+      Selects com optgroups separados. toggleSEDUCAdmin atualizado.
+    </span>
+  </div>
+
+  <!-- ── REV-26 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-26" data-data="2026-04-06" data-status="ATUAL">
+    <span data-tipo="IMPL" data-id="AKE_TENTATIVAS_FALHAS">
+      IMPLEMENTADO: sistema de Tentativas Falhas (AKE UFT-1.0).
+      Nova camada no log de 3 para 4 camadas:
+        1. div#app-version-log → histórico REVs (existia)
+        2. div data-rev="TENTATIVAS_FALHAS" → 6 falhas retroativas (NOVO)
+        3. div data-rev="VICIOS_CONHECIDOS" → vícios catalogados (existia)
+        4. window._TENTATIVAS_FALHAS → array JS consultável (NOVO)
+      Console atualizado (AKE v3): exibe tentativas falhas com ❌ ao carregar.
+      Consulta: window._TENTATIVAS_FALHAS
+      Protocolo: IC < 0.9 = não implementar. Registrar ANTES de corrigir.
+      6 tentativas falhas retroativas documentadas: TF-01 a TF-06.
+    </span>
+  </div>
+
+  <!-- ── TENTATIVAS FALHAS (AKE — registro obrigatório) ────────── -->
+  <!-- PROTOCOLO: toda solução incorreta aplicada e depois revertida deve  -->
+  <!-- ser registrada aqui ANTES da correção, não depois. Formato:         -->
+  <!-- data-tf="TF-N" | data-rev-origem="REV-X" | data-rev-correcao="REV-Y" -->
+  <div data-rev="TENTATIVAS_FALHAS" data-tipo="AKE_REGISTRO">
+
+    <span data-tf="TF-01" data-rev-origem="REV-11" data-rev-correcao="REV-12">
+      TENTATIVA FALHA TF-01 — Inversão dinâmica insuficiente (REV-11)
+      Hipótese: swap automático por comparação de índices na trilha seria
+      suficiente para detectar e corrigir postoDevidoMes abaixo de postoAtual.
+      Falha: quando progsAteMes >= 1 retorna postoDevidoMes = postoAtual,
+      condição postoDevidoMes !== postoAtual é FALSE → inversão não dispara
+      → ambos iguais → linha descartada → "só 2023 pra cá".
+      Causa da hipótese errada: não simulei o caso de múltiplas progressões
+      antes de implementar. IC baixo (suposição sem verificação axiomática).
+      Correção em REV-12: branch autoDetectado com valores FIXOS.
+    </span>
+
+    <span data-tf="TF-02" data-rev-origem="REV-13" data-rev-correcao="REV-14">
+      TENTATIVA FALHA TF-02 — Campo manual s-ref-max / m-ref-max (REV-13)
+      Hipótese: adicionar campo manual "Referência Máxima Devida" para que
+      o operador informe o teto quando posseDate mais antiga gerasse progs extras.
+      Falha: contrário ao princípio de automação. Transferia ao operador
+      a responsabilidade de um cálculo que o sistema deve fazer sozinho.
+      Causa da hipótese errada: olhei o sintoma (posseDate antiga → progs extras)
+      e propus workaround manual em vez de solução computável.
+      Descartado na mesma sessão pelo operador humano (colapso correto do AKE).
+      Correção em REV-14: cap automático por período retroativo.
+    </span>
+
+    <span data-tf="TF-03" data-rev-origem="REV-14" data-rev-correcao="REV-18">
+      TENTATIVA FALHA TF-03 — Cap automático 1+floor(período/24) (REV-14)
+      Hipótese: progsMaximas = 1 + floor((endDate-startDate)/intersticio)
+      limitaria progressões ao que é juridicamente exigível no período.
+      Falha: o cap é independente da posseDate real. Com posseDate=MAR/2018
+      e período de 36 meses, cap = 1+1 = 2 → teto B1. Mas com 96 meses
+      desde a posse o servidor já tinha 4 progressões legítimas → C1. O cap
+      ignorava todo o histórico anterior ao startDate.
+      Causa da hipótese errada: derivei a fórmula sem casos de teste com
+      posseDate anterior ao startDate. Violação do princípio AKE: nunca
+      derivar constante de sistema sem verificar o caso geral.
+      Correção em REV-18: remoção do cap. posseDate correta é suficiente.
+    </span>
+
+    <span data-tf="TF-04" data-rev-origem="REV-20" data-rev-correcao="REV-22">
+      TENTATIVA FALHA TF-04 — Interstício SEMED = 48 meses (REV-20)
+      Hipótese: derivei intersticioUnico=48 a partir de dois casos
+      confirmados, assumindo posseDate=MAR/2018 (não confirmada pelo usuário).
+      MAR/2018 + 48m = MAR/2022 (B1 antes do período) ✓ aparentemente correto.
+      Falha: a posseDate real confirmada era MAR/2020, não MAR/2018.
+      Com posseDate=MAR/2020, 48m → B1 em MAR/2024 (errado — deveria ser MAR/2023).
+      Com posseDate=MAR/2020, 36m → B1 em MAR/2023 ✓ e C1 em MAR/2026 ✓.
+      Causa da hipótese errada: violação AKE crítica — derivei constante
+      de sistema (interstício) a partir de variável de entrada ASSUMIDA
+      (posseDate=MAR/2018) sem confirmação do operador humano.
+      IC < 0.9 = não deveria ter implementado.
+      Correção em REV-22: interstício = 36 meses (derivação axiomática
+      confirmada com posseDate=MAR/2020 real do usuário).
+    </span>
+
+    <span data-tf="TF-05" data-rev-origem="REV-23" data-rev-correcao="REV-25">
+      TENTATIVA FALHA TF-05 — refAtual sem propagação completa (REV-23)
+      Hipótese: adicionar refAtual ao CORPO da função gerarDemonstrativoEduc
+      e ao destructuring seria suficiente para resolver o problema de
+      refInicial sendo usado como proxy do salário atual.
+      Falha: refAtual foi adicionado ao uso e ao destructuring mas NÃO
+      foi passado na chamada em _coletarEduc → gerarDemonstrativoEduc()
+      → params.refAtual = undefined → ReferenceError em runtime.
+      Causa da hipótese errada: editei em 2 dos 3 pontos atômicos
+      obrigatórios (uso + destructuring) esquecendo o 3º (chamada do caller).
+      Padrão não documentado explicitamente no AKE até este momento.
+      Correção em REV-25: refAtual adicionado à chamada. V22 documenta
+      que uso + destructuring + chamada são SEMPRE atômicos.
+    </span>
+
+    <span data-tf="TF-06" data-rev-origem="REV-24" data-rev-correcao="REV-25">
+      TENTATIVA FALHA TF-06 — SEDUC apenas A1–H1 sem aliases (REV-24)
+      Hipótese: substituir A–H por A1–H1 como única notação aceita.
+      Falha: parte dos servidores e folhas de pagamento usa notação A–H
+      sem sufixo. O sistema rejeitava essas referências silenciosamente
+      (multRefs['A'] = undefined → ?? 1 = sem multiplicador, sem erro).
+      Causa da hipótese errada: a imagem da tabela mostrava A1/B1 mas
+      não confirmei com o usuário que ALL sistemas usam essa notação.
+      Generalização indevida de um caso específico.
+      Correção em REV-25: dual notação com aliases — ambas aceitas.
+    </span>
+
   </div>
 
   <!-- ── VÍCIOS CONHECIDOS (guia para IA e manutenção) ─────────── -->
@@ -4473,12 +4628,83 @@ window._VERSION_LOG = [
   {
     rev: "REV-24",
     data: "2026-04-02",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "SEDUC magistério corrigido para notação A1–H1 — PCCR Lei 3.951/2013.",
     fixes: [
       { id: "SEDUC_REFS_A1_H1", desc: "REGRAS.SEDUC.referencias=['A1'...'H1'], multRefs com chaves A1–H1. toggleSEDUCAdmin e selects s-ref/s-ref-inicial atualizados." }
     ],
     bugs_pendentes: []
+  },
+  {
+    rev: "REV-25",
+    data: "2026-04-06",
+    status: "SUPERADA",
+    descricao: "Fix refAtual not defined + dual notação SEDUC (A1/A simultâneos).",
+    fixes: [
+      { id: "REFATUAL_NAO_PASSADO_AO_GERADOR", desc: "refAtual adicionado ao destructuring de params e à chamada _coletarEduc→gerarDemonstrativoEduc. Padrão: uso+destructuring+chamada são atômicos." },
+      { id: "SEDUC_DUAL_NOTACAO",              desc: "multRefs com aliases A–H e A1–H1. referencias inclui ambas. Selects com optgroups separados. toggleSEDUCAdmin atualizado." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-26",
+    data: "2026-04-06",
+    status: "ATUAL",
+    descricao: "Implementação do sistema AKE de Tentativas Falhas — 4ª camada do log.",
+    fixes: [
+      { id: "AKE_TENTATIVAS_FALHAS", desc: "window._TENTATIVAS_FALHAS com TF-01 a TF-06 retroativos. Bloco HTML data-rev=TENTATIVAS_FALHAS. Console AKE v3 com exibição ❌ das falhas." }
+    ],
+    bugs_pendentes: []
+  }
+];
+
+/* ================================================================
+   TENTATIVAS FALHAS — AKE registro obrigatório
+   Protocolo: IC < 0.9 = não implementar. Registrar ANTES de corrigir.
+   Consulte: window._TENTATIVAS_FALHAS
+   ================================================================ */
+window._TENTATIVAS_FALHAS = [
+  {
+    id: "TF-01", revOrigem: "REV-11", revCorrecao: "REV-12",
+    hipotese: "Swap automático por índice na trilha detectaria inversão devida/recebida.",
+    falha: "progsAteMes>=1 → postoDevidoMes=postoAtual → condição !==postoAtual é FALSE → inversão não dispara.",
+    causaAke: "Não simulei caso de múltiplas progressões. IC baixo implementado sem verificação.",
+    correcao: "Branch autoDetectado com valores FIXOS para todo o período."
+  },
+  {
+    id: "TF-02", revOrigem: "REV-13", revCorrecao: "REV-14",
+    hipotese: "Campo manual s-ref-max permitiria operador definir teto de progressões.",
+    falha: "Transferia ao operador responsabilidade computável. Anti-padrão de automação.",
+    causaAke: "Olhei o sintoma e propus workaround manual. Não busquei solução computável.",
+    correcao: "Cap automático por período (depois também descartado — TF-03)."
+  },
+  {
+    id: "TF-03", revOrigem: "REV-14", revCorrecao: "REV-18",
+    hipotese: "progsMaximas = 1 + floor((endDate-startDate)/intersticio) cobre o caso geral.",
+    falha: "Ignora histórico anterior ao startDate. posseDate=MAR/2018: cap=2=B1, mas 4 progs legítimas=C1.",
+    causaAke: "Derivei fórmula sem testar posseDate anterior ao startDate. Violação: nunca derivar sem verificar caso geral.",
+    correcao: "Remoção do cap. posseDate correta é soberana e suficiente."
+  },
+  {
+    id: "TF-04", revOrigem: "REV-20", revCorrecao: "REV-22",
+    hipotese: "Interstício SEMED = 48 meses, derivado assumindo posseDate=MAR/2018.",
+    falha: "posseDate real confirmada era MAR/2020. 48m → B1 MAR/2024 (errado). 36m → B1 MAR/2023 ✓.",
+    causaAke: "VIOLAÇÃO AKE CRÍTICA: derivei constante de sistema de variável assumida sem confirmação. IC<0.9 = NÃO IMPLEMENTAR.",
+    correcao: "Interstício=36m. Derivação axiomática com posseDate=MAR/2020 confirmada pelo usuário."
+  },
+  {
+    id: "TF-05", revOrigem: "REV-23", revCorrecao: "REV-25",
+    hipotese: "Adicionar refAtual ao corpo e ao destructuring seria suficiente.",
+    falha: "_coletarEduc não passava refAtual na chamada → params.refAtual=undefined → ReferenceError.",
+    causaAke: "Editei 2 de 3 pontos atômicos: uso + destructuring. Esqueci chamada do caller.",
+    correcao: "V22 formaliza padrão: uso + destructuring + chamada = SEMPRE atômicos."
+  },
+  {
+    id: "TF-06", revOrigem: "REV-24", revCorrecao: "REV-25",
+    hipotese: "SEDUC usa apenas A1–H1. Substituir A–H completamente.",
+    falha: "Parte dos sistemas usa A–H. Motor usava multiplicador neutro (1) sem erro visível.",
+    causaAke: "Generalizei de um caso específico (tabela MEA) sem confirmar universalidade com usuário.",
+    correcao: "Dual notação: aliases A–H e A1–H1 com mesmos multiplicadores."
   }
 ];
 
@@ -4560,22 +4786,62 @@ window._VICIOS_CONHECIDOS = [
     exemplo_errado: "referencias: ['A','B','C','D','E','F','G','H']",
     exemplo_correto: "referencias: ['A1','B1','C1','D1','E1','F1','G1','H1'] // SEDUC magistério"
   }
+,
+  {
+    id: "V22",
+    severidade: "CRITICA",
+    titulo: "Variável nova em params: uso + destructuring + chamada são atômicos",
+    descricao: "Ao adicionar variável ao corpo de uma função que recebe params, sempre atualizar os 3 pontos: (1) uso no corpo, (2) destructuring de params, (3) chamada do caller. Omitir qualquer um gera ReferenceError silencioso ou undefined.",
+    exemplo_errado: "// body: usa refAtual; destructuring: sem refAtual; caller: não passa refAtual",
+    exemplo_correto: "// body: usa refAtual; destructuring: { refAtual }; caller: gerarDemonstratvoEduc({ refAtual, ... })"
+  }
 ];
 
 /* ================================================================
-   CONSOLE — exibe ao carregar (formato v2)
+   CONSOLE — exibe ao carregar (AKE v3 — com tentativas falhas)
    ================================================================ */
 (function() {
   const atual = window._VERSION_LOG.find(v => v.status === 'ATUAL') || window._VERSION_LOG[window._VERSION_LOG.length - 1];
-  console.groupCollapsed("%c LAADV " + atual.rev + " ", "background:#0B4A44;color:#C9A93E;font-weight:bold;padding:2px 8px;border-radius:3px;font-size:12px");
+  console.groupCollapsed(
+    "%c LAADV " + atual.rev + " — AKE UFT-1.0 ",
+    "background:#0B4A44;color:#C9A93E;font-weight:bold;padding:2px 8px;border-radius:3px;font-size:12px"
+  );
+
   console.log("%cVersão: " + atual.rev + " (" + atual.data + ")", "color:#0B4A44;font-weight:bold");
   console.log("%c" + atual.descricao, "color:#3D4F63");
-  if (atual.fixes?.length) { console.log("%cFixes:", "color:#2E7D32;font-weight:bold"); atual.fixes.forEach(f => console.log("  ✅ [" + f.id + "] " + f.desc)); }
-  if (atual.bugs_pendentes?.length) { console.log("%cBugs pendentes:", "color:#C0392B;font-weight:bold"); atual.bugs_pendentes.forEach(b => console.log("  ⚠️ [" + b.id + "] " + b.desc)); }
+
+  if (atual.fixes?.length) {
+    console.log("%cFixes desta versão:", "color:#2E7D32;font-weight:bold");
+    atual.fixes.forEach(f => console.log("  ✅ [" + f.id + "] " + f.desc));
+  }
+  if (atual.bugs_pendentes?.length) {
+    console.log("%cBugs pendentes:", "color:#C0392B;font-weight:bold");
+    atual.bugs_pendentes.forEach(b => console.log("  ⚠️ [" + b.id + "] " + b.desc));
+  }
+
+  // Vícios críticos
   const criticos = window._VICIOS_CONHECIDOS.filter(v => v.severidade === 'CRITICA');
-  console.log("%cVícios CRÍTICOS (" + criticos.length + "/" + window._VICIOS_CONHECIDOS.length + "):", "color:#7B1FA2;font-weight:bold");
+  console.log(
+    "%cVícios CRÍTICOS (" + criticos.length + "/" + window._VICIOS_CONHECIDOS.length + "):",
+    "color:#7B1FA2;font-weight:bold"
+  );
   criticos.forEach(v => console.log("  🚫 [" + v.id + "] " + v.titulo));
-  console.log("%cConsulte: window._VERSION_LOG | window._VICIOS_CONHECIDOS", "color:#8899AA;font-size:11px");
+
+  // Tentativas falhas — memória de erros passados
+  if (window._TENTATIVAS_FALHAS?.length) {
+    console.log(
+      "%cTentativas Falhas (" + window._TENTATIVAS_FALHAS.length + ") — AKE memória:",
+      "color:#B8560A;font-weight:bold"
+    );
+    window._TENTATIVAS_FALHAS.forEach(tf =>
+      console.log("  ❌ [" + tf.id + "] " + tf.revOrigem + "→" + tf.revCorrecao + ": " + tf.falha.slice(0,80) + "…")
+    );
+  }
+
+  console.log(
+    "%cConsulte: window._VERSION_LOG | window._VICIOS_CONHECIDOS | window._TENTATIVAS_FALHAS",
+    "color:#8899AA;font-size:11px"
+  );
   console.groupEnd();
 })();
 </script>
