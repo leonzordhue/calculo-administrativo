@@ -631,7 +631,7 @@
                     <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option>
                   </optgroup>
                 </select>
-                <span class="field-hint">Referência constante na folha de pagamento</span>
+                <span class="field-hint">⚠️ Informe a referência do <strong>contracheque atual</strong> — não a que deveria receber</span>
               </div>
               <div class="field"><label class="field-label">Referência no Ingresso (se diferente)</label>
                 <select id="s-ref-inicial">
@@ -937,7 +937,7 @@
                   <option value="">Selecione...</option>
                   <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option><option value="D1">D1</option><option value="D2">D2</option><option value="E1">E1</option><option value="E2">E2</option>
                 </select>
-                <span class="field-hint">Referência constante na folha de pagamento</span>
+                <span class="field-hint">⚠️ Informe a referência do <strong>contracheque atual</strong> — não a que deveria receber</span>
               </div>
               <div class="field"><label class="field-label">Referência no Ingresso (se diferente)</label>
                 <select id="sa-ref-inicial">
@@ -1762,7 +1762,7 @@ function toggleSEDUCAdmin() {
   if (refHint) {
     refHint.textContent = isApoio
       ? 'Referências A–E (Apoio Específico — Lei n.º 3.951/2013, Anexo IV/V)'
-      : 'Referência constante na folha de pagamento';
+      : '⚠️ Informe a referência do contracheque atual — não a que deveria receber';
   }
 }
 
@@ -2086,7 +2086,7 @@ function gerarDemonstrativoEduc(params) {
   const nMeses        = rows.filter(r => r.tipo === 'normal').length;
   return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial, refDevida,
     area, nome, matricula, cargo, classe, posseDate, startDate, endDate, incluirExtras,
-    municipio, pctLocalidade: pctLoc, incluirRegencia, dataCalculo: new Date() };
+    municipio, pctLocalidade: pctLoc, incluirRegencia, refAtual, dataCalculo: new Date() };
 }
 
 // ─────────────────────────────────────────
@@ -2704,6 +2704,35 @@ function calcular() {
             + `a Data de Posse deve ser <strong>anterior a ${fmtPD(posseDateIdeal)}</strong>.`;
           const stepResults = document.getElementById('step-results');
           if (stepResults) stepResults.insertBefore(avisoEl, stepResults.firstChild);
+
+        } else if (resultado.refAtual && resultado.refInicial && resultado.refAtual !== resultado.refInicial) {
+          // ── ALERTA: refAtual provavelmente incorreta ────────────────────────
+          // posseDate correta (progsJaFeitas > 0), mas diferenças só aparecem no
+          // final do período. Causa: operador colocou no campo "Referência Atual"
+          // o valor que o servidor DEVERIA receber (ex: F), em vez do que consta
+          // no contracheque (ex: A). Motor trata refAtual=F como teto de recebido:
+          // refRecebidaMes = min(progressão, F) → iguais até progs=6 → diff=0.
+          const refListDiag  = REGRAS[(AREA_FORM + (resultado.categoria === 'admin' ? '_ADMIN' : '')).toUpperCase()]?.referencias
+                             || REGRAS[AREA_FORM.toUpperCase()]?.referencias || [];
+          const idxAtualDiag = refListDiag.indexOf(resultado.refAtual);
+          const idxInicDiag  = refListDiag.indexOf(resultado.refInicial);
+          if (idxAtualDiag > idxInicDiag) {
+            const avisoRef = document.createElement('div');
+            avisoRef.className = 'alert alert-warn';
+            avisoRef.style.cssText = 'margin-bottom:1rem;border-left:4px solid #C0392B;background:#FEF2F2;';
+            avisoRef.innerHTML = `⚠️ <strong>Atenção — "Referência Atual" possivelmente incorreta:</strong><br><br>`
+              + `As diferenças só aparecem a partir de <strong>${primeiraLinhaMsg.competencia}</strong>, `
+              + `mas o retroativo começa em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>.<br><br>`
+              + `Isso acontece quando o campo <strong>"Referência Atual (sendo paga)"</strong> está preenchido com `
+              + `<strong>${resultado.refAtual}</strong> — que pode ser a referência que o servidor <em>deveria</em> `
+              + `receber, e não a que <em>realmente consta no contracheque hoje</em>.<br><br>`
+              + `<strong>🔧 Como corrigir:</strong> abra o contracheque do servidor e informe no campo `
+              + `"Referência Atual" exatamente o código que aparece na folha de pagamento.<br>`
+              + `<em>Se o servidor nunca foi promovido e entrou como <strong>${resultado.refInicial}</strong>, `
+              + `o campo deve ser <strong>${resultado.refInicial}</strong> — e as diferenças aparecerão desde o início do período.</em>`;
+            const stepResults = document.getElementById('step-results');
+            if (stepResults) stepResults.insertBefore(avisoRef, stepResults.firstChild);
+          }
         }
       }
     }
@@ -3686,7 +3715,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-26"
+     data-versao-atual="REV-27"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -4137,7 +4166,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-26 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-26" data-data="2026-04-06" data-status="ATUAL">
+  <div data-rev="REV-26" data-data="2026-04-06" data-status="SUPERADA">
     <span data-tipo="IMPL" data-id="AKE_TENTATIVAS_FALHAS">
       IMPLEMENTADO: sistema de Tentativas Falhas (AKE UFT-1.0).
       Nova camada no log de 3 para 4 camadas:
@@ -4149,6 +4178,32 @@ document.addEventListener('DOMContentLoaded', () => {
       Consulta: window._TENTATIVAS_FALHAS
       Protocolo: IC < 0.9 = não implementar. Registrar ANTES de corrigir.
       6 tentativas falhas retroativas documentadas: TF-01 a TF-06.
+    </span>
+  </div>
+
+  <!-- ── REV-27 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-27" data-data="2026-04-13" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="REFATUAL_NO_RETURN">
+      CORRIGIDO: refAtual não estava no return de gerarDemonstrativoEduc.
+      V22 (3 pontos atômicos): estava no destructuring e na chamada mas
+      faltava no return — resultado.refAtual era undefined no calcular().
+    </span>
+    <span data-tipo="FIX" data-id="ALERTA_REFATUAL_INCORRETA">
+      IMPLEMENTADO: alerta diagnóstico quando "Referência Atual" está
+      incorreta em SEDUC/SEMED. Cenário: operador coloca no campo
+      "Referência Atual" o valor que o servidor DEVERIA receber (ex: F)
+      em vez do que consta no contracheque (ex: A). Motor interpreta F
+      como teto de recebido → refRecebidaMes = min(progressão, F) →
+      iguais até progs=6 → diff=0 → skip → só aparece G em diante.
+      Detecção: diffInicio > 1 mês E progsJaFeitas > 0 E
+      refAtual != refInicial E idxAtual > idxInicial.
+      Exibe alerta vermelho com explicação e instrução ao operador.
+    </span>
+    <span data-tipo="UX" data-id="HINT_REFATUAL">
+      MELHORADO: hint do campo "Referência Atual" em SEDUC, SEMSA e
+      toggleSEDUCAdmin agora alerta explicitamente: "⚠️ Informe a
+      referência do contracheque atual — não a que deveria receber".
+      Prevenção na origem do erro mais recorrente do sistema.
     </span>
   </div>
 
@@ -4237,6 +4292,20 @@ document.addEventListener('DOMContentLoaded', () => {
       não confirmei com o usuário que ALL sistemas usam essa notação.
       Generalização indevida de um caso específico.
       Correção em REV-25: dual notação com aliases — ambas aceitas.
+    </span>
+
+    <span data-tf="TF-07" data-rev-origem="REV-26" data-rev-correcao="REV-27">
+      TENTATIVA FALHA TF-07 — refAtual no return ausente (REV-26/REV-23)
+      Hipótese: adicionar refAtual ao destructuring e à chamada (_coletarEduc)
+      seria suficiente para propagá-lo ao sistema de alertas em calcular().
+      Falha: resultado.refAtual = undefined porque o return do gerador não
+      incluía refAtual — o objeto retornado nunca carregava o campo.
+      O alerta REV-27 dependia de resultado.refAtual para funcionar.
+      Causa: V22 define 3 pontos atômicos (uso, destructuring, chamada),
+      mas esquecemos o return como 4º ponto quando a variável precisa
+      sair da função como parte do resultado.
+      Correção em REV-27: refAtual adicionado ao return. Padrão V22
+      estendido para incluir return quando aplicável.
     </span>
 
   </div>
@@ -4649,10 +4718,22 @@ window._VERSION_LOG = [
   {
     rev: "REV-26",
     data: "2026-04-06",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Implementação do sistema AKE de Tentativas Falhas — 4ª camada do log.",
     fixes: [
       { id: "AKE_TENTATIVAS_FALHAS", desc: "window._TENTATIVAS_FALHAS com TF-01 a TF-06 retroativos. Bloco HTML data-rev=TENTATIVAS_FALHAS. Console AKE v3 com exibição ❌ das falhas." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-27",
+    data: "2026-04-13",
+    status: "ATUAL",
+    descricao: "Fix refAtual ausente no return + alerta diagnóstico de Referência Atual incorreta + hints preventivos.",
+    fixes: [
+      { id: "REFATUAL_NO_RETURN",      desc: "resultado.refAtual adicionado ao return de gerarDemonstrativoEduc (V22: 3 pontos atômicos — faltava o return)." },
+      { id: "ALERTA_REFATUAL_INCORRETA", desc: "Alerta vermelho quando diffInicio>1 E progsJaFeitas>0 E refAtual!=refInicial E idxAtual>idxInicial. Explica causa e instrui correção." },
+      { id: "HINT_REFATUAL",           desc: "Hint dos campos refAtual em SEDUC/SEMSA/toggleSEDUC agora alerta explicitamente para usar o contracheque, não a ref devida." }
     ],
     bugs_pendentes: []
   }
@@ -4705,6 +4786,13 @@ window._TENTATIVAS_FALHAS = [
     falha: "Parte dos sistemas usa A–H. Motor usava multiplicador neutro (1) sem erro visível.",
     causaAke: "Generalizei de um caso específico (tabela MEA) sem confirmar universalidade com usuário.",
     correcao: "Dual notação: aliases A–H e A1–H1 com mesmos multiplicadores."
+  },
+  {
+    id: "TF-07", revOrigem: "REV-26/REV-23", revCorrecao: "REV-27",
+    hipotese: "refAtual no destructuring + chamada seria suficiente para o alerta de calcular() acessar resultado.refAtual.",
+    falha: "return do gerador não incluía refAtual → resultado.refAtual=undefined → alerta nunca disparava.",
+    causaAke: "V22 cobre uso+destructuring+chamada, mas esquecemos o return como ponto obrigatório quando variável precisa sair da função.",
+    correcao: "refAtual adicionado ao return. V22 estendido mentalmente para incluir return quando aplicável."
   }
 ];
 
@@ -4794,6 +4882,15 @@ window._VICIOS_CONHECIDOS = [
     descricao: "Ao adicionar variável ao corpo de uma função que recebe params, sempre atualizar os 3 pontos: (1) uso no corpo, (2) destructuring de params, (3) chamada do caller. Omitir qualquer um gera ReferenceError silencioso ou undefined.",
     exemplo_errado: "// body: usa refAtual; destructuring: sem refAtual; caller: não passa refAtual",
     exemplo_correto: "// body: usa refAtual; destructuring: { refAtual }; caller: gerarDemonstratvoEduc({ refAtual, ... })"
+  }
+,
+  {
+    id: "V23",
+    severidade: "CRITICA",
+    titulo: "Variável em params: uso + destructuring + chamada + RETURN são atômicos",
+    descricao: "Extensão do V22: quando a variável também precisa sair da função via return, o return é o 4º ponto atômico obrigatório. Omitir o return faz resultado.variavel=undefined no caller mesmo com os outros 3 pontos corretos.",
+    exemplo_errado: "// destructuring: {refAtual}; chamada: {refAtual,...}; corpo: usa refAtual; return: SEM refAtual → undefined",
+    exemplo_correto: "// return { ...outros, refAtual, dataCalculo: new Date() }; // sempre incluir no return"
   }
 ];
 
