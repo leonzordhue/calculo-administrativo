@@ -1250,6 +1250,9 @@
       <button class="btn btn-ghost" id="btn-nova-consulta" onclick="novaConsulta()">+ Nova Consulta</button>
     </div>
 
+    <!-- CONTENTOR DE ALERTAS DINÂMICOS — limpo a cada novo cálculo (AKE REV-28) -->
+    <div id="alertas-dinamicos"></div>
+
     <div class="legal-box"><div class="legal-box-icon">⚖️</div><div><div class="legal-box-title">Fundamento Jurídico</div><div class="legal-box-text" id="legal-text"></div></div></div>
 
     <div class="result-summary" id="result-summary"></div>
@@ -2589,6 +2592,9 @@ function novaConsulta() {
   document.getElementById('step-selector').classList.remove('hidden');
   stepAtivo(1);
   RESULTADO = null;
+  // Limpar alertas dinâmicos para próxima consulta
+  const ca = document.getElementById('alertas-dinamicos');
+  if (ca) ca.innerHTML = '';
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -2670,73 +2676,85 @@ function calcular() {
 
   renderizarResultados(resultado);
 
-  // ── ALERTA: posseDate provavelmente errada (SEDUC/SEMED) ────────────────
-  // Se a primeira linha normal não começa no início do período, o operador
-  // provavelmente informou a data de início do retroativo como posseDate,
-  // em vez da data real de ingresso no cargo.
+  // ── ALERTAS DINÂMICOS (AKE REV-28) ──────────────────────────────────────
+  // Regras:
+  //   1. Sempre usar o contentor #alertas-dinamicos (posição fixa antes da legal-box)
+  //   2. Limpar o contentor antes de inserir — evita acúmulo entre cálculos
+  //   3. NUNCA usar insertBefore(el, stepResults.firstChild) — firstChild pode ser
+  //      text node ou element que herda display:grid → texto fragmentado em células
+  const containerAlertas = document.getElementById('alertas-dinamicos');
+  if (containerAlertas) containerAlertas.innerHTML = '';   // ← limpa antes de novo cálculo
+
+  function _addAlerta(html, cor) {
+    if (!containerAlertas) return;
+    const el = document.createElement('div');
+    el.className = 'alert alert-warn';
+    el.style.cssText = `margin-bottom:1rem;border-left:4px solid ${cor};` + (cor === '#C0392B' ? 'background:#FEF2F2;' : '');
+    el.innerHTML = html;
+    containerAlertas.appendChild(el);
+  }
+
+  // ── ALERTA: posseDate ou refAtual provavelmente errada (SEDUC/SEMED) ────
   if ((AREA_FORM === 'seduc' || AREA_FORM === 'semed') && resultado.rows && resultado.posseDate && resultado.startDate) {
     const primeiraLinhaMsg = resultado.rows.find(r => r.tipo === 'normal');
     if (primeiraLinhaMsg) {
       const primeiroMes = new Date(primeiraLinhaMsg.ano, primeiraLinhaMsg.mes, 1);
       const startMes    = new Date(resultado.startDate.getFullYear(), resultado.startDate.getMonth(), 1);
       const diffInicio  = (primeiroMes - startMes) / (1000 * 60 * 60 * 24 * 30);
+
       if (diffInicio > 1) {
-        // Calcular qual posseDate geraria diferença desde o início
-        const intersticioMeses = AREA_FORM === 'semed' ? 48 : 24;
+        // ── Determinar interstício real conforme área ────────────────────
+        const area_diag = AREA_FORM;
+        const cfg_diag  = REGRAS[area_diag.toUpperCase()];
+        const intersticio_diag = cfg_diag?.intersticioUnico || cfg_diag?.intersticioNovo || 36;
+
         const mesesNecessarios = diffMonths(resultado.posseDate, startMes);
-        const progsJaFeitas    = Math.floor(mesesNecessarios / intersticioMeses);
+        const progsJaFeitas    = Math.floor(mesesNecessarios / intersticio_diag);
+
         if (progsJaFeitas === 0) {
-          // posseDate ainda não completou um interstício → provavelmente é a data errada
-          const mesesFaltando  = intersticioMeses - mesesNecessarios;
+          // posseDate insuficiente → data provavelmente é a do início do retroativo
+          const mesesFaltando  = intersticio_diag - mesesNecessarios;
           const posseDateIdeal = new Date(resultado.posseDate);
           posseDateIdeal.setMonth(posseDateIdeal.getMonth() - mesesFaltando);
           const fmtPD = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-          const avisoEl = document.createElement('div');
-          avisoEl.className = 'alert alert-warn';
-          avisoEl.style.cssText = 'margin-bottom:1rem;border-left:4px solid #C9A93E;';
-          avisoEl.innerHTML = `⚠️ <strong>Atenção — Data de Posse possivelmente incorreta:</strong><br>`
-            + `O sistema detectou que a primeira diferença salarial só aparece em <strong>${primeiraLinhaMsg.competencia}</strong>, `
-            + `mas o período retroativo começa em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>.<br><br>`
-            + `Isso geralmente indica que a <strong>Data de Posse/Ingresso</strong> informada `
-            + `(<strong>${fmtPD(resultado.posseDate)}</strong>) é a data de início do retroativo, e não a data real de ingresso no cargo.<br><br>`
-            + `<strong>Como corrigir:</strong> informe a data real de nomeação/posse no cargo. `
-            + `Para que as diferenças comecem em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>, `
-            + `a Data de Posse deve ser <strong>anterior a ${fmtPD(posseDateIdeal)}</strong>.`;
-          const stepResults = document.getElementById('step-results');
-          if (stepResults) stepResults.insertBefore(avisoEl, stepResults.firstChild);
+          _addAlerta(
+            `⚠️ <strong>Atenção — Data de Posse possivelmente incorreta:</strong><br>` +
+            `O sistema detectou que a primeira diferença salarial só aparece em <strong>${primeiraLinhaMsg.competencia}</strong>, ` +
+            `mas o período retroativo começa em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>.<br><br>` +
+            `Isso geralmente indica que a <strong>Data de Posse/Ingresso</strong> informada ` +
+            `(<strong>${fmtPD(resultado.posseDate)}</strong>) é a data de início do retroativo, e não a data real de ingresso no cargo.<br><br>` +
+            `<strong>Como corrigir:</strong> informe a data real de nomeação/posse no cargo. ` +
+            `Para que as diferenças comecem em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>, ` +
+            `a Data de Posse deve ser <strong>anterior a ${fmtPD(posseDateIdeal)}</strong>.`,
+            '#C9A93E'
+          );
 
         } else if (resultado.refAtual && resultado.refInicial && resultado.refAtual !== resultado.refInicial) {
-          // ── ALERTA: refAtual provavelmente incorreta ────────────────────────
-          // posseDate correta (progsJaFeitas > 0), mas diferenças só aparecem no
-          // final do período. Causa: operador colocou no campo "Referência Atual"
-          // o valor que o servidor DEVERIA receber (ex: F), em vez do que consta
-          // no contracheque (ex: A). Motor trata refAtual=F como teto de recebido:
-          // refRecebidaMes = min(progressão, F) → iguais até progs=6 → diff=0.
+          // posseDate correta, mas diferenças tardias → refAtual provavelmente errada
           const refListDiag  = REGRAS[(AREA_FORM + (resultado.categoria === 'admin' ? '_ADMIN' : '')).toUpperCase()]?.referencias
                              || REGRAS[AREA_FORM.toUpperCase()]?.referencias || [];
           const idxAtualDiag = refListDiag.indexOf(resultado.refAtual);
           const idxInicDiag  = refListDiag.indexOf(resultado.refInicial);
           if (idxAtualDiag > idxInicDiag) {
-            const avisoRef = document.createElement('div');
-            avisoRef.className = 'alert alert-warn';
-            avisoRef.style.cssText = 'margin-bottom:1rem;border-left:4px solid #C0392B;background:#FEF2F2;';
-            avisoRef.innerHTML = `⚠️ <strong>Atenção — "Referência Atual" possivelmente incorreta:</strong><br><br>`
-              + `As diferenças só aparecem a partir de <strong>${primeiraLinhaMsg.competencia}</strong>, `
-              + `mas o retroativo começa em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>.<br><br>`
-              + `Isso acontece quando o campo <strong>"Referência Atual (sendo paga)"</strong> está preenchido com `
-              + `<strong>${resultado.refAtual}</strong> — que pode ser a referência que o servidor <em>deveria</em> `
-              + `receber, e não a que <em>realmente consta no contracheque hoje</em>.<br><br>`
-              + `<strong>🔧 Como corrigir:</strong> abra o contracheque do servidor e informe no campo `
-              + `"Referência Atual" exatamente o código que aparece na folha de pagamento.<br>`
-              + `<em>Se o servidor nunca foi promovido e entrou como <strong>${resultado.refInicial}</strong>, `
-              + `o campo deve ser <strong>${resultado.refInicial}</strong> — e as diferenças aparecerão desde o início do período.</em>`;
-            const stepResults = document.getElementById('step-results');
-            if (stepResults) stepResults.insertBefore(avisoRef, stepResults.firstChild);
+            _addAlerta(
+              `⚠️ <strong>Atenção — "Referência Atual" possivelmente incorreta:</strong><br><br>` +
+              `As diferenças só aparecem a partir de <strong>${primeiraLinhaMsg.competencia}</strong>, ` +
+              `mas o retroativo começa em <strong>${resultado.startDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}</strong>.<br><br>` +
+              `Isso acontece quando o campo <strong>"Referência Atual (sendo paga)"</strong> está preenchido com ` +
+              `<strong>${resultado.refAtual}</strong> — que pode ser a referência que o servidor <em>deveria</em> ` +
+              `receber, e não a que <em>realmente consta no contracheque hoje</em>.<br><br>` +
+              `<strong>🔧 Como corrigir:</strong> abra o contracheque do servidor e informe no campo ` +
+              `"Referência Atual" exatamente o código que aparece na folha de pagamento.<br>` +
+              `<em>Se o servidor nunca foi promovido e entrou como <strong>${resultado.refInicial}</strong>, ` +
+              `o campo deve ser <strong>${resultado.refInicial}</strong> — as diferenças aparecerão desde o início do período.</em>`,
+              '#C0392B'
+            );
           }
         }
       }
     }
   }
+
   document.getElementById('step-form').classList.add('hidden');
   document.getElementById('step-results').classList.remove('hidden');
   stepAtivo(3);
@@ -3715,7 +3733,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-27"
+     data-versao-atual="REV-28"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -4182,7 +4200,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-27 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-27" data-data="2026-04-13" data-status="ATUAL">
+  <div data-rev="REV-27" data-data="2026-04-13" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="REFATUAL_NO_RETURN">
       CORRIGIDO: refAtual não estava no return de gerarDemonstrativoEduc.
       V22 (3 pontos atômicos): estava no destructuring e na chamada mas
@@ -4204,6 +4222,24 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleSEDUCAdmin agora alerta explicitamente: "⚠️ Informe a
       referência do contracheque atual — não a que deveria receber".
       Prevenção na origem do erro mais recorrente do sistema.
+    </span>
+  </div>
+
+  <!-- ── REV-28 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-28" data-data="2026-04-15" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="ALERTAS_DUPLICADOS">
+      CORRIGIDO: alertas dinâmicos duplicavam a cada recalcular.
+      Causa: insertBefore(el, stepResults.firstChild) acumulava
+      alertas sem limpeza entre cálculos. Adicionalmente, firstChild
+      pode ser text node ou elemento com display:grid, fazendo o texto
+      do alerta fragmentar em células grid visualmente.
+      Fix: contentor fixo #alertas-dinamicos (div vazio antes da legal-box).
+      Antes de cada cálculo: containerAlertas.innerHTML = '' → limpa.
+      _addAlerta() centraliza criação e inserção em local seguro.
+      novaConsulta() também limpa o contentor.
+      VICIO_EVITAR: nunca usar insertBefore(el, stepResults.firstChild).
+      firstChild pode ser text node ou elemento grid → layout quebrado.
+      Sempre usar um contentor com ID explícito e posição fixa no DOM.
     </span>
   </div>
 
@@ -4306,6 +4342,22 @@ document.addEventListener('DOMContentLoaded', () => {
       sair da função como parte do resultado.
       Correção em REV-27: refAtual adicionado ao return. Padrão V22
       estendido para incluir return quando aplicável.
+    </span>
+
+
+    <span data-tf="TF-08" data-rev-origem="REV-27" data-rev-correcao="REV-28">
+      TENTATIVA FALHA TF-08 — insertBefore em firstChild (REV-21/REV-27)
+      Hipótese: insertBefore(avisoEl, stepResults.firstChild) colocaria
+      o alerta no topo de step-results, antes de qualquer conteúdo.
+      Falha 1: firstChild pode ser text node (whitespace), e o alerta
+      herdava display de um container ancestral (grid/flex), fragmentando
+      o texto em células.
+      Falha 2: sem limpeza entre cálculos, alertas acumulavam — ao
+      recalcular, apareciam dois alertas idênticos sobrepostos.
+      Causa: assumimos que firstChild seria o print-header. Na prática,
+      pode ser qualquer nó dependendo do estado do DOM.
+      Correção em REV-28: contentor fixo #alertas-dinamicos com
+      innerHTML='' antes de cada cálculo. _addAlerta() centraliza tudo.
     </span>
 
   </div>
@@ -4728,12 +4780,22 @@ window._VERSION_LOG = [
   {
     rev: "REV-27",
     data: "2026-04-13",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Fix refAtual ausente no return + alerta diagnóstico de Referência Atual incorreta + hints preventivos.",
     fixes: [
       { id: "REFATUAL_NO_RETURN",      desc: "resultado.refAtual adicionado ao return de gerarDemonstrativoEduc (V22: 3 pontos atômicos — faltava o return)." },
       { id: "ALERTA_REFATUAL_INCORRETA", desc: "Alerta vermelho quando diffInicio>1 E progsJaFeitas>0 E refAtual!=refInicial E idxAtual>idxInicial. Explica causa e instrui correção." },
       { id: "HINT_REFATUAL",           desc: "Hint dos campos refAtual em SEDUC/SEMSA/toggleSEDUC agora alerta explicitamente para usar o contracheque, não a ref devida." }
+    ],
+    bugs_pendentes: []
+  },
+  {
+    rev: "REV-28",
+    data: "2026-04-15",
+    status: "ATUAL",
+    descricao: "Fix alertas duplicados e layout quebrado — contentor #alertas-dinamicos com limpeza antes de cada cálculo.",
+    fixes: [
+      { id: "ALERTAS_DUPLICADOS", desc: "containerAlertas.innerHTML='' antes de cada cálculo. _addAlerta() centraliza. firstChild não é mais usado. novaConsulta() também limpa." }
     ],
     bugs_pendentes: []
   }
@@ -4793,6 +4855,13 @@ window._TENTATIVAS_FALHAS = [
     falha: "return do gerador não incluía refAtual → resultado.refAtual=undefined → alerta nunca disparava.",
     causaAke: "V22 cobre uso+destructuring+chamada, mas esquecemos o return como ponto obrigatório quando variável precisa sair da função.",
     correcao: "refAtual adicionado ao return. V22 estendido mentalmente para incluir return quando aplicável."
+  },
+  {
+    id: "TF-08", revOrigem: "REV-27/REV-21", revCorrecao: "REV-28",
+    hipotese: "insertBefore(avisoEl, stepResults.firstChild) colocaria alerta no topo corretamente.",
+    falha: "firstChild pode ser text node ou elemento com display:grid → texto fragmentado. Sem limpeza → alertas acumulam ao recalcular.",
+    causaAke: "Assumimos firstChild = print-header, sem verificar o estado real do DOM. Sem protocolo de limpeza entre cálculos.",
+    correcao: "Contentor #alertas-dinamicos com posição fixa. innerHTML='' antes de cada cálculo. _addAlerta() centraliza."
   }
 ];
 
@@ -4891,6 +4960,15 @@ window._VICIOS_CONHECIDOS = [
     descricao: "Extensão do V22: quando a variável também precisa sair da função via return, o return é o 4º ponto atômico obrigatório. Omitir o return faz resultado.variavel=undefined no caller mesmo com os outros 3 pontos corretos.",
     exemplo_errado: "// destructuring: {refAtual}; chamada: {refAtual,...}; corpo: usa refAtual; return: SEM refAtual → undefined",
     exemplo_correto: "// return { ...outros, refAtual, dataCalculo: new Date() }; // sempre incluir no return"
+  }
+,
+  {
+    id: "V24",
+    severidade: "CRITICA",
+    titulo: "Alertas dinâmicos: nunca usar insertBefore(el, stepResults.firstChild)",
+    descricao: "firstChild pode ser text node ou elemento com display:grid → texto fragmenta em células. Alertas acumulam entre cálculos se não há limpeza. Sempre usar contentor #alertas-dinamicos com innerHTML='' antes de cada cálculo.",
+    exemplo_errado: "stepResults.insertBefore(avisoEl, stepResults.firstChild) // pode inserir em grid",
+    exemplo_correto: "document.getElementById('alertas-dinamicos').appendChild(el) // posição fixa, sem grid"
   }
 ];
 
