@@ -2325,15 +2325,25 @@ function gerarDemonstrativoSeguranca(params) {
       }
     }
   }
-  // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha
-  const trilhaRef = getTrilhaProgresso(cfg, modoFixo ? postoAtual : postoInicial);
+  // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha — REV-29
+  // F3: modo CHOA usa contagem via mapa cfg.choa (trilhas distintas — indexOf na trilha de praças retornaria -1)
   let numProgressoesAtraso;
-  if (trilhaRef) {
-    const tIdxAtual  = trilhaRef.indexOf(postoAtual);
-    const tIdxDevido = trilhaRef.indexOf(postoDevido);
-    numProgressoesAtraso = Math.max(0, tIdxDevido - tIdxAtual);
+  if (area === 'pmam' && incluirChoa && cfg.choa) {
+    let _steps = 0, _cur = postoInicial;
+    while (cfg.choa[_cur] && _cur !== postoDevido) {
+      _cur = cfg.choa[_cur]; _steps++;
+      if (_steps > 10) break; // safeguard: mapa CHOA tem 3 passos no máximo
+    }
+    numProgressoesAtraso = Math.max(0, _steps);
   } else {
-    numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
+    const trilhaRef = getTrilhaProgresso(cfg, modoFixo ? postoAtual : postoInicial);
+    if (trilhaRef) {
+      const tIdxAtual  = trilhaRef.indexOf(postoAtual);
+      const tIdxDevido = trilhaRef.indexOf(postoDevido);
+      numProgressoesAtraso = Math.max(0, tIdxDevido - tIdxAtual);
+    } else {
+      numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
+    }
   }
 
   const rows = [], erros = [];
@@ -3022,17 +3032,30 @@ function _coletarPMAM() {
   cincoAnos_pm.setFullYear(cincoAnos_pm.getFullYear() - 5);
   const alertaPrescricao_pm = startDate < cincoAnos_pm;
 
-  // Validar postoDevida se informado
+  // Validar postoDevida se informado — REV-29: guarda CHOA explícita (F1) + validação positiva via mapa (F2)
   if (postoDevidaStr) {
     const cfgPMAM_d = REGRAS.PMAM;
-    const trilhaDevida  = getTrilhaProgresso(cfgPMAM_d, postoDevidaStr);
-    const trilhaAtualPM = getTrilhaProgresso(cfgPMAM_d, postoAtual);
-    if (trilhaDevida && trilhaAtualPM && trilhaDevida !== trilhaAtualPM) {
-      throw new Error(`"Posto que deveria estar" (${postoDevidaStr}) e "Posto Atual" (${postoAtual}) pertencem a trilhas distintas. Ambos devem ser da mesma carreira (Praças / QOPM / QOAPM).`);
-    }
-    const trilha_pm = trilhaDevida || trilhaAtualPM;
-    if (trilha_pm && trilha_pm.indexOf(postoDevidaStr) <= trilha_pm.indexOf(postoAtual)) {
-      throw new Error(`O posto devida (${postoDevidaStr}) deve ser SUPERIOR ao posto atual (${postoAtual}) na hierarquia. Verifique os campos.`);
+    if (incluirChoa) {
+      // Modo CHOA: postoAtual é praça (subtente), postoDevida DEVE ser destino QOAPM via mapa cfg.choa.
+      // Trilhas distintas são esperadas e corretas neste contexto — validação por trilha não se aplica.
+      // F2: validação positiva explícita — impede dependência frágil de indexOf retornar -1.
+      const destinosChoa = new Set();
+      let _cur = 'subtente';
+      while (cfgPMAM_d.choa[_cur]) { _cur = cfgPMAM_d.choa[_cur]; destinosChoa.add(_cur); }
+      if (!destinosChoa.has(postoDevidaStr)) {
+        throw new Error(`No modo CHOA, "Posto que deveria estar" deve ser um posto QOAPM válido (2.º Tenente, 1.º Tenente ou Capitão QOAPM). "${postoDevidaStr}" não é um destino CHOA reconhecido.`);
+      }
+    } else {
+      // Modo normal: postoDevida e postoAtual devem pertencer à mesma trilha de carreira.
+      const trilhaDevida  = getTrilhaProgresso(cfgPMAM_d, postoDevidaStr);
+      const trilhaAtualPM = getTrilhaProgresso(cfgPMAM_d, postoAtual);
+      if (trilhaDevida && trilhaAtualPM && trilhaDevida !== trilhaAtualPM) {
+        throw new Error(`"Posto que deveria estar" (${postoDevidaStr}) e "Posto Atual" (${postoAtual}) pertencem a trilhas distintas. Ambos devem ser da mesma carreira (Praças / QOPM / QOAPM).`);
+      }
+      const trilha_pm = trilhaDevida || trilhaAtualPM;
+      if (trilha_pm && trilha_pm.indexOf(postoDevidaStr) <= trilha_pm.indexOf(postoAtual)) {
+        throw new Error(`O posto devida (${postoDevidaStr}) deve ser SUPERIOR ao posto atual (${postoAtual}) na hierarquia. Verifique os campos.`);
+      }
     }
   }
 
@@ -4226,7 +4249,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-28 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-28" data-data="2026-04-15" data-status="ATUAL">
+  <div data-rev="REV-28" data-data="2026-04-15" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="ALERTAS_DUPLICADOS">
       CORRIGIDO: alertas dinâmicos duplicavam a cada recalcular.
       Causa: insertBefore(el, stepResults.firstChild) acumulava
@@ -4240,6 +4263,37 @@ document.addEventListener('DOMContentLoaded', () => {
       VICIO_EVITAR: nunca usar insertBefore(el, stepResults.firstChild).
       firstChild pode ser text node ou elemento grid → layout quebrado.
       Sempre usar um contentor com ID explícito e posição fixa no DOM.
+    </span>
+  </div>
+
+  <!-- ── REV-29 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-29" data-data="2026-04-29" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="CHOA_TRILHA_POSTODEVIDA">
+      F1: CORRIGIDO: validação de postoDevidaStr em _coletarPMAM() não estava
+      guardada por !incluirChoa. Em modo CHOA (subtente→QOAPM), postoAtual
+      pertence à trilha pracas e postoDevidaStr à trilha qoapm — isso é correto
+      por definição. A ausência da guarda causava throw indevido com mensagem
+      "pertencem a trilhas distintas", bloqueando todo cálculo CHOA com campo
+      postoDevidaFixo preenchido.
+      Fix: bloco if(postoDevidaStr) reestruturado em dois branches: incluirChoa
+      e !incluirChoa. Branch CHOA usa validação positiva via cfg.choa (F2).
+    </span>
+    <span data-tipo="FIX" data-id="CHOA_VALIDACAO_POSITIVA">
+      F2: CORRIGIDO: branch CHOA da validação de postoDevidaStr dependia
+      implicitamente de indexOf retornar -1 para postoAtual fora da trilha qoapm.
+      Comportamento correto por acidente — se a estrutura mudar, quebraria
+      silenciosamente (Vício V11 em potencial).
+      Fix: validação positiva explícita — coleta todos os destinos alcançáveis
+      via mapa cfg.choa a partir de subtente e verifica se postoDevidaStr está
+      no conjunto. Erro descritivo se destino for inválido.
+    </span>
+    <span data-tipo="FIX" data-id="CHOA_NUM_PROGRESSOES">
+      F3: CORRIGIDO: numProgressoesAtraso em gerarDemonstrativoSeguranca() usava
+      getTrilhaProgresso(cfg, postoInicial) que retorna trilha pracas em modo CHOA.
+      Buscar postoDevido (QOAPM) dentro de pracas → indexOf=-1 →
+      Math.max(0, -1-7)=0 → zero progressões em atraso exibidas sempre.
+      Fix: branch dedicado para area=pmam && incluirChoa: conta passos no mapa
+      cfg.choa de postoInicial até postoDevido via loop com safeguard (max 10).
     </span>
   </div>
 
@@ -4792,12 +4846,27 @@ window._VERSION_LOG = [
   {
     rev: "REV-28",
     data: "2026-04-15",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Fix alertas duplicados e layout quebrado — contentor #alertas-dinamicos com limpeza antes de cada cálculo.",
     fixes: [
       { id: "ALERTAS_DUPLICADOS", desc: "containerAlertas.innerHTML='' antes de cada cálculo. _addAlerta() centraliza. firstChild não é mais usado. novaConsulta() também limpa." }
     ],
     bugs_pendentes: []
+  },
+  {
+    rev: "REV-29",
+    data: "2026-04-29",
+    status: "ATUAL",
+    descricao: "Fix CHOA/PMAM: validação postoDevidaStr sem guarda incluirChoa (F1), validação positiva via cfg.choa (F2), numProgressoesAtraso via mapa CHOA em vez de índice de trilha de praças (F3).",
+    fixes: [
+      { id: "CHOA_TRILHA_POSTODEVIDA", desc: "Branch if(!incluirChoa) adicionado na validação de postoDevidaStr em _coletarPMAM(). Modo CHOA bypassa verificação de trilha cruzada, que é válida por definição neste contexto." },
+      { id: "CHOA_VALIDACAO_POSITIVA", desc: "Branch CHOA usa validação positiva: coleta destinos alcançáveis via cfg.choa['subtente'] e verifica presença. Elimina dependência de indexOf=-1 frágil." },
+      { id: "CHOA_NUM_PROGRESSOES", desc: "gerarDemonstrativoSeguranca(): branch area=pmam&&incluirChoa conta passos via loop em cfg.choa. Elimina indexOf=-1 em trilha pracas para postos QOAPM (sempre retornava 0)." }
+    ],
+    bugs_pendentes: [
+      "F4: Filtro dinâmico de pm-posto-devida por trilha do pm-posto selecionado (preventivo via UI).",
+      "F5: Select pm-posto-inicial incompleto para praças em modo não-CHOA (faltam aluno, soldado2, soldado1, cabo, sgt3, sgt2, sgt1)."
+    ]
   }
 ];
 
