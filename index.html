@@ -1034,7 +1034,7 @@
                     <option value="tenente2">2.º Tenente (QOPM)</option>
                     <option value="aspirante">Aspirante a Oficial</option>
                   </optgroup>
-                  <optgroup label="Oficiais — QOAPM (CHOA)">
+                  <optgroup label="Oficiais — QOAPM (CHOA)" data-choa="true">
                     <option value="capitao_qoapm">Capitão (QOAPM)</option>
                     <option value="tenente1_qoapm">1.º Tenente (QOAPM)</option>
                     <option value="tenente2_qoapm">2.º Tenente (QOAPM)</option>
@@ -2620,6 +2620,10 @@ function stepAtivo(n) {
 
 function limparFormulario() {
   document.getElementById('form-calc').reset();
+  // REV-30: form.reset() restaura pm-choa='nao' no DOM mas NÃO dispara
+  // o evento 'change', então syncCHOAFields() deve ser chamado explicitamente
+  // para garantir que o optgroup QOAPM seja ocultado corretamente (T6).
+  syncCHOAFields();
   document.getElementById('alert-form-error').classList.add('hidden');
   const wrap = document.getElementById('live-preview-wrap');
   if (wrap) wrap.style.display = 'none';
@@ -3695,6 +3699,90 @@ function atualizarPreview() {
   tbody.innerHTML = html;
 }
 
+// ─────────────────────────────────────────
+// 16-A. CHOA UX SYNC — REV-30 (Abordagem C)
+// Problema: header "CHOA — QOAPM" estático induzia usuário a crer que
+// o modo CHOA estava ativo sem ter selecionado o radio pm-choa=sim.
+// Opções QOAPM em pm-posto-devida ficavam visíveis sempre → estado
+// impossível (postoAtual=pracas, devida=qoapm, incluirChoa=false) → throw.
+// Solução C (bidirecional):
+//   B) Ocultar optgroup QOAPM quando CHOA=nao (impede seleção indevida)
+//   A) Auto-ativar CHOA quando devida=QOAPM e posto=subtente (safety net)
+//   +  Desativar CHOA ao trocar posto para não-subtente (T5)
+//   +  Chamada explícita em limparFormulario() pois form.reset() não
+//      dispara 'change' em radios (T6 — risco confirmado em simulação)
+// ─────────────────────────────────────────
+
+const _QOAPM_SET = new Set(['tenente2_qoapm', 'tenente1_qoapm', 'capitao_qoapm']);
+
+function syncCHOAFields() {
+  const choaAtivo = document.querySelector('input[name="pm-choa"]:checked')?.value === 'sim';
+  const selDevida  = document.getElementById('pm-posto-devida');
+  const optgQOAPM  = selDevida?.querySelector('optgroup[data-choa="true"]');
+  if (!selDevida || !optgQOAPM) return;
+
+  if (choaAtivo) {
+    // Mostrar opções QOAPM — modo CHOA ativo
+    optgQOAPM.style.display = '';
+  } else {
+    // Ocultar opções QOAPM — modo CHOA inativo
+    optgQOAPM.style.display = 'none';
+    // Se havia valor QOAPM selecionado, resetar para evitar estado inconsistente
+    if (_QOAPM_SET.has(selDevida.value)) {
+      selDevida.value = '';
+    }
+  }
+}
+
+function bindCHOAListeners() {
+  // ── Direção principal: radio pm-choa muda → sincronizar visibilidade optgroup
+  document.querySelectorAll('input[name="pm-choa"]').forEach(radio => {
+    radio.addEventListener('change', syncCHOAFields);
+  });
+
+  // ── Safety net A: devida muda para valor QOAPM (via programático ou tab)
+  // Com Abordagem B ativa, o usuário não consegue selecionar QOAPM via UI
+  // quando CHOA=nao — mas restore de sessão ou preenchimento externo pode injetar.
+  const selDevida = document.getElementById('pm-posto-devida');
+  if (selDevida) {
+    selDevida.addEventListener('change', () => {
+      if (_QOAPM_SET.has(selDevida.value)) {
+        const postoAtual = document.getElementById('pm-posto')?.value;
+        if (postoAtual === 'subtente') {
+          // Auto-ativar CHOA: subtente com devida QOAPM = cenário CHOA por definição
+          const radioSim = document.querySelector('input[name="pm-choa"][value="sim"]');
+          if (radioSim) {
+            radioSim.checked = true;
+            // dispatchEvent para acionar syncCHOAFields e atualizarPreview
+            radioSim.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        } else {
+          // posto ≠ subtente: QOAPM como devida é inválido sem CHOA — resetar
+          selDevida.value = '';
+        }
+      }
+    });
+  }
+
+  // ── T5: posto atual muda para não-subtente com CHOA ativo → desativar CHOA
+  // Evita estado inconsistente: incluirChoa=true mas postoAtual≠subtente
+  const selPosto = document.getElementById('pm-posto');
+  if (selPosto) {
+    selPosto.addEventListener('change', () => {
+      if (selPosto.value !== 'subtente') {
+        const choaAtivo = document.querySelector('input[name="pm-choa"]:checked')?.value === 'sim';
+        if (choaAtivo) {
+          const radioNao = document.querySelector('input[name="pm-choa"][value="nao"]');
+          if (radioNao) {
+            radioNao.checked = true;
+            radioNao.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      }
+    });
+  }
+}
+
 function bindPreviewListeners() {
   // Debounce: evita chamadas excessivas em dispositivos lentos
   let _previewTimer;
@@ -3745,6 +3833,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   bindPreviewListeners();
+  // REV-30: inicializar sync CHOA — oculta optgroup QOAPM no estado inicial (pm-choa=nao default)
+  bindCHOAListeners();
+  syncCHOAFields();
 });
 </script>
 
@@ -4267,7 +4358,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-29 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-29" data-data="2026-04-29" data-status="ATUAL">
+  <div data-rev="REV-29" data-data="2026-04-29" data-status="SUPERADA">
     <span data-tipo="FIX" data-id="CHOA_TRILHA_POSTODEVIDA">
       F1: CORRIGIDO: validação de postoDevidaStr em _coletarPMAM() não estava
       guardada por !incluirChoa. Em modo CHOA (subtente→QOAPM), postoAtual
@@ -4294,6 +4385,30 @@ document.addEventListener('DOMContentLoaded', () => {
       Math.max(0, -1-7)=0 → zero progressões em atraso exibidas sempre.
       Fix: branch dedicado para area=pmam && incluirChoa: conta passos no mapa
       cfg.choa de postoInicial até postoDevido via loop com safeguard (max 10).
+    </span>
+  </div>
+
+  <!-- ── REV-30 ────────────────────────────────────────────────── -->
+  <div data-rev="REV-30" data-data="2026-04-29" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="CHOA_UX_SYNC_ABORDAGEM_C">
+      CORRIGIDO: estado impossível (postoAtual=pracas, devida=QOAPM,
+      incluirChoa=false) era criável via UI porque o optgroup QOAPM em
+      pm-posto-devida estava sempre visível e o header "CHOA — QOAPM"
+      era estático, induzindo usuário a crer que o modo CHOA estava ativo
+      sem ter selecionado o radio pm-choa=sim.
+      Abordagem C bidirecional implementada:
+      B) syncCHOAFields() oculta optgroup[data-choa="true"] quando pm-choa=nao,
+         e reseta pm-posto-devida se havia valor QOAPM selecionado.
+      A) Listener em pm-posto-devida: se QOAPM selecionado e pm-posto=subtente
+         → auto-ativa pm-choa=sim via dispatchEvent. Se pm-posto≠subtente
+         → reseta devida para '' (QOAPM inválido sem CHOA).
+      T5) Listener em pm-posto: troca para não-subtente com CHOA ativo
+         → desativa pm-choa=nao para evitar incluirChoa=true com postoAtual≠subtente.
+      T6) limparFormulario(): syncCHOAFields() chamado explicitamente após
+         form.reset(), pois form.reset() não dispara evento 'change' em radios.
+      T7) DOMContentLoaded: bindCHOAListeners() + syncCHOAFields() no init.
+      VICIO_EVITAR: nunca assumir que form.reset() dispara eventos de change.
+      Sempre chamar handlers de sincronização explicitamente após reset.
     </span>
   </div>
 
@@ -4414,9 +4529,28 @@ document.addEventListener('DOMContentLoaded', () => {
       innerHTML='' antes de cada cálculo. _addAlerta() centraliza tudo.
     </span>
 
-  </div>
+    <span data-tf="TF-09" data-rev-origem="REV-29" data-rev-correcao="REV-30">
+      TENTATIVA FALHA TF-09 — Guarda !incluirChoa em postoDevidaStr (REV-29)
+      Hipótese: adicionar branch if(incluirChoa)/else na validação de
+      postoDevidaStr em _coletarPMAM() resolveria o throw "trilhas distintas"
+      em modo CHOA, pois o branch CHOA bypassa a verificação de trilha.
+      Falha: o usuário nunca ativava incluirChoa=true porque o formulário
+      induzia estado impossível pela UI: (1) header estático "CHOA — QOAPM"
+      sempre visível criava falsa percepção de modo ativo; (2) optgroup QOAPM
+      em pm-posto-devida disponível sempre, sem vínculo com o radio pm-choa;
+      (3) radio pm-choa aparece DEPOIS de pm-posto-devida no DOM, passando
+      despercebido. Resultado: usuário selecionava tenente2_qoapm como devida
+      com pm-choa=nao → incluirChoa=false → branch else → throw idêntico ao
+      original. O branch corrigido (incluirChoa=true) nunca era alcançado.
+      Causa AKE: diagnostiquei pelo código JS sem verificar o fluxo real de
+      preenchimento do formulário. Corrigi a validação que rejeita o estado
+      inválido, mas não a UI que permite criá-lo. IC < 0.9: devia ter
+      simulado o fluxo do usuário antes de implementar.
+      Correção em REV-30: Abordagem C bidirecional — syncCHOAFields() +
+      bindCHOAListeners() tornam o estado impossível via UI.
+    </span>
 
-  <!-- ── VÍCIOS CONHECIDOS (guia para IA e manutenção) ─────────── -->
+  </div>
   <div data-rev="VICIOS_CONHECIDOS" data-tipo="GUIA_IA">
     <span data-vicio="V01" data-severidade="CRITICA">
       VÍCIO V01 — DIREÇÃO DE PROGRESSÃO EM OBJETOS ORDENADOS:
@@ -4856,7 +4990,7 @@ window._VERSION_LOG = [
   {
     rev: "REV-29",
     data: "2026-04-29",
-    status: "ATUAL",
+    status: "SUPERADA",
     descricao: "Fix CHOA/PMAM: validação postoDevidaStr sem guarda incluirChoa (F1), validação positiva via cfg.choa (F2), numProgressoesAtraso via mapa CHOA em vez de índice de trilha de praças (F3).",
     fixes: [
       { id: "CHOA_TRILHA_POSTODEVIDA", desc: "Branch if(!incluirChoa) adicionado na validação de postoDevidaStr em _coletarPMAM(). Modo CHOA bypassa verificação de trilha cruzada, que é válida por definição neste contexto." },
@@ -4866,6 +5000,24 @@ window._VERSION_LOG = [
     bugs_pendentes: [
       "F4: Filtro dinâmico de pm-posto-devida por trilha do pm-posto selecionado (preventivo via UI).",
       "F5: Select pm-posto-inicial incompleto para praças em modo não-CHOA (faltam aluno, soldado2, soldado1, cabo, sgt3, sgt2, sgt1)."
+    ]
+  },
+  {
+    rev: "REV-30",
+    data: "2026-04-29",
+    status: "ATUAL",
+    descricao: "Fix CHOA/UX Abordagem C: syncCHOAFields() + bindCHOAListeners() tornam estado impossível (postoAtual=pracas, devida=QOAPM, incluirChoa=false) inacessível via UI.",
+    fixes: [
+      { id: "CHOA_UX_SYNC_B", desc: "syncCHOAFields(): optgroup[data-choa='true'] oculto quando pm-choa=nao. Valor QOAPM em devida é resetado ao ocultar. Impede seleção de QOAPM sem CHOA ativo." },
+      { id: "CHOA_UX_SYNC_A", desc: "Listener pm-posto-devida: QOAPM selecionado + pm-posto=subtente → auto-ativa pm-choa=sim via dispatchEvent. pm-posto≠subtente → reseta devida para ''." },
+      { id: "CHOA_UX_T5", desc: "Listener pm-posto: troca de subtente para outro posto com CHOA ativo → desativa pm-choa=nao via dispatchEvent. Evita incluirChoa=true com postoAtual≠subtente." },
+      { id: "CHOA_UX_T6", desc: "limparFormulario(): syncCHOAFields() chamado explicitamente após form.reset(). form.reset() não dispara 'change' em radios — risco confirmado em simulação T6." },
+      { id: "CHOA_UX_T7", desc: "DOMContentLoaded: bindCHOAListeners() + syncCHOAFields() no init. Garante estado inicial correto (optgroup QOAPM oculto, pm-choa=nao default)." }
+    ],
+    bugs_pendentes: [
+      "F4: Filtro dinâmico de pm-posto-devida por trilha do pm-posto selecionado (preventivo — QOPM vs Praças).",
+      "F5: Select pm-posto-inicial incompleto para praças em modo não-CHOA.",
+      "F6: Validação _coletarPMAM: if(incluirChoa && postoAtual !== 'subtente') → throw descritivo (defesa server-side além da UX)."
     ]
   }
 ];
@@ -4931,6 +5083,13 @@ window._TENTATIVAS_FALHAS = [
     falha: "firstChild pode ser text node ou elemento com display:grid → texto fragmentado. Sem limpeza → alertas acumulam ao recalcular.",
     causaAke: "Assumimos firstChild = print-header, sem verificar o estado real do DOM. Sem protocolo de limpeza entre cálculos.",
     correcao: "Contentor #alertas-dinamicos com posição fixa. innerHTML='' antes de cada cálculo. _addAlerta() centraliza."
+  },
+  {
+    id: "TF-09", revOrigem: "REV-29", revCorrecao: "REV-30",
+    hipotese: "Adicionar branch if(incluirChoa)/else na validação de postoDevidaStr em _coletarPMAM() resolveria o throw 'trilhas distintas' em modo CHOA.",
+    falha: "O usuário nunca ativava incluirChoa=true porque a UI permitia criar o estado impossível: optgroup QOAPM sempre visível em pm-posto-devida + header 'CHOA — QOAPM' estático + radio pm-choa após o select no DOM. Resultado: pm-choa=nao, devida=QOAPM → branch else → mesmo throw.",
+    causaAke: "Diagnostiquei pelo código JS sem simular o fluxo real do usuário. Corrigi a validação que rejeita o estado inválido mas não a UI que permite criá-lo. IC < 0.9: simulação de fluxo é obrigatória antes de implementar correções de validação de formulário.",
+    correcao: "REV-30: Abordagem C — syncCHOAFields() torna o estado UI impossível. bindCHOAListeners() bidirecional cobre todos os vetores de entrada do estado inválido."
   }
 ];
 
