@@ -1034,7 +1034,7 @@
                     <option value="tenente2">2.º Tenente (QOPM)</option>
                     <option value="aspirante">Aspirante a Oficial</option>
                   </optgroup>
-                  <optgroup label="Oficiais — QOAPM (CHOA)" data-choa="true">
+                  <optgroup label="Oficiais — QOAPM (CHOA)">
                     <option value="capitao_qoapm">Capitão (QOAPM)</option>
                     <option value="tenente1_qoapm">1.º Tenente (QOAPM)</option>
                     <option value="tenente2_qoapm">2.º Tenente (QOAPM)</option>
@@ -2261,7 +2261,10 @@ function gerarDemonstrativoSeguranca(params) {
   const dataRef = dataReferenciaIntersticio || posseDate;
 
   // ── MODO POSTO DEVIDA FIXO ────────────────────────────────────────────────
-  const modoFixo = !!(postoDevidaFixo && postoDevidaFixo !== postoAtual);
+  // Quando CHOA ativo, postoDevidaFixo é ignorado — o motor CHOA calcula
+  // automaticamente a progressão subtente→QOAPM pela própria lógica interna.
+  // modoFixo só se aplica quando CHOA está desativado.
+  const modoFixo = !!(postoDevidaFixo && postoDevidaFixo !== postoAtual && !(area === 'pmam' && incluirChoa));
 
   // ── MODO CHOA (PMAM) ──────────────────────────────────────────────────────
   // Quando CHOA ativo, o post devida segue o mapa cfg.choa em vez da lista linear
@@ -2325,25 +2328,15 @@ function gerarDemonstrativoSeguranca(params) {
       }
     }
   }
-  // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha — REV-29
-  // F3: modo CHOA usa contagem via mapa cfg.choa (trilhas distintas — indexOf na trilha de praças retornaria -1)
+  // numProgressoesAtraso: diferença entre o posto devido e o atual, dentro da trilha
+  const trilhaRef = getTrilhaProgresso(cfg, modoFixo ? postoAtual : postoInicial);
   let numProgressoesAtraso;
-  if (area === 'pmam' && incluirChoa && cfg.choa) {
-    let _steps = 0, _cur = postoInicial;
-    while (cfg.choa[_cur] && _cur !== postoDevido) {
-      _cur = cfg.choa[_cur]; _steps++;
-      if (_steps > 10) break; // safeguard: mapa CHOA tem 3 passos no máximo
-    }
-    numProgressoesAtraso = Math.max(0, _steps);
+  if (trilhaRef) {
+    const tIdxAtual  = trilhaRef.indexOf(postoAtual);
+    const tIdxDevido = trilhaRef.indexOf(postoDevido);
+    numProgressoesAtraso = Math.max(0, tIdxDevido - tIdxAtual);
   } else {
-    const trilhaRef = getTrilhaProgresso(cfg, modoFixo ? postoAtual : postoInicial);
-    if (trilhaRef) {
-      const tIdxAtual  = trilhaRef.indexOf(postoAtual);
-      const tIdxDevido = trilhaRef.indexOf(postoDevido);
-      numProgressoesAtraso = Math.max(0, tIdxDevido - tIdxAtual);
-    } else {
-      numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
-    }
+    numProgressoesAtraso = Math.max(0, idxAtual - listaPostos.indexOf(postoDevido));
   }
 
   const rows = [], erros = [];
@@ -2620,10 +2613,6 @@ function stepAtivo(n) {
 
 function limparFormulario() {
   document.getElementById('form-calc').reset();
-  // REV-30: form.reset() restaura pm-choa='nao' no DOM mas NÃO dispara
-  // o evento 'change', então syncCHOAFields() deve ser chamado explicitamente
-  // para garantir que o optgroup QOAPM seja ocultado corretamente (T6).
-  syncCHOAFields();
   document.getElementById('alert-form-error').classList.add('hidden');
   const wrap = document.getElementById('live-preview-wrap');
   if (wrap) wrap.style.display = 'none';
@@ -3036,30 +3025,34 @@ function _coletarPMAM() {
   cincoAnos_pm.setFullYear(cincoAnos_pm.getFullYear() - 5);
   const alertaPrescricao_pm = startDate < cincoAnos_pm;
 
-  // Validar postoDevida se informado — REV-29: guarda CHOA explícita (F1) + validação positiva via mapa (F2)
-  if (postoDevidaStr) {
+  // Validar postoDevida se informado (e CHOA não ativo — CHOA ignora postoDevidaFixo)
+  if (postoDevidaStr && !incluirChoa) {
     const cfgPMAM_d = REGRAS.PMAM;
-    if (incluirChoa) {
-      // Modo CHOA: postoAtual é praça (subtente), postoDevida DEVE ser destino QOAPM via mapa cfg.choa.
-      // Trilhas distintas são esperadas e corretas neste contexto — validação por trilha não se aplica.
-      // F2: validação positiva explícita — impede dependência frágil de indexOf retornar -1.
-      const destinosChoa = new Set();
-      let _cur = 'subtente';
-      while (cfgPMAM_d.choa[_cur]) { _cur = cfgPMAM_d.choa[_cur]; destinosChoa.add(_cur); }
-      if (!destinosChoa.has(postoDevidaStr)) {
-        throw new Error(`No modo CHOA, "Posto que deveria estar" deve ser um posto QOAPM válido (2.º Tenente, 1.º Tenente ou Capitão QOAPM). "${postoDevidaStr}" não é um destino CHOA reconhecido.`);
-      }
-    } else {
-      // Modo normal: postoDevida e postoAtual devem pertencer à mesma trilha de carreira.
-      const trilhaDevida  = getTrilhaProgresso(cfgPMAM_d, postoDevidaStr);
-      const trilhaAtualPM = getTrilhaProgresso(cfgPMAM_d, postoAtual);
-      if (trilhaDevida && trilhaAtualPM && trilhaDevida !== trilhaAtualPM) {
-        throw new Error(`"Posto que deveria estar" (${postoDevidaStr}) e "Posto Atual" (${postoAtual}) pertencem a trilhas distintas. Ambos devem ser da mesma carreira (Praças / QOPM / QOAPM).`);
-      }
-      const trilha_pm = trilhaDevida || trilhaAtualPM;
-      if (trilha_pm && trilha_pm.indexOf(postoDevidaStr) <= trilha_pm.indexOf(postoAtual)) {
-        throw new Error(`O posto devida (${postoDevidaStr}) deve ser SUPERIOR ao posto atual (${postoAtual}) na hierarquia. Verifique os campos.`);
-      }
+    const trilhaDevida  = getTrilhaProgresso(cfgPMAM_d, postoDevidaStr);
+    const trilhaAtualPM = getTrilhaProgresso(cfgPMAM_d, postoAtual);
+
+    // Transição canônica CHOA: praças → qoapm é válida mesmo via modoFixo
+    // (Subtenente pode informar posto devida na trilha qoapm sem ativar o modo CHOA
+    //  quando o operador sabe o posto exato — ex: tenente2_qoapm — e quer modoFixo)
+    const trilhaPracas = cfgPMAM_d.trilhas.pracas;
+    const trilhaQoapm  = cfgPMAM_d.trilhas.qoapm;
+    const ehTransicaoCHOA = trilhaAtualPM === trilhaPracas && trilhaDevida === trilhaQoapm;
+
+    if (trilhaDevida && trilhaAtualPM && trilhaDevida !== trilhaAtualPM && !ehTransicaoCHOA) {
+      // Mensagem orientadora específica para o erro mais comum: subtente → tenente QOPM
+      const dica = (postoAtual === 'subtente')
+        ? ` Para Subtenente que concluiu CHOA, selecione "2.º Tenente (QOAPM)" como posto devida, ou ative a opção CHOA acima.`
+        : '';
+      throw new Error(
+        `"Posto que deveria estar" (${postoDevidaStr}) e "Posto Atual" (${postoAtual}) pertencem a trilhas distintas. `
+        + `Ambos devem ser da mesma carreira (Praças / QOPM / QOAPM).${dica}`
+      );
+    }
+
+    // Verificar hierarquia (apenas quando na mesma trilha ou dentro de qoapm)
+    const trilha_pm = ehTransicaoCHOA ? trilhaQoapm : (trilhaDevida || trilhaAtualPM);
+    if (!ehTransicaoCHOA && trilha_pm && trilha_pm.indexOf(postoDevidaStr) <= trilha_pm.indexOf(postoAtual)) {
+      throw new Error(`O posto devida (${postoDevidaStr}) deve ser SUPERIOR ao posto atual (${postoAtual}) na hierarquia. Verifique os campos.`);
     }
   }
 
@@ -3699,90 +3692,6 @@ function atualizarPreview() {
   tbody.innerHTML = html;
 }
 
-// ─────────────────────────────────────────
-// 16-A. CHOA UX SYNC — REV-30 (Abordagem C)
-// Problema: header "CHOA — QOAPM" estático induzia usuário a crer que
-// o modo CHOA estava ativo sem ter selecionado o radio pm-choa=sim.
-// Opções QOAPM em pm-posto-devida ficavam visíveis sempre → estado
-// impossível (postoAtual=pracas, devida=qoapm, incluirChoa=false) → throw.
-// Solução C (bidirecional):
-//   B) Ocultar optgroup QOAPM quando CHOA=nao (impede seleção indevida)
-//   A) Auto-ativar CHOA quando devida=QOAPM e posto=subtente (safety net)
-//   +  Desativar CHOA ao trocar posto para não-subtente (T5)
-//   +  Chamada explícita em limparFormulario() pois form.reset() não
-//      dispara 'change' em radios (T6 — risco confirmado em simulação)
-// ─────────────────────────────────────────
-
-const _QOAPM_SET = new Set(['tenente2_qoapm', 'tenente1_qoapm', 'capitao_qoapm']);
-
-function syncCHOAFields() {
-  const choaAtivo = document.querySelector('input[name="pm-choa"]:checked')?.value === 'sim';
-  const selDevida  = document.getElementById('pm-posto-devida');
-  const optgQOAPM  = selDevida?.querySelector('optgroup[data-choa="true"]');
-  if (!selDevida || !optgQOAPM) return;
-
-  if (choaAtivo) {
-    // Mostrar opções QOAPM — modo CHOA ativo
-    optgQOAPM.style.display = '';
-  } else {
-    // Ocultar opções QOAPM — modo CHOA inativo
-    optgQOAPM.style.display = 'none';
-    // Se havia valor QOAPM selecionado, resetar para evitar estado inconsistente
-    if (_QOAPM_SET.has(selDevida.value)) {
-      selDevida.value = '';
-    }
-  }
-}
-
-function bindCHOAListeners() {
-  // ── Direção principal: radio pm-choa muda → sincronizar visibilidade optgroup
-  document.querySelectorAll('input[name="pm-choa"]').forEach(radio => {
-    radio.addEventListener('change', syncCHOAFields);
-  });
-
-  // ── Safety net A: devida muda para valor QOAPM (via programático ou tab)
-  // Com Abordagem B ativa, o usuário não consegue selecionar QOAPM via UI
-  // quando CHOA=nao — mas restore de sessão ou preenchimento externo pode injetar.
-  const selDevida = document.getElementById('pm-posto-devida');
-  if (selDevida) {
-    selDevida.addEventListener('change', () => {
-      if (_QOAPM_SET.has(selDevida.value)) {
-        const postoAtual = document.getElementById('pm-posto')?.value;
-        if (postoAtual === 'subtente') {
-          // Auto-ativar CHOA: subtente com devida QOAPM = cenário CHOA por definição
-          const radioSim = document.querySelector('input[name="pm-choa"][value="sim"]');
-          if (radioSim) {
-            radioSim.checked = true;
-            // dispatchEvent para acionar syncCHOAFields e atualizarPreview
-            radioSim.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        } else {
-          // posto ≠ subtente: QOAPM como devida é inválido sem CHOA — resetar
-          selDevida.value = '';
-        }
-      }
-    });
-  }
-
-  // ── T5: posto atual muda para não-subtente com CHOA ativo → desativar CHOA
-  // Evita estado inconsistente: incluirChoa=true mas postoAtual≠subtente
-  const selPosto = document.getElementById('pm-posto');
-  if (selPosto) {
-    selPosto.addEventListener('change', () => {
-      if (selPosto.value !== 'subtente') {
-        const choaAtivo = document.querySelector('input[name="pm-choa"]:checked')?.value === 'sim';
-        if (choaAtivo) {
-          const radioNao = document.querySelector('input[name="pm-choa"][value="nao"]');
-          if (radioNao) {
-            radioNao.checked = true;
-            radioNao.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        }
-      }
-    });
-  }
-}
-
 function bindPreviewListeners() {
   // Debounce: evita chamadas excessivas em dispositivos lentos
   let _previewTimer;
@@ -3833,9 +3742,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   bindPreviewListeners();
-  // REV-30: inicializar sync CHOA — oculta optgroup QOAPM no estado inicial (pm-choa=nao default)
-  bindCHOAListeners();
-  syncCHOAFields();
 });
 </script>
 
@@ -3847,7 +3753,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ████████████████████████████████████████████████████████████████ -->
 <div id="app-version-log" style="display:none"
      data-app="LAADV — Cálculo de Diferenças Salariais"
-     data-versao-atual="REV-28"
+     data-versao-atual="REV-29"
      data-data-atual="2026-03-19">
 
   <!-- ── REV-1 ─────────────────────────────────────────────────── -->
@@ -4358,57 +4264,27 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
 
   <!-- ── REV-29 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-29" data-data="2026-04-29" data-status="SUPERADA">
-    <span data-tipo="FIX" data-id="CHOA_TRILHA_POSTODEVIDA">
-      F1: CORRIGIDO: validação de postoDevidaStr em _coletarPMAM() não estava
-      guardada por !incluirChoa. Em modo CHOA (subtente→QOAPM), postoAtual
-      pertence à trilha pracas e postoDevidaStr à trilha qoapm — isso é correto
-      por definição. A ausência da guarda causava throw indevido com mensagem
-      "pertencem a trilhas distintas", bloqueando todo cálculo CHOA com campo
-      postoDevidaFixo preenchido.
-      Fix: bloco if(postoDevidaStr) reestruturado em dois branches: incluirChoa
-      e !incluirChoa. Branch CHOA usa validação positiva via cfg.choa (F2).
+  <div data-rev="REV-29" data-data="2026-04-30" data-status="ATUAL">
+    <span data-tipo="FIX" data-id="PMAM_CHOA_MODOFIX_CONFLITO">
+      CORRIGIDO: modoFixo e CHOA entravam em conflito.
+      Quando CHOA ativo, modoFixo era true se postoDevidaFixo estava
+      preenchido → modoFixo sobrepunha o motor CHOA → cálculo errado.
+      Fix: modoFixo = false quando CHOA ativo. CHOA tem prioridade.
+      Adicionalmente: quando CHOA não ativo, postoDevidaFixo = ignorado.
     </span>
-    <span data-tipo="FIX" data-id="CHOA_VALIDACAO_POSITIVA">
-      F2: CORRIGIDO: branch CHOA da validação de postoDevidaStr dependia
-      implicitamente de indexOf retornar -1 para postoAtual fora da trilha qoapm.
-      Comportamento correto por acidente — se a estrutura mudar, quebraria
-      silenciosamente (Vício V11 em potencial).
-      Fix: validação positiva explícita — coleta todos os destinos alcançáveis
-      via mapa cfg.choa a partir de subtente e verifica se postoDevidaStr está
-      no conjunto. Erro descritivo se destino for inválido.
+    <span data-tipo="FIX" data-id="PMAM_VALIDACAO_CHOA_TRILHA">
+      CORRIGIDO: validação de trilha bloqueava subtente → qoapm via
+      postoDevidaFixo (tenente2_qoapm). A transição pracas→qoapm é
+      canonicamente o CHOA — é uma transição VÁLIDA mesmo sem ativar
+      o modo CHOA (operador pode usar modoFixo com posto qoapm explícito).
+      Fix: ehTransicaoCHOA detecta pracas→qoapm e permite a transição.
+      Validação de hierarquia usa trilhaQoapm para esse caso.
     </span>
-    <span data-tipo="FIX" data-id="CHOA_NUM_PROGRESSOES">
-      F3: CORRIGIDO: numProgressoesAtraso em gerarDemonstrativoSeguranca() usava
-      getTrilhaProgresso(cfg, postoInicial) que retorna trilha pracas em modo CHOA.
-      Buscar postoDevido (QOAPM) dentro de pracas → indexOf=-1 →
-      Math.max(0, -1-7)=0 → zero progressões em atraso exibidas sempre.
-      Fix: branch dedicado para area=pmam && incluirChoa: conta passos no mapa
-      cfg.choa de postoInicial até postoDevido via loop com safeguard (max 10).
-    </span>
-  </div>
-
-  <!-- ── REV-30 ────────────────────────────────────────────────── -->
-  <div data-rev="REV-30" data-data="2026-04-29" data-status="ATUAL">
-    <span data-tipo="FIX" data-id="CHOA_UX_SYNC_ABORDAGEM_C">
-      CORRIGIDO: estado impossível (postoAtual=pracas, devida=QOAPM,
-      incluirChoa=false) era criável via UI porque o optgroup QOAPM em
-      pm-posto-devida estava sempre visível e o header "CHOA — QOAPM"
-      era estático, induzindo usuário a crer que o modo CHOA estava ativo
-      sem ter selecionado o radio pm-choa=sim.
-      Abordagem C bidirecional implementada:
-      B) syncCHOAFields() oculta optgroup[data-choa="true"] quando pm-choa=nao,
-         e reseta pm-posto-devida se havia valor QOAPM selecionado.
-      A) Listener em pm-posto-devida: se QOAPM selecionado e pm-posto=subtente
-         → auto-ativa pm-choa=sim via dispatchEvent. Se pm-posto≠subtente
-         → reseta devida para '' (QOAPM inválido sem CHOA).
-      T5) Listener em pm-posto: troca para não-subtente com CHOA ativo
-         → desativa pm-choa=nao para evitar incluirChoa=true com postoAtual≠subtente.
-      T6) limparFormulario(): syncCHOAFields() chamado explicitamente após
-         form.reset(), pois form.reset() não dispara evento 'change' em radios.
-      T7) DOMContentLoaded: bindCHOAListeners() + syncCHOAFields() no init.
-      VICIO_EVITAR: nunca assumir que form.reset() dispara eventos de change.
-      Sempre chamar handlers de sincronização explicitamente após reset.
+    <span data-tipo="FIX" data-id="PMAM_MENSAGEM_ORIENTADORA">
+      MELHORADO: mensagem de erro quando subtente cruza para trilha errada
+      agora explica: "Selecione 2.º Tenente (QOAPM) ou ative CHOA".
+      O operador selecionou tenente2 (QOPM) em vez de tenente2_qoapm.
+      A mensagem anterior era genérica e não orientava a correção.
     </span>
   </div>
 
@@ -4529,28 +4405,24 @@ document.addEventListener('DOMContentLoaded', () => {
       innerHTML='' antes de cada cálculo. _addAlerta() centraliza tudo.
     </span>
 
-    <span data-tf="TF-09" data-rev-origem="REV-29" data-rev-correcao="REV-30">
-      TENTATIVA FALHA TF-09 — Guarda !incluirChoa em postoDevidaStr (REV-29)
-      Hipótese: adicionar branch if(incluirChoa)/else na validação de
-      postoDevidaStr em _coletarPMAM() resolveria o throw "trilhas distintas"
-      em modo CHOA, pois o branch CHOA bypassa a verificação de trilha.
-      Falha: o usuário nunca ativava incluirChoa=true porque o formulário
-      induzia estado impossível pela UI: (1) header estático "CHOA — QOAPM"
-      sempre visível criava falsa percepção de modo ativo; (2) optgroup QOAPM
-      em pm-posto-devida disponível sempre, sem vínculo com o radio pm-choa;
-      (3) radio pm-choa aparece DEPOIS de pm-posto-devida no DOM, passando
-      despercebido. Resultado: usuário selecionava tenente2_qoapm como devida
-      com pm-choa=nao → incluirChoa=false → branch else → throw idêntico ao
-      original. O branch corrigido (incluirChoa=true) nunca era alcançado.
-      Causa AKE: diagnostiquei pelo código JS sem verificar o fluxo real de
-      preenchimento do formulário. Corrigi a validação que rejeita o estado
-      inválido, mas não a UI que permite criá-lo. IC < 0.9: devia ter
-      simulado o fluxo do usuário antes de implementar.
-      Correção em REV-30: Abordagem C bidirecional — syncCHOAFields() +
-      bindCHOAListeners() tornam o estado impossível via UI.
+
+    <span data-tf="TF-09" data-rev-origem="REV-6" data-rev-correcao="REV-29">
+      TENTATIVA FALHA TF-09 — Validação de trilha bloqueia CHOA via modoFixo
+      Hipótese: validar trilhaDevida === trilhaAtualPM para postoDevidaFixo
+      evitaria cruzamentos indevidos de carreira (praças→delegado etc).
+      Falha: a transição canônica CHOA (subtente→tenente2_qoapm) é
+      exatamente uma transição pracas→qoapm — que a validação bloqueava.
+      Adicionalmente, modoFixo e CHOA coexistiam sem regra de prioridade,
+      causando modoFixo sobrepor o motor CHOA quando os dois estavam ativos.
+      Causa: a validação foi desenhada para carreiras estanques (PC/PM praças)
+      sem considerar a exceção estrutural do CHOA como passagem entre trilhas.
+      Correção: ehTransicaoCHOA detecta pracas→qoapm; modoFixo=false quando
+      CHOA ativo; mensagem orienta operador para tenente2_qoapm.
     </span>
 
   </div>
+
+  <!-- ── VÍCIOS CONHECIDOS (guia para IA e manutenção) ─────────── -->
   <div data-rev="VICIOS_CONHECIDOS" data-tipo="GUIA_IA">
     <span data-vicio="V01" data-severidade="CRITICA">
       VÍCIO V01 — DIREÇÃO DE PROGRESSÃO EM OBJETOS ORDENADOS:
@@ -4989,36 +4861,15 @@ window._VERSION_LOG = [
   },
   {
     rev: "REV-29",
-    data: "2026-04-29",
-    status: "SUPERADA",
-    descricao: "Fix CHOA/PMAM: validação postoDevidaStr sem guarda incluirChoa (F1), validação positiva via cfg.choa (F2), numProgressoesAtraso via mapa CHOA em vez de índice de trilha de praças (F3).",
-    fixes: [
-      { id: "CHOA_TRILHA_POSTODEVIDA", desc: "Branch if(!incluirChoa) adicionado na validação de postoDevidaStr em _coletarPMAM(). Modo CHOA bypassa verificação de trilha cruzada, que é válida por definição neste contexto." },
-      { id: "CHOA_VALIDACAO_POSITIVA", desc: "Branch CHOA usa validação positiva: coleta destinos alcançáveis via cfg.choa['subtente'] e verifica presença. Elimina dependência de indexOf=-1 frágil." },
-      { id: "CHOA_NUM_PROGRESSOES", desc: "gerarDemonstrativoSeguranca(): branch area=pmam&&incluirChoa conta passos via loop em cfg.choa. Elimina indexOf=-1 em trilha pracas para postos QOAPM (sempre retornava 0)." }
-    ],
-    bugs_pendentes: [
-      "F4: Filtro dinâmico de pm-posto-devida por trilha do pm-posto selecionado (preventivo via UI).",
-      "F5: Select pm-posto-inicial incompleto para praças em modo não-CHOA (faltam aluno, soldado2, soldado1, cabo, sgt3, sgt2, sgt1)."
-    ]
-  },
-  {
-    rev: "REV-30",
-    data: "2026-04-29",
+    data: "2026-04-30",
     status: "ATUAL",
-    descricao: "Fix CHOA/UX Abordagem C: syncCHOAFields() + bindCHOAListeners() tornam estado impossível (postoAtual=pracas, devida=QOAPM, incluirChoa=false) inacessível via UI.",
+    descricao: "Fix PMAM: modoFixo/CHOA conflito + validação trilha pracas→qoapm + mensagem orientadora subtente.",
     fixes: [
-      { id: "CHOA_UX_SYNC_B", desc: "syncCHOAFields(): optgroup[data-choa='true'] oculto quando pm-choa=nao. Valor QOAPM em devida é resetado ao ocultar. Impede seleção de QOAPM sem CHOA ativo." },
-      { id: "CHOA_UX_SYNC_A", desc: "Listener pm-posto-devida: QOAPM selecionado + pm-posto=subtente → auto-ativa pm-choa=sim via dispatchEvent. pm-posto≠subtente → reseta devida para ''." },
-      { id: "CHOA_UX_T5", desc: "Listener pm-posto: troca de subtente para outro posto com CHOA ativo → desativa pm-choa=nao via dispatchEvent. Evita incluirChoa=true com postoAtual≠subtente." },
-      { id: "CHOA_UX_T6", desc: "limparFormulario(): syncCHOAFields() chamado explicitamente após form.reset(). form.reset() não dispara 'change' em radios — risco confirmado em simulação T6." },
-      { id: "CHOA_UX_T7", desc: "DOMContentLoaded: bindCHOAListeners() + syncCHOAFields() no init. Garante estado inicial correto (optgroup QOAPM oculto, pm-choa=nao default)." }
+      { id: "PMAM_CHOA_MODOFIX_CONFLITO",  desc: "modoFixo=false quando CHOA ativo. CHOA tem prioridade sobre postoDevidaFixo." },
+      { id: "PMAM_VALIDACAO_CHOA_TRILHA",  desc: "ehTransicaoCHOA permite pracas→qoapm via modoFixo. Validação de hierarquia usa trilhaQoapm para esse caso." },
+      { id: "PMAM_MENSAGEM_ORIENTADORA",   desc: "Quando subtente cruza para QOPM (trilha errada), mensagem sugere tenente2_qoapm ou ativar CHOA." }
     ],
-    bugs_pendentes: [
-      "F4: Filtro dinâmico de pm-posto-devida por trilha do pm-posto selecionado (preventivo — QOPM vs Praças).",
-      "F5: Select pm-posto-inicial incompleto para praças em modo não-CHOA.",
-      "F6: Validação _coletarPMAM: if(incluirChoa && postoAtual !== 'subtente') → throw descritivo (defesa server-side além da UX)."
-    ]
+    bugs_pendentes: []
   }
 ];
 
@@ -5085,11 +4936,11 @@ window._TENTATIVAS_FALHAS = [
     correcao: "Contentor #alertas-dinamicos com posição fixa. innerHTML='' antes de cada cálculo. _addAlerta() centraliza."
   },
   {
-    id: "TF-09", revOrigem: "REV-29", revCorrecao: "REV-30",
-    hipotese: "Adicionar branch if(incluirChoa)/else na validação de postoDevidaStr em _coletarPMAM() resolveria o throw 'trilhas distintas' em modo CHOA.",
-    falha: "O usuário nunca ativava incluirChoa=true porque a UI permitia criar o estado impossível: optgroup QOAPM sempre visível em pm-posto-devida + header 'CHOA — QOAPM' estático + radio pm-choa após o select no DOM. Resultado: pm-choa=nao, devida=QOAPM → branch else → mesmo throw.",
-    causaAke: "Diagnostiquei pelo código JS sem simular o fluxo real do usuário. Corrigi a validação que rejeita o estado inválido mas não a UI que permite criá-lo. IC < 0.9: simulação de fluxo é obrigatória antes de implementar correções de validação de formulário.",
-    correcao: "REV-30: Abordagem C — syncCHOAFields() torna o estado UI impossível. bindCHOAListeners() bidirecional cobre todos os vetores de entrada do estado inválido."
+    id: "TF-09", revOrigem: "REV-6/REV-4", revCorrecao: "REV-29",
+    hipotese: "Validar trilhaDevida === trilhaAtualPM evitaria cruzamentos indevidos de carreira.",
+    falha: "Transição CHOA (subtente→tenente2_qoapm) é pracas→qoapm — bloqueada pela validação. modoFixo sobrepunha motor CHOA sem regra de prioridade.",
+    causaAke: "Validação foi desenhada para carreiras estanques sem considerar exceção estrutural CHOA como passagem entre trilhas.",
+    correcao: "ehTransicaoCHOA detecta pracas→qoapm. modoFixo=false quando CHOA ativo. Mensagem orienta operador."
   }
 ];
 
@@ -5197,6 +5048,23 @@ window._VICIOS_CONHECIDOS = [
     descricao: "firstChild pode ser text node ou elemento com display:grid → texto fragmenta em células. Alertas acumulam entre cálculos se não há limpeza. Sempre usar contentor #alertas-dinamicos com innerHTML='' antes de cada cálculo.",
     exemplo_errado: "stepResults.insertBefore(avisoEl, stepResults.firstChild) // pode inserir em grid",
     exemplo_correto: "document.getElementById('alertas-dinamicos').appendChild(el) // posição fixa, sem grid"
+  }
+,
+  {
+    id: "V25",
+    severidade: "CRITICA",
+    titulo: "PMAM: modoFixo e CHOA são mutuamente exclusivos — CHOA tem prioridade",
+    descricao: "Quando incluirChoa=true, postoDevidaFixo deve ser ignorado. modoFixo=false quando CHOA ativo. Os dois modos tem lógicas incompatíveis. CHOA calcula automaticamente subtente→QOAPM via mapa cfg.choa.",
+    exemplo_errado: "modoFixo = !!(postoDevidaFixo && postoDevidaFixo !== postoAtual)  // ignora CHOA",
+    exemplo_correto: "modoFixo = !!(postoDevidaFixo && postoDevidaFixo !== postoAtual && !incluirChoa)"
+  },
+  {
+    id: "V26",
+    severidade: "CRITICA",
+    titulo: "PMAM: transição pracas→qoapm é válida (CHOA) — nunca bloquear via validação de trilha",
+    descricao: "A transição subtente (pracas) → tenente2_qoapm (qoapm) é canonicamente o CHOA. Validação de trilha deve detectar ehTransicaoCHOA=true e permitir. O erro mais comum: operador seleciona tenente2 (QOPM) em vez de tenente2_qoapm (QOAPM).",
+    exemplo_errado: "if (trilhaDevida !== trilhaAtualPM) throw Error  // bloqueia CHOA via modoFixo",
+    exemplo_correto: "const ehTransicaoCHOA = trilhaAtual===pracas && trilhaDevida===qoapm; if (!ehTransicaoCHOA) throw Error"
   }
 ];
 
