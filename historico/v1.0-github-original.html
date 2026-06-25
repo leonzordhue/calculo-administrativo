@@ -1896,14 +1896,7 @@ function calcularProgressoesEduc(area, posseDate, ateDate) {
   while (true) {
     let meses;
     if (areaKey === 'SEDUC' || areaKey === 'SEDUC_APOIO_SUPERIOR' || areaKey === 'SEDUC_APOIO_FUNDAMENTAL') {
-      // FIX MARCO TEMPORAL (Lei 4.836/2019): a Lei nova alcança interstícios em curso.
-      // Se a progressão sob a regra antiga (48m) recairia APÓS o marco (01/03/2019),
-      // o interstício passa a ser de 36m (Lei n.º 4.836/2019). A regra anterior
-      // olhava apenas o início do interstício (cursor), atrasando em 1 ano a
-      // primeira progressão pós-marco — caso de referência: docente SEDUC com
-      // ingresso 01/03/2001 deveria estar em Ref. G a partir de 01/03/2023.
-      const proximaSeAntigo = new Date(cursor.getFullYear(), cursor.getMonth() + cfg.intersticioAntigo, 1);
-      meses = proximaSeAntigo > cfg.marco ? cfg.intersticioNovo : cfg.intersticioAntigo;
+      meses = cursor < cfg.marco ? cfg.intersticioAntigo : cfg.intersticioNovo;
     } else {
       meses = cfg.intersticioUnico;
     }
