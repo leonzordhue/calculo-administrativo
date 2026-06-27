@@ -6,6 +6,67 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.2 — 2026-06-27 — Sistema de login com Firebase Authentication
+
+**Arquivo:** `historico/v1.2-login-firebase.html`
+**Alteração:** novo bloco `<style>` (~110 linhas), HTML do overlay/badge/admin
+(~120 linhas) e `<script type="module">` ao final (~280 linhas).
+
+### Por que
+
+A plataforma é hospedada publicamente em GitHub Pages. Sem controle de
+acesso, qualquer pessoa com o link usa a ferramenta. Foi adotado um portão
+de autenticação para restringir o uso aos advogados autorizados pelo
+escritório, sem alterar a arquitetura estática (sem backend, sem build).
+
+### Como funciona
+
+- **SDK:** Firebase v10.13.0 carregado direto via CDN como ES module — não
+  exige `npm`/bundler, segue compatível com GitHub Pages.
+- **Provedor:** `firebase/auth` apenas. Sem Firestore, sem Hosting, sem
+  Functions.
+- **Gate:** `onAuthStateChanged` controla um overlay full-screen com
+  `z-index: 99999` que cobre todo o conteúdo da calculadora até a sessão
+  ser validada.
+- **Estados da tela de auth:** `loading` → `login` → `change` (primeiro
+  login força criação de senha definitiva) → `bootstrap` (exibe o UID
+  para liberação administrativa) → entra na plataforma.
+- **Cadastro:** signup público desativado. O administrador convida cada
+  usuário pelo painel; o Firebase envia e-mail automático para definição
+  de senha. **Nenhuma senha trafega pelo painel ou pelo código.**
+- **App secundário:** o convite usa uma segunda instância
+  (`initializeApp(firebaseConfig, "AdminInvite")`) para que o
+  `createUserWithEmailAndPassword` não deslogue o administrador.
+- **Esqueci minha senha:** disponível na tela de login e no painel admin
+  para reenvio. Fluxo padrão `sendPasswordResetEmail`.
+- **Identificação de admin:** lista hardcoded de UIDs do Firebase (não
+  e-mails). UIDs são identificadores opacos — não revelam o nome do
+  titular.
+
+### Segurança
+
+| Camada | Onde |
+|---|---|
+| Domínios autorizados | Firebase Console → Authentication → Configurações → `leonzordhue.github.io` |
+| Signup público bloqueado | Apenas o painel admin chama `createUserWithEmailAndPassword` |
+| Rate limiting | Nativo do Firebase Auth contra brute-force |
+| Senhas nunca expostas | Firebase armazena com hash; o painel gera senha aleatória interna descartável e força reset imediato por e-mail |
+| Exclusão de contas | Apenas via Console (não exposta no painel) |
+
+### Bootstrap (primeira execução do admin)
+
+`ADMIN_UIDS` inicia vazio neste deploy. O primeiro acesso do administrador
+mostra a tela "bootstrap" com o UID gerado pelo Firebase. Esse UID é
+adicionado ao array `ADMIN_UIDS` em commit subsequente, liberando o botão
+"Admin" no badge superior.
+
+### Custo
+
+R$ 0/mês no plano Spark (gratuito) — limite de 50.000 autenticações/mês
+folgado para o uso do escritório.
+
+---
+
 ## v1.1 — 2026-06-25 — Fix marco temporal SEDUC (Lei 4.836/2019)
 
 **Arquivo:** `historico/v1.1-fix-marco-seduc.html`
