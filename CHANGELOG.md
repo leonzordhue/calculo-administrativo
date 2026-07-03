@@ -6,6 +6,20 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.2.1 — 2026-06-27 — Bootstrap do administrador
+
+**Arquivo:** `historico/v1.2.1-admin-bootstrap.html`
+**Alteração:** UID do primeiro administrador incluído em `ADMIN_UIDS`.
+
+Após v1.2 subir com `ADMIN_UIDS = []`, o administrador entrou pela primeira
+vez, criou a senha definitiva e recebeu o UID pela tela de bootstrap.
+Este patch registra esse UID no array, habilitando o botão "Admin" no
+badge superior e liberando o painel de convite de usuários. A partir daqui
+novos advogados são cadastrados diretamente pela interface, sem
+intervenção de código.
+
+---
+
 ## v1.2 — 2026-06-27 — Sistema de login com Firebase Authentication
 
 **Arquivo:** `historico/v1.2-login-firebase.html`
