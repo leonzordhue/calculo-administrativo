@@ -6,6 +6,53 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.6 — 2026-08-13 — Auditoria completa + reconstrução do SEMED Administrativo
+
+**Arquivo:** `historico/v1.6-auditoria-semed-admin.html`
+
+Rodada de auditoria 100% (motor, tabelas, código, UX) com correções aplicadas e
+verificadas, culminando na **reconstrução do SEMED Administrativo** contra a
+fonte oficial.
+
+### Auditoria — 13 correções aplicadas e testadas
+
+- **SELIC/data:** data-fim padrão passou a usar hora **local** (não `toISOString`
+  UTC) — corrige o bug que rejeitava o cálculo como "data futura" à noite (UTC-4).
+- **XSS:** preview ao vivo e log do "Cadastrar" passam por `escHtml`.
+- **Marco temporal SEDUC:** `new Date(2019,2,1)` + `>=` — resultado não depende
+  mais do fuso do navegador (caso de referência 2001→Ref G/2023 preservado).
+- **Datas:** bloqueio de posse/ingresso futuro nas 5 áreas.
+- **SEMED docente:** trava de início ≥ 06/2026 (grid oficial não tem histórico);
+  coluna "Lei" mostra a fonte real (PL 506/2026) em vez da lei histórica.
+- **UX/texto:** painel SEMED e `AREA_CONFIG` corrigidos (mecânica e lei certas);
+  `m-ref` com opção "Selecione…"; contraste `--gray-mid` dentro do WCAG AA;
+  GAA admin 0% respeitado.
+- **Verificados sem alteração:** SELIC 91 meses (1:1 BCB); grid magistério
+  **126/126 células 1:1 com o PL 506/2026 oficial** (a "anomalia" P9/RefB é da
+  própria norma — Anexos I-A/I-B arredondados independentemente).
+
+### SEMED Administrativo — reconstruído (Lei n.º 1.624/2011)
+
+O modelo anterior estava **estruturalmente errado** (referências A1–L2 ×
+multiplicador sobre a tabela do **magistério**, interstício 24m). O correto,
+conforme a **Lei n.º 1.624/2011** (PCCR Administrativo da Educação):
+
+- **4 tabelas por cargo/escolaridade** (Anexos I-C a I-F): grid **Padrão (1–13)
+  × Classe**. Padrão sobe por **tempo** (interstício **36m**); Classe é fixa
+  (titulação). Classes por cargo: I-C A–G, I-D B–G, I-E C–G, I-F D–G.
+- **Valores oficiais** do **DOM ed. 6329 (11/06/2026)**, vig. 01/06/2026 (+4,14%).
+  Extraídos por reconhecimento das bordas do PDF (`pdfplumber`) e **verificados
+  1:1: 126/126 células**, passo de padrão exatamente 5%. Nada estimado.
+- **Formulário:** novos campos (cargo/nível → tabela, classe, padrão atual/ingresso),
+  toggle e população dinâmica de classes. Trava início ≥ 06/2026.
+- **Motor:** `calcVencimentoEduc` ganha ramo de grid administrativo por cargo;
+  `calcularProgressoesEduc` usa 36m para SEMED_ADMIN; `refList` = padrões 1–13.
+
+Fontes primárias arquivadas em `fontes/leis/`: `dom6329-semed-2026.pdf`,
+`lei-1624-2011.pdf`, `pl506-2026.pdf`, `lei-1126-2007.pdf` e resumos `.md`.
+
+---
+
 ## v1.5 — 2026-08-13 — Magistério SEMED: grid Padrão × Referência + jornada
 
 **Arquivo:** `historico/v1.5-magisterio-semed-grid.html`
