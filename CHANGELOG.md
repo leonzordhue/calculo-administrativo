@@ -6,6 +6,32 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.5 — 2026-08-13 — Magistério SEMED: grid Padrão × Referência + jornada
+
+**Arquivo:** `historico/v1.5-magisterio-semed-grid.html`
+
+Reestrutura o **Docente SEMED (Lei n.º 1.126/2007, PCCR Magistério de Manaus)** do
+modelo antigo (eixo único A1–D1, valores desatualizados) para a **estrutura oficial**:
+
+- **Grid Padrão (1–9) × Referência (A–G)**, jornadas **20h** (Anexo I-A) e **40h**
+  (Anexo I-B), com **valores absolutos** oficiais.
+- **Fonte primária verificada:** PL 506/2026 (CMM) — reajuste **4,14%**, vigência
+  **01/06/2026**. Transcrição auditada **126/126 células** contra o processo
+  legislativo (zero divergência). Auditoria pegou a foto do cliente com
+  P1/RefA(20h)=2.788,63; o oficial é **2.788,81** — usado o oficial.
+- **Mecânica legal (Lei 1.126/2007):** Referência progride por **Progressão**
+  (interstício 3 anos / 36m, Art. 49); **Padrão** evolui por **Promoção**
+  (Art. 56, ≥6 anos + título/desempenho) — ato não automático, portanto
+  **informado pelo usuário** (estático, como a "classe" do SEDUC), não projetado.
+- **Formulário:** novos campos **Padrão Atual** e **Jornada**; referências docente
+  passam a A–G. Categoria Administrativo (Lei 1.118/2007) inalterada.
+- **Motor:** `calcVencimentoEduc` ganha ramo de grid absoluto por jornada;
+  `gerarDemonstrativoEduc`/`_coletarEduc` threadam padrão e jornada.
+
+Dossiê de fontes e base legal em `fontes/leis/magisterio-semed-1126.md`.
+
+---
+
 ## v1.4 — 2026-08-13 — Auditoria do Cálculo (laudo PDF) + arquivo de fontes
 
 **Arquivo:** `historico/v1.4-auditoria-calculo.html`
