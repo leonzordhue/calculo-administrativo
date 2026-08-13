@@ -6,6 +6,34 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.7 — 2026-08-13 — SEMSA: grid Classe × Padrão (Assistente/Especialista em Saúde)
+
+**Arquivo:** `historico/v1.7-semsa-grid-anexo2.html`
+
+Adiciona à SEMSA o **grid Classe (A–H) × Padrão (1–18)** do Anexo II (Assistente/
+Especialista em Saúde), para os cargos **não-Médico** (Nível I/II/III). O Médico
+permanece no modelo anterior (tabela própria, fora do escopo desta rodada).
+
+- **Fonte primária verificada (cadeia rastreada no SAPL/CMM):** a tabela vigente é a
+  **Lei n.º 3.665, de 11/06/2026** (reajuste **4,14%**, data-base **01/06/2026**), que
+  revoga a Lei 3.513/2025, que revogou a 3.339/2024. A base legal/mecânica é a
+  **Lei n.º 1.222/2008**. Valores **extraídos 1:1 do PDF oficial** (pdfplumber).
+- **Auditoria decisiva:** a tabela que a cliente enviou era o **Anexo II de 2018**
+  (P1/Classe A = 907,00) — 8 anos desatualizada. O vigente é **2.673,34** (~2,9×).
+  Usar a foto teria subestimado grosseiramente o cálculo.
+- **Mecânica (Lei 1.222/2008):** Classe = escolaridade (estática; A–D básico, E–H
+  superior; Auxiliar de Serviços = Classe A). Padrão progride por Progressão a cada
+  **2 anos / 24m** (Art. 32 §2).
+- **Formulário SEMSA:** seletores **Classe**, **Padrão Atual** e **Padrão Ingresso**
+  para não-Médico (toggle por nível); campos de referência A1–E2 preservados para o
+  Médico. **Motor:** novo `_gerarSEMSAGrid` (valor absoluto do grid; Padrão progride
+  24m; Classe estática); Médico segue em `gerarDemonstrativoSEMSA`.
+
+Fontes primárias em `fontes/leis/`: `lei-3665-2026-semsa.pdf`, `lei-1222-2008-semsa.pdf`,
+`semsa-1222-3665.md` (dossiê com a tabela vigente completa).
+
+---
+
 ## v1.6 — 2026-08-13 — Auditoria completa + reconstrução do SEMED Administrativo
 
 **Arquivo:** `historico/v1.6-auditoria-semed-admin.html`
