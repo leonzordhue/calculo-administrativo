@@ -6,6 +6,92 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.4 — 2026-08-13 — Auditoria do Cálculo (laudo PDF) + arquivo de fontes
+
+**Arquivo:** `historico/v1.4-auditoria-calculo.html`
+
+### Botão "🔍 Auditoria do Cálculo"
+
+Novo botão na tela de resultados (ao lado de "Exportar PDF"). Gera um
+**laudo autônomo e imprimível** (`gerarAuditoria`) que expõe toda a memória
+de cálculo para conferência:
+
+1. **Identificação** — servidor, matrícula, cargo e todos os parâmetros de
+   entrada efetivamente usados (classe/nível, localidade, regência, GTS/GAA,
+   quinquênios, G.T./GEP conforme a carreira).
+2. **Fundamentação legal** — normas da carreira, STJ Tema 1075, EC 113/2021,
+   prescrição quinquenal; e a lista das **leis efetivamente incidentes** em
+   cada competência (extraídas das linhas do demonstrativo).
+3. **Metodologia passo a passo** — como as progressões são contadas
+   (interstício e marco temporal por carreira), como o vencimento devido é
+   montado, cálculo da diferença, 13º/férias e a **fórmula da correção SELIC**.
+4. **Demonstrativo competência a competência** — tabela completa com fator
+   SELIC por mês.
+5. **Síntese** — totais nominal e corrigido.
+
+Detalhes técnicos:
+- O resultado do último cálculo é guardado em `window._ultimoResultado`
+  (setado em `renderizarResultados`) e consumido pelo laudo.
+- O laudo abre em nova janela como HTML autônomo (CSS embutido) e chama
+  `window.print()` — sem dependência de CDN/npm, coerente com GitHub Pages.
+- **Correção de bug latente:** a string `</script>` embutida no template do
+  laudo foi escapada (`<\/scr…ipt>`); sem isso o parser HTML fecharia o bloco
+  de script da própria página. Validado no Chromium (Playwright): página sem
+  erros de JS e laudo gerado com escape XSS dos dados do servidor.
+
+### Pasta `fontes/`
+
+Arquivo das bases usadas para construir a plataforma:
+- `fontes/README.md` — índice de **todas** as leis e valores-base por carreira,
+  com status `verificado` / `referência` e onde cada um é usado.
+- `fontes/selic/` — série SELIC oficial do BCB (SGS 4390) em CSV e JSON cru,
+  fonte primária da correção.
+- `fontes/leis/` — destino dos PDFs das normas (a obter; ver README).
+
+---
+
+## v1.3 — 2026-08-13 — SELIC verificada contra o BCB + acesso público
+
+**Arquivo:** `historico/v1.3-selic-oficial-bcb.html`
+**Alterações:** `SELIC_MENSAL` substituída integralmente; comentário-fonte reescrito.
+
+### Correção da tabela SELIC (crítico — afetava valores entregues)
+
+`SELIC_MENSAL` foi conferida 1:1 contra a série oficial do BCB
+**SGS 4390 — "Taxa de juros - Selic acumulada no mês (% a.m.)"**, a base da
+correção da EC 113/2021.
+
+Resultado da conferência:
+
+- **61 dos 87 meses divergiam** da série oficial. Divergências de até
+  **+0,30 p.p./mês** (ex.: 2024-11 estava 0,0109 vs. 0,0079 oficial), que
+  compõem no fator acumulado e inflavam/deflavam os totais corrigidos.
+- O bloco **2024–2025 estava com valores padronizados** (alternância
+  0,0116/0,0112), sem correspondência com a série real — efetivamente
+  estimados, não verificados.
+- **4 meses faltavam** (2026-04 a 2026-07): a correção parava em março/2026
+  e qualquer competência posterior ficava sub-corrigida.
+
+Toda a tabela foi regravada com os valores oficiais e estendida até
+**2026-07** (91 meses, 2019-01 → 2026-07). Fonte e data da verificação
+ficam no comentário acima da constante. A função `fatorSelicAcumulado`
+não mudou: já ignora meses ainda não publicados via `|| 0` (o mês corrente
+só entra quando o BCB fecha a série).
+
+**Rotina de manutenção:** a cada mês, acrescentar a competência nova puxando
+a série 4390 do BCB (`api.bcb.gov.br/dados/serie/bcdados.sgs.4390/dados?formato=json`).
+
+### Acesso público (decisão registrada)
+
+O gate de autenticação Firebase descrito nas v1.2/v1.2.1 foi **removido** no
+commit `91675cc` (2026-07-30). **É intencional:** a ferramenta é usada por
+poucas pessoas e roda pública em GitHub Pages, sem login. As camadas de
+segurança descritas na v1.2 (domínios autorizados, signup bloqueado, rate
+limiting) **não se aplicam mais**. Restou apenas a integração opcional com
+Google Apps Script (`salvarSheets`) para persistência em planilha.
+
+---
+
 ## v1.2.1 — 2026-06-27 — Bootstrap do administrador
 
 **Arquivo:** `historico/v1.2.1-admin-bootstrap.html`

@@ -355,7 +355,7 @@
       .result-table-wrap { overflow:visible !important; border-radius:0 !important; }
       .print-header { display:flex !important; }
       #step-results { display:block !important; }
-      #btn-nova-consulta, #btn-exportar, #btn-auditoria, #btn-salvar, .cadastrar-block { display:none !important; }
+      #btn-nova-consulta, #btn-exportar, #btn-salvar, .cadastrar-block { display:none !important; }
     }
     .print-header { display:none; margin-bottom:1rem; }
     @media print {
@@ -1387,7 +1387,6 @@
 
     <div class="btn-actions" style="margin-bottom:1rem;">
       <button class="btn btn-gold btn-lg" id="btn-exportar" onclick="exportarPDF()">📄 Exportar PDF</button>
-      <button class="btn btn-lg" id="btn-auditoria" onclick="gerarAuditoria()" style="background:var(--teal);color:#fff;" title="Gera um laudo passo a passo com leis, fórmulas e cada competência para conferência">🔍 Auditoria do Cálculo</button>
       <button class="btn btn-ghost" id="btn-nova-consulta" onclick="novaConsulta()">+ Nova Consulta</button>
     </div>
 
@@ -3296,7 +3295,6 @@ function _coletarPCAM() {
 // ─────────────────────────────────────────
 
 function renderizarResultados(res) {
-  window._ultimoResultado = res; // usado pela Auditoria do Cálculo
   const { rows, totalDiff, nMeses, numProgressoesAtraso, refInicial, refDevida,
           nome, matricula, cargo, area, posseDate, startDate, endDate } = res;
 
@@ -3488,189 +3486,6 @@ function atualizarBadgeLocalidade() {
 // ─────────────────────────────────────────
 
 function exportarPDF() { window.print(); }
-
-// ─────────────────────────────────────────
-// 11-B. AUDITORIA DO CÁLCULO — laudo passo a passo (PDF)
-// Gera um documento autônomo, imprimível, que expõe TODA a memória de
-// cálculo: parâmetros, fundamentação legal, metodologia e o demonstrativo
-// competência a competência. Objetivo: conferência e confiabilidade.
-// ─────────────────────────────────────────
-function gerarAuditoria() {
-  const res = window._ultimoResultado;
-  if (!res) { alert('Rode um cálculo antes de gerar a auditoria.'); return; }
-  const e = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const m = v => (v==null||isNaN(v)) ? '—' : Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-  const d = dt => dt ? new Date(dt).toLocaleDateString('pt-BR') : '—';
-  const pct = v => (v>0?`+${Math.round(v*100)}%`:'0%');
-
-  // Fundamentação legal por carreira (espelha renderizarResultados)
-  const legalMap = {
-    SEDUC_APOIO_SUPERIOR:'Lei n.º 3.951/2013 (Anexo IV — Apoio Superior) → Lei n.º 4.836/2019 → Lei n.º 5.770/2022',
-    SEDUC_APOIO_FUNDAMENTAL:'Lei n.º 3.951/2013 (Anexo V — Apoio Fund./Médio) → Lei n.º 4.836/2019 → Lei n.º 5.770/2022',
-    SEDUC_ADMIN:'Lei n.º 4.058/2014 (PCCR Administrativo SEDUC) — progressão bienal A–H',
-    SEMED_ADMIN:'Lei Municipal n.º 1.118/2007 (PCCR Administrativo SEMED) — progressão bienal A1–L2',
-    seduc:'Lei n.º 3.951/2013 (interstício 4 anos) → Lei n.º 4.836/2019 (interstício 3 anos, marco 01/03/2019)',
-    semed:'Lei Municipal n.º 1.126/2007 e reajustes (Leis 2.871/2022, 3.056/2023, 3.315/2024)',
-    ses:'Lei n.º 3.469/2009 (PCCR SES/AM) — progressão bienal (24 meses)',
-    semsa:'Lei n.º 1.222/2008 (PCCR SEMSA/Manaus) — progressão bienal',
-    pmam:'Lei n.º 3.725/2012 → Lei n.º 4.618/2018 → Lei n.º 4.852/2019 (PMAM)',
-    pcam:'Lei n.º 2.875/2004 → Lei n.º 4.059/2014 (PCCR PCAM)',
-  };
-  const areaLabel = {
-    SEDUC_APOIO_SUPERIOR:'SEDUC/AM — Apoio Específico (Nível Superior)',
-    SEDUC_APOIO_FUNDAMENTAL:'SEDUC/AM — Apoio Específico (Nível Fund./Médio)',
-    SEDUC_ADMIN:'SEDUC/AM — Administrativo', SEMED_ADMIN:'SEMED/AM — Administrativo',
-    seduc:'SEDUC/AM — Rede Estadual', semed:'SEMED/AM — Rede Municipal',
-    ses:'SES/AM — Saúde Estadual', semsa:'SEMSA — Saúde Municipal',
-    pmam:'PMAM — Polícia Militar', pcam:'PCAM — Polícia Civil',
-  };
-  const areaKey = res.area;
-  const isSeduc = ['seduc','SEDUC_APOIO_SUPERIOR','SEDUC_APOIO_FUNDAMENTAL'].includes(areaKey);
-
-  // Parâmetros / verbas efetivamente usados
-  const params = [];
-  params.push(['Órgão / carreira', areaLabel[areaKey] || areaKey]);
-  if (res.classe) params.push(['Classe', res.classe]);
-  if (res.nivel)  params.push(['Nível', res.nivel]);
-  params.push(['Referência recebida (inicial)', res.refInicial]);
-  params.push(['Referência devida (final)', res.refDevida]);
-  params.push(['Progressões em atraso', res.numProgressoesAtraso]);
-  params.push(['Período do retroativo', `${d(res.startDate)} a ${d(res.endDate)}`]);
-  if (res.posseDate) params.push(['Ingresso / referência do interstício', d(res.posseDate)]);
-  if (isSeduc) {
-    params.push(['Localidade (adicional)', res.pctLocalidade>0 ? `${pct(res.pctLocalidade)} (${res.municipio||'—'})` : 'Manaus (0%)']);
-    if (areaKey==='seduc') params.push(['Regência de classe', res.incluirRegencia ? '+25%' : 'não']);
-  }
-  if (areaKey==='ses') {
-    params.push(['GTS', res.pctGTS>0?pct(res.pctGTS):'não']);
-    params.push(['GAA', res.pctGAA>0?pct(res.pctGAA):'não']);
-    params.push(['Quinquênios', res.nQuinq>0?`${res.nQuinq} × 5%`:'não']);
-  }
-  if (areaKey==='pmam') params.push(['Gratificação (G.T.)', res.incluirAdicional?'incluída':'não']);
-  if (areaKey==='pcam') params.push(['GEP', res.incluirAdicional?'+100%':'não']);
-
-  // Leis efetivamente aplicadas nas competências (distintas, na ordem)
-  const leisUsadas = [...new Set(res.rows.map(r=>r.lei).filter(Boolean))];
-
-  const paramRows = params.map(([k,v])=>`<tr><th>${e(k)}</th><td>${e(v)}</td></tr>`).join('');
-  const demoRows = res.rows.map(r=>{
-    const cls = r.tipo==='13o'?'r13':r.tipo==='ferias'?'rfer':'';
-    return `<tr class="${cls}">
-      <td>${e(r.competencia)}</td>
-      <td class="c">${e(r.refRecebida)||'—'}</td>
-      <td class="r">${m(r.vencRecebido)}</td>
-      <td class="c">${e(r.refDevida)||'—'}</td>
-      <td class="r">${m(r.vencDevido)}</td>
-      <td class="r">${m(r.diffMensal)}</td>
-      <td class="c">${r.fatorSelic?r.fatorSelic.toFixed(4):'—'}</td>
-      <td class="r b">${m(r.diffCorrigida)}</td>
-      <td class="r">${r.extras>0?m(r.extras):'—'}</td>
-      <td class="r b">${m(r.totalLinha)}</td></tr>`;
-  }).join('');
-
-  const totalNominal = res.totalDiff;
-  const totalCorrigido = res.totalCorrigido || res.totalDiff;
-
-  // Passo de metodologia da progressão conforme a carreira
-  const passoProg = isSeduc
-    ? `A cada interstício conta-se uma progressão de referência. A Lei n.º 3.951/2013 previa <strong>48 meses</strong>; a Lei n.º 4.836/2019 reduziu para <strong>36 meses</strong> com marco em <strong>01/03/2019</strong>. Regra aplicada: se a próxima progressão sob a regra antiga (48m) recairia <em>após</em> o marco, ela é antecipada para 36 meses (a lei nova alcança interstícios em curso).`
-    : (areaKey==='ses'
-      ? `Progressão <strong>bienal</strong> (interstício de 24 meses) conforme a Lei n.º 3.469/2009. A cada 24 meses de serviço avança-se uma classe.`
-      : (areaKey==='pmam'||areaKey==='pcam')
-        ? `Progressão por interstício mínimo de <strong>36 meses</strong> entre postos/classes, conforme o PCCR da corporação.`
-        : `Progressão conforme o interstício previsto no PCCR da carreira (ver fundamentação legal).`);
-
-  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-<title>Auditoria do Cálculo — ${e(res.nome)}</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font:12px/1.5 'Segoe UI',system-ui,sans-serif;color:#162030;padding:28px 32px;max-width:1000px;margin:0 auto}
-  h1{font-size:19px;color:#0B4A44;border-bottom:3px solid #C9A93E;padding-bottom:6px;margin-bottom:2px}
-  h2{font-size:13px;color:#0B4A44;margin:18px 0 7px;padding-bottom:3px;border-bottom:1px solid #A8D4D0;text-transform:uppercase;letter-spacing:.04em}
-  .sub{color:#8899AA;font-size:10.5px;margin-bottom:14px}
-  table{border-collapse:collapse;width:100%;font-size:11px}
-  th,td{border:1px solid #DDE3EC;padding:4px 7px;text-align:left;vertical-align:top}
-  .kv th{background:#EBF5F4;width:38%;color:#0B4A44;font-weight:600}
-  .demo th{background:#0B4A44;color:#fff;font-size:10px;text-align:center;position:sticky;top:0}
-  .demo td.r{text-align:right}.demo td.c{text-align:center}.demo td.b{font-weight:700}
-  .demo tr.r13 td{background:#FBF5E0}.demo tr.rfer td{background:#EBF0F8}
-  .demo tr:nth-child(even) td{background:#F7FAFA}
-  .tot{background:#0B4A44;color:#fff}.tot td{border-color:#0B4A44;font-weight:700;font-size:12px}
-  .tot td.r{text-align:right}
-  ol,ul{margin:4px 0 4px 20px}li{margin:3px 0}
-  .box{background:#F5F7F9;border:1px solid #DDE3EC;border-left:4px solid #C9A93E;padding:9px 12px;border-radius:4px;margin:8px 0;font-size:11px}
-  .formula{font-family:Consolas,monospace;background:#162030;color:#E8CB6E;padding:8px 12px;border-radius:5px;margin:6px 0;font-size:11.5px;overflow-x:auto}
-  .foot{margin-top:22px;padding-top:10px;border-top:1px solid #DDE3EC;color:#8899AA;font-size:10px}
-  .warn{color:#B02020;font-weight:600}
-  @media print{body{padding:0}.demo th{position:static}}
-</style></head><body>
-<h1>Laudo de Auditoria do Cálculo</h1>
-<div class="sub">LUIS ALBERT ADVOCACIA — Cálculo de Diferenças Salariais / Progressão Funcional · Emitido em ${d(new Date())}</div>
-
-<h2>1. Identificação</h2>
-<table class="kv">
-  <tr><th>Servidor(a)</th><td>${e(res.nome)}</td></tr>
-  <tr><th>Matrícula</th><td>${e(res.matricula)}</td></tr>
-  ${res.cargo?`<tr><th>Cargo</th><td>${e(res.cargo)}</td></tr>`:''}
-  ${paramRows}
-</table>
-
-<h2>2. Fundamentação legal aplicada</h2>
-<ul>
-  <li><strong>Carreira:</strong> ${e(legalMap[areaKey]||'—')}</li>
-  <li><strong>Progressão funcional:</strong> STJ Tema 1075.</li>
-  <li><strong>Correção monetária e juros:</strong> EC 113/2021 (índice SELIC).</li>
-  <li><strong>Prescrição:</strong> Decreto Federal n.º 20.910/1932 (quinquenal).</li>
-</ul>
-${res.alertaPrescricao&&res.cincoAnos?`<div class="box"><span class="warn">⚠ Prescrição quinquenal:</span> créditos anteriores a <strong>${d(res.cincoAnos)}</strong> podem estar prescritos — conferir antes de protocolar.</div>`:''}
-<div class="box"><strong>Leis efetivamente incidentes nas competências deste cálculo:</strong>
-<ul>${leisUsadas.map(l=>`<li>${e(l)}</li>`).join('')}</ul></div>
-
-<h2>3. Metodologia — passo a passo</h2>
-<ol>
-  <li><strong>Progressões devidas:</strong> ${passoProg}</li>
-  <li><strong>Referência/posto devido por competência:</strong> a partir da referência inicial (${e(res.refInicial)}) aplicam-se as progressões acumuladas até cada mês, chegando à referência devida (${e(res.refDevida)}).</li>
-  <li><strong>Vencimento devido:</strong> valor-base da tabela salarial vigente na competência (coluna "Lei/Reajuste" do demonstrativo), multiplicado pelo fator da referência/classe e acrescido das verbas informadas (localidade, regência, GTS/GAA, quinquênios, G.T./GEP conforme o caso).</li>
-  <li><strong>Diferença nominal mensal:</strong> vencimento devido − vencimento recebido.</li>
-  <li><strong>13º e férias:</strong> lançados como linhas próprias (13º sobre dezembro; férias com adicional de 1/3), destacadas no demonstrativo.</li>
-  <li><strong>Correção monetária (EC 113/2021):</strong> cada diferença mensal é corrigida pela SELIC acumulada da competência até o mês atual.</li>
-</ol>
-<div class="formula">fator_SELIC(mês) = Π [ (1 + selic_mensal[k]) ] , para k = competência … mês atual</div>
-<div class="box">Índice: BCB — série SGS 4390 "Taxa de juros - Selic acumulada no mês (% a.m.)". Tabela do sistema <strong>verificada 1:1 contra a série oficial do BCB em 2026-08-13</strong> (cobertura 2019-01 a 2026-07). Meses ainda não publicados pelo BCB não recebem correção (fator 1).</div>
-
-<h2>4. Demonstrativo competência a competência</h2>
-<table class="demo">
-  <thead><tr>
-    <th>Competência</th><th>Ref. receb.</th><th>Venc. recebido</th><th>Ref. devida</th><th>Venc. devido</th>
-    <th>Dif. nominal</th><th>Fator SELIC</th><th>Dif. corrigida</th><th>Extras</th><th>Total linha</th>
-  </tr></thead>
-  <tbody>
-    ${demoRows}
-    <tr class="tot"><td colspan="5">TOTAL GERAL — Diferença Salarial Devida</td>
-      <td class="r">${m(totalNominal)}</td><td></td><td class="r">${m(totalCorrigido)}</td><td></td><td class="r">${m(totalCorrigido)}</td></tr>
-  </tbody>
-</table>
-<div class="sub">${res.nMeses} competências analisadas · ${res.rows.length} linhas no demonstrativo.</div>
-
-<h2>5. Síntese</h2>
-<table class="kv">
-  <tr><th>Total nominal (sem correção)</th><td>${m(totalNominal)}</td></tr>
-  <tr><th>Total corrigido (SELIC — EC 113/2021)</th><td><strong>${m(totalCorrigido)}</strong></td></tr>
-</table>
-
-<div class="foot">
-  Laudo gerado automaticamente pela plataforma LAADV para fins de <strong>conferência e auditoria</strong>.
-  Os valores-base e percentuais de reajuste das tabelas salariais devem ser confrontados com o texto
-  oficial das normas citadas (ver <em>fontes/</em> do projeto). Documento de apoio — não substitui a
-  conferência do responsável técnico antes do protocolo judicial.
-</div>
-<scr${''}ipt>window.onload=function(){setTimeout(function(){window.print();},250);};<\/scr${''}ipt>
-</body></html>`;
-
-  const w = window.open('', '_blank');
-  if (!w) { alert('Permita pop-ups para gerar a auditoria.'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
-}
 
 // ─────────────────────────────────────────
 // 14. INTEGRAÇÃO GOOGLE SHEETS (CORRIGIDA)
