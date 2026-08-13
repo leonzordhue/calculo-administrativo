@@ -6,6 +6,32 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.8 — 2026-08-13 — Auditoria da v1.7 (SEMSA) + trava de data faltante
+
+Auditoria do grid SEMSA (v1.7). **Dados e mecânica aprovados:** as 144 células
+(Classe A–H × Padrão 1–18) conferem **1:1 com o PDF oficial** da Lei 3.665/2026
+(0 ausentes); interstício de 24m confirmado na Lei 1.222/2008 (Art. 37/38 —
+"a cada dois anos"; o trecho "X padrões para tempo > Y" é enquadramento inicial
+de 2008, transitório, não a progressão contínua). Função isolada, `_appendExtras`
+usado corretamente, sem regressões, sem erros de JS.
+
+**Correção aplicada — 1 achado:** faltava a **trava de data** no grid SEMSA.
+Como o grid usa valores só de 2026 (vig. 01/06/2026, sem histórico), um retroativo
+anterior a 06/2026 aplicava valores de 2026 a competências antigas → resultado
+inflado silenciosamente (reproduzido: período de 2022 calculava com valores de
+2026). Adicionado em `_coletarSEMSA`, para `usaGrid`:
+`if (startDate < new Date(2026,5,1)) throw ...` (mensagem citando a Lei 3.665/2026).
+
+> ⚠️ **PADRÃO RECORRENTE (para o outro agente):** esta é a **terceira vez** que um
+> grid de tabela única de 2026 sobe **sem a trava de início ≥ 06/2026** — ocorreu
+> no SEMED docente (v1.5), no SEMED administrativo (corrigido na v1.6) e agora no
+> SEMSA (v1.7). **Regra fixa:** todo grid cujo valor é de uma única vigência
+> (sem tabela histórica por data) DEVE bloquear `startDate` anterior à vigência,
+> senão o retroativo antigo sai inflado. Incluir essa trava por padrão em qualquer
+> nova carreira/grid de valor único.
+
+---
+
 ## v1.7 — 2026-08-13 — SEMSA: grid Classe × Padrão (Assistente/Especialista em Saúde)
 
 **Arquivo:** `historico/v1.7-semsa-grid-anexo2.html`
