@@ -6,6 +6,35 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.10 — 2026-08-14 — Magistério SEMED: tabelas históricas (retroativo pré-06/2026)
+
+**Arquivo:** `historico/v1.10-magisterio-historico.html`
+
+Resolve o feedback da cliente ("só deixa começar o retroativo em 06/2026"). A trava
+existia porque só havia a tabela de 06/2026; retroativo trabalhista vai até 5 anos
+atrás (prescrição quinquenal), então travar em 06/2026 inutilizava o cálculo.
+
+- **Tabelas históricas oficiais** do magistério (Padrão 1–9 × Referência A–G, 20h/40h),
+  extraídas 1:1 e cross-validadas pelos %s de reajuste:
+  - **Lei 3.088/2023** (vig. 01/05/2023, +4,5%)
+  - **Lei 3.342/2024** (vig. 01/06/2024, ~+3,69%)
+  - **Lei 3.516/2025** (vig. 01/06/2025, +5,48%)
+  - **PL 506/2026** (vig. 01/06/2026, +4,14%)
+  - Cadeia rastreada por revogação no SAPL/CMM (PL 506 revoga 3.516 → 3.342).
+- **Motor vigência-aware:** `calcVencimentoEduc` (SEMED) escolhe a tabela vigente em
+  cada competência (como `getValorBase`); a coluna "Lei" do laudo mostra o reajuste
+  correto por mês. Auditoria de extração pegou e corrigiu uma corrupção no 40h/2023
+  (P2/P3 vinham de outra tabela) antes de entrar no código.
+- **Trava** rebaixada de 06/2026 para **05/2023** (menor vigência carregada), com
+  mensagem clara. Retroativo de 05/2023 até hoje agora calcula corretamente.
+- Pendente (mesma técnica): tabelas históricas de SEMSA e SEMED-administrativo, e
+  magistério pré-05/2023 (2021/2022) se algum caso alcançar.
+
+Fontes em `fontes/leis/`: `lei-3088-2023-magisterio.pdf`, `lei-3342-2024-magisterio.pdf`,
+`lei-3516-2025-magisterio.pdf`.
+
+---
+
 ## v1.9 — 2026-08-13 — SEMSA: refinamentos + `.nojekyll` (destrava Pages)
 
 **Arquivo:** `historico/v1.9-semsa-refino.html`
