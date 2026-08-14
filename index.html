@@ -3398,7 +3398,7 @@ function _coletarEduc(area) {
   if (isSemedDoc && startDate < new Date(2023, 4, 1))
     throw new Error('Magistério SEMED: as tabelas oficiais carregadas vão de 05/2023 (Lei 3.088/2023) até hoje. Informe o início do retroativo em 05/2023 ou depois.');
   if (isSemedAdmin && startDate < new Date(2026, 5, 1))
-    throw new Error('Administrativo SEMED: a tabela oficial vigora a partir de 06/2026 (Lei 1.624/2011 · DOM 6329). Informe início do retroativo em 06/2026 ou depois.');
+    throw new Error('Administrativo SEMED: por ora só a tabela a partir de 06/2026 (Lei 1.624/2011 · DOM 6329) está carregada; as históricas ainda serão adicionadas. Para este módulo, informe o início do retroativo em 06/2026 ou depois.');
 
   // Determinar área de cálculo efetiva
   let areaCalc;
@@ -3549,7 +3549,7 @@ function _coletarSEMSA() {
   // sem histórico — bloquear competências anteriores para não aplicar valor de 2026 a
   // período antigo (retroativo inflado). Mesma trava dos grids SEMED docente/admin.
   if (usaGrid && startDate < new Date(2026, 5, 1))
-    throw new Error('Grid SEMSA (não-Médico): a tabela oficial vigora a partir de 06/2026 (Lei 3.665/2026). Informe início do retroativo em 06/2026 ou depois.');
+    throw new Error('SEMSA (não-Médico): por ora só a tabela a partir de 06/2026 (Lei 3.665/2026) está carregada; as históricas ainda serão adicionadas. Para este módulo, informe o início do retroativo em 06/2026 ou depois.');
 
   const refInicial = refInicStr || refAtual;
 
