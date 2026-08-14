@@ -6,6 +6,28 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.9 — 2026-08-13 — SEMSA: refinamentos + `.nojekyll` (destrava Pages)
+
+**Arquivo:** `historico/v1.9-semsa-refino.html`
+
+Fecha 3 pontas da SEMSA e corrige a causa real da "não aparição" na cliente.
+
+- **Deploy destravado:** adicionado **`.nojekyll`** na raiz. O build do GitHub Pages
+  falhava desde v1.6 (Jekyll engasgando nos `.md` de `fontes/`) — por isso nada desde
+  o magistério (v1.5) chegava ao site. `.nojekyll` faz o Pages servir os arquivos direto.
+- **Rótulos de Classe (A–H):** agora com a escolaridade exata da **Lei 1.222/2008,
+  Art. 3, XII** (A=fundamental incompleto … H=superior+doutorado). Confirma Auxiliar
+  de Serviços = Classe A.
+- **Laudo:** as colunas de referência do grid SEMSA passam a exibir **"Padrão N · Cl. X"**
+  (antes saía o número solto "6", que parecia letra de referência); 13º/férias ajustados
+  para extrair o padrão do rótulo.
+- **Gate de deploy (fora do repo, em `~/.claude/auditoria/verificar_deploy.py`):** novo
+  verificador que só declara PUBLICADO após o build do Pages concluir com success **e** o
+  marcador aparecer no HTML ao vivo. Criado porque a auditoria de conteúdo passava mas a
+  entrega estava quebrada no deploy.
+
+---
+
 ## v1.8 — 2026-08-13 — Auditoria da v1.7 (SEMSA) + trava de data faltante
 
 Auditoria do grid SEMSA (v1.7). **Dados e mecânica aprovados:** as 144 células
