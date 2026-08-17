@@ -6,6 +6,13 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.12 — 2026-08-17 — Remove alertas automáticos que poluíam o laudo/PDF
+
+Removidos os avisos automáticos "Data de Posse possivelmente incorreta" e
+"Referência Atual possivelmente incorreta" (SEDUC/SEMED). Eram diagnósticos
+internos que apareciam no PDF e confundiam o cliente — não têm valor para ele
+e o cálculo não depende deles. Demais alertas (prescrição etc.) mantidos.
+
 ## v1.11 — 2026-08-17 — Magistério SEMED: tabelas até 2021 (prescrição quinquenal)
 
 **Arquivo:** `historico/v1.11-magisterio-2021.html`
