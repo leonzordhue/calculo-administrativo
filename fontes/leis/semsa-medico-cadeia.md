@@ -56,3 +56,50 @@ Classe II começa onde a I está ~4 padrões acima; IV ~ +6).
 pdftotext -layout + clusterização das posições-x dos valores em 4 colunas
 (robusto a variação de cabeçalho). Script em `semsa_extrair_medico.py`.
 Regra de ouro: só entra valor cujo encadeamento percentual fecha com a lei.
+
+---
+
+## MAPA DE PÁGINAS das tabelas do Médico (lido visualmente via PyMuPDF)
+
+Estrutura por lei: médico **efetivo 20h** numa página, **clínico 40h** na seguinte;
+depois ANEXO III (ESF) e Tabela 2 (prorrogação 24h). Cada tabela: Padrão INICIAL+1–18 × Classe I–IV.
+
+| Lei | efetivo 20h | clínico 40h | ESF | 24h |
+|---|---|---|---|---|
+| 2.449/2019 | pág 9 (Anexo II, sem INICIAL, P1=8.190,35) | (verificar) | pág 9 (P1=14.331,52) | pág 9 (P1=9.003,89) |
+| 2.819/2021 (vig 01/2022) | pág 6 (INICIAL 7.630,89) | pág 6 (INICIAL 15.261,77) | pág 5/7 | — |
+| 2.931/2022 | pág 8 (verificar) | pág 8/9 | — | — |
+| 3.119/2023 | pág 5 | pág 6 (INICIAL 17.872,98) | pág 6 (P1 ESF=?) | pág 6 |
+| 3.326/2024 | extração limpa | — | — | — |
+| 3.339/2024 | extração limpa | — | — | — |
+| 3.513/2025 | extração limpa | — | — | — |
+| 3.665/2026 | pág 5 (INICIAL 10.150,06) | pág 5 (INICIAL 20.300,12) | pág 5 | pág 5 |
+
+## GRADE — Médico efetivo 20h — VALORES LIDOS 1:1 (Classe I | II | III | IV)
+
+### 2.819/2021 (vig. 01/01/2022) — Lei 1.223/2008, +10,051% sobre 2.449/2019
+INICIAL: 7630.89 | - | - | -
+1: 9013.56 | 9377.70 | 9756.57 | 10150.73
+2: 9193.81 | 9565.27 | 9951.71 | 10353.76
+3: 9377.70 | 9756.57 | 10150.73 | 10560.82
+4: 9565.27 | 9951.71 | 10353.76 | 10772.04
+5: 9756.57 | 10150.73 | 10560.82 | 10987.47
+6: 9951.71 | 10353.76 | 10772.04 | 11207.20
+7: 10150.73 | 10560.82 | 10987.47 | 11431.38
+8: 10353.76 | 10772.04 | 11207.20 | 11660.00
+9: 10560.82 | 10987.47 | 11431.38 | 11893.20
+10: 10772.04 | 11207.20 | 11660.00 | 12131.05
+11: 10987.47 | 11431.38 | 11893.20 | 12373.67
+12: 11207.20 | 11660.00 | 12131.05 | 12621.14
+13: 11431.38 | 11893.20 | 12373.67 | 12873.58
+14: 11660.00 | 12131.05 | 12621.14 | 13131.04
+15: 11893.20 | 12373.67 | 12873.58 | 13393.68
+16: 12131.05 | 12621.14 | 13131.04 | 13661.56
+17: 12373.67 | 12873.58 | 13393.68 | 13934.78
+18: 12621.14 | 13131.04 | 13661.56 | 14213.47
+
+### 2024–2026: extraídos limpos e validados (ver seção "VALIDADO 1:1" acima, Classe I;
+### Classes II-IV extraídas juntas, monotônicas). Chain confere ao centavo.
+
+## PENDENTE de leitura visual: médico 20h de 2.931/2022 (pág ~8) e 3.119/2023 (pág 5);
+## médico 40h de todas; ESF/24h de todas. PNGs geráveis por PyMuPDF (matrix 2.4).
