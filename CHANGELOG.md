@@ -6,6 +6,33 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.11 — 2026-08-17 — Magistério SEMED: tabelas até 2021 (prescrição quinquenal)
+
+**Arquivo:** `historico/v1.11-magisterio-2021.html`
+
+Resolve o feedback da cliente: o magistério travava o início do retroativo em **05/2023**,
+mas a prescrição quinquenal vai até ~2021. Faltavam as tabelas oficiais anteriores.
+
+- **Cadeia rastreada por revogação no SAPL/CMM** (cada lei revoga a anterior):
+  PL 506/2026 → Lei 3.516/2025 → Lei 3.342/2024 → **Lei 3.088/2023** (Art. 6 revoga a
+  **Lei 2.905/2022**) → **Lei 2.804/2021** (Art. cita/revoga anexo dela).
+- **3 vigências novas**, extraídas 1:1 (pdfplumber) e cross-validadas pelos %s:
+  - **Lei 2.804/2021** — duas vigências: **01/01/2021** e **01/05/2021 (+8,8962%)**.
+  - **Lei 2.905/2022** — **01/05/2022 (+12,47%)**.
+  - Encadeamento confere: 1.913,06 (01/2021) → 2.083,25 (05/2021) → 2.343,03 (05/2022)
+    → 2.448,47 (05/2023) → … → 2.788,81 (06/2026).
+- **Ressalva documentada:** a linha **Padrão 9 do 20h de 05/2021** não é extraível do PDF
+  (corta na quebra de página em todas as impressões); foi derivada do **40h oficial da mesma
+  vigência ÷ 2** (P1–P8 oficiais 1:1). Afeta só servidores no padrão 9 (24+ anos) com
+  retroativo em 2021, com incerteza de ±1 centavo em ~3 células. Método por % foi descartado
+  (não reproduzia P1–P8 exatamente).
+- **Trava** rebaixada de 05/2023 → **01/2021** (`vigenciaMin`), com mensagem atualizada.
+  O motor já escolhe a tabela vigente por competência — agora cobre 01/2021 → hoje.
+
+Fontes em `fontes/leis/`: `lei-2804-2021-magisterio.pdf`, `lei-2905-2022-magisterio.pdf`.
+
+---
+
 ## v1.10 — 2026-08-14 — Magistério SEMED: tabelas históricas (retroativo pré-06/2026)
 
 **Arquivo:** `historico/v1.10-magisterio-historico.html`
