@@ -6,6 +6,30 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.13 — 2026-08-17 — Bibliografia de fontes legais + auditoria de citações
+
+**Arquivo:** `historico/v1.13-bibliografia.html`
+
+Novo botão **"📚 Bibliografia · Fontes Legais"** no rodapé: gera um documento
+imprimível com TODAS as normas que embasam os cálculos (40 referências), o uso
+de cada uma e o **link oficial verificado** (SAPL/CMM, SAPL/ALEAM, Planalto,
+BCB, STJ). Todos os links conferidos HTTP 200 em 2026-08-17.
+
+**Auditoria de fontes (1ª rodada) — correções aplicadas:**
+- Magistério municipal: o app citava Leis **2.871/2022, 3.056/2023, 3.315/2024**
+  como reajustes da educação. Na base oficial da CMM essas leis tratam de
+  proteção animal, inscrição de PcD e contratação — nada de salário. Corrigido
+  para **2.905/2022, 3.088/2023, 3.342/2024** (reajustes reais da educação),
+  em todas as ocorrências (tabela, legalMap, laudo de auditoria).
+- Box "Fundamento Jurídico" do magistério exibia leis da PMAM/segurança
+  (4.852/2019, 5.771/2022). Corrigido para a cadeia municipal do magistério.
+- Magistério 2026: "PL 506/2026" → **Lei 3.661/2026** (sancionada).
+
+**Divergências sinalizadas (não alteradas — aguardam decisão):**
+- SEMSA reutiliza os números/percentuais da educação; cadeia real da saúde é
+  3.339/2024, 3.513/2025, 3.665/2026. Recomenda-se reconstruir a tabela.
+- SES: Lei 908/2023 não localizada na base SAPL da ALEAM.
+
 ## v1.12 — 2026-08-17 — Remove alertas automáticos que poluíam o laudo/PDF
 
 Removidos os avisos automáticos "Data de Posse possivelmente incorreta" e
