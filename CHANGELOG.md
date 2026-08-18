@@ -6,6 +6,20 @@ Cada versão estável é arquivada em `historico/` como cópia integral do `inde
 
 ---
 
+## v1.14 — 2026-08-18 — Arquivo de auditoria: PDFs no projeto + download na bibliografia
+
+**Arquivo:** `historico/v1.14-bibliografia-download.html`
+
+- **Todas as normas em PDF arquivadas no projeto** (`fontes/leis/`) — cópia oficial
+  de cada lei que embasa os cálculos, para que a base normativa não dependa de
+  portal de terceiros (rastro de auditoria).
+- A **Bibliografia** agora oferece, ao lado de cada norma, o link **"⬇ Baixar cópia
+  arquivada (PDF)"** (servido pelo próprio site) além da fonte oficial.
+- SES: correção do rótulo 908/2023 → Data-Base 2023 (v1.13-b já no ar).
+- Pendência: 3 leis-estrutura (PMAM 3.725/2012, PCAM 2.875/2004 e 4.059/2014)
+  aguardam cópia — ALEAM bloqueando por captcha; as leis de reajuste (valor) já
+  estão todas arquivadas.
+
 ## v1.13 — 2026-08-17 — Bibliografia de fontes legais + auditoria de citações
 
 **Arquivo:** `historico/v1.13-bibliografia.html`
