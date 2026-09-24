@@ -773,6 +773,10 @@
                 </select>
                 <span class="field-hint">⚠️ Informe a referência do <strong>contracheque atual</strong> — não a que deveria receber</span>
               </div>
+              <div class="field"><label class="field-label">Data da Última Progressão Concedida</label>
+                <input type="date" id="s-ref-desde" />
+                <span class="field-hint">Desde quando o contracheque mostra essa referência. <strong>Em branco</strong> = o sistema presume que todas as progressões anteriores saíram na data legal — e os meses anteriores a esta ficam zerados.</span>
+              </div>
               <div class="field"><label class="field-label">Referência no Ingresso (se diferente)</label>
                 <select id="s-ref-inicial">
                   <option value="">Igual à Referência Atual</option>
@@ -869,6 +873,10 @@
                     <option>K1</option><option>K2</option><option>L1</option><option>L2</option>
                   </optgroup>
                 </select>
+              </div>
+              <div class="field"><label class="field-label">Data da Última Progressão Concedida</label>
+                <input type="date" id="m-ref-desde" />
+                <span class="field-hint">Desde quando o contracheque mostra essa referência. <strong>Em branco</strong> = o sistema presume que todas as progressões anteriores saíram na data legal — e os meses anteriores a esta ficam zerados.</span>
               </div>
               <div class="field"><label class="field-label">Referência no Ingresso (se diferente)</label>
                 <select id="m-ref-inicial">
@@ -2536,7 +2544,7 @@ function calcVencimentoSeguranca(area, postoKey, dataRef, incluirGT_ou_GEP) {
 
 function gerarDemonstrativoEduc(params) {
   const { area, nome, matricula, cargo, posseDate, classe,
-          refInicial, refAtual, startDate, endDate, incluirExtras,
+          refInicial, refAtual, refAtualDesde, startDate, endDate, incluirExtras,
           municipio, pctLocalidade, incluirRegencia,
           categoria, pctGAA_admin, jornada, cargoAdmin } = params;
   // ── Determina chave de regras (admin usa sub-tabela própria) ──
@@ -2571,14 +2579,26 @@ function gerarDemonstrativoEduc(params) {
   const rows = [], erros = [];
   let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
   const endM = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
-  const idxAtualRef = refList.indexOf(refAtual); // índice do que o servidor realmente recebe
+  const idxAtualRef  = refList.indexOf(refAtual);    // o que o contracheque mostra hoje
+  const idxInicialRef = refList.indexOf(refInicial); // o que o contracheque mostrava no ingresso
+  // Mês em que a referência do contracheque passou a ser paga, quando o operador informa.
+  const desdeM = refAtualDesde
+    ? new Date(refAtualDesde.getFullYear(), refAtualDesde.getMonth(), 1) : null;
 
   while (cursor <= endM) {
     const progsAteMes   = calcularProgressoesEduc(area, posseDate, cursor);
     const refDevidaMes  = refComCap(refInicial, progsAteMes);
     const idxDevidaMes  = refList.indexOf(refDevidaMes);
-    // recebidaMes = o que o servidor efetivamente recebeu: progressão natural, capada em refAtual
-    const refRecebidaMes = refList[Math.min(idxDevidaMes, idxAtualRef)];
+    // O que o servidor RECEBEU naquele mês.
+    //  - com data informada: refInicial até o mês anterior à concessão, refAtual daí em diante.
+    //    É o único caminho que representa progressão concedida COM ATRASO — e atraso é a
+    //    premissa da ação. Sem isso, os meses entre o direito e a concessão somem do cálculo.
+    //  - sem data: mantém o comportamento antigo (presume concessão na data legal).
+    // O teto em idxDevidaMes existe nos dois casos: ninguém deve diferença negativa.
+    const idxPago = desdeM
+      ? (cursor < desdeM ? idxInicialRef : idxAtualRef)
+      : idxAtualRef;
+    const refRecebidaMes = refList[Math.min(idxDevidaMes, idxPago)];
     if (refDevidaMes === refRecebidaMes) { cursor = addMonths(cursor, 1); continue; }
 
     const recItem = calcVencimentoEduc(areaUp, classe, refRecebidaMes, cursor, pctLoc, pctReg, pctGAA, jornada, cargoAdmin);
@@ -2653,9 +2673,24 @@ function gerarDemonstrativoEduc(params) {
   const totalDiff     = parseFloat(rows.reduce((s,r) => s + r.diffMensal, 0).toFixed(2));
   const totalCorrigido= parseFloat(rows.reduce((s,r) => s + (r.diffCorrigida || r.diffMensal), 0).toFixed(2));
   const nMeses        = rows.filter(r => r.tipo === 'normal').length;
+
+  // ── ALERTA: meses do início do período que saíram zerados ─────────────────
+  // Mesmo defeito que o motor da segurança já sinaliza: o operador informa um
+  // retroativo de 49 meses e o demonstrativo devolve 9, sem dizer por quê. Aqui a
+  // causa é a presunção de que as progressões até a referência do contracheque
+  // foram concedidas na data legal — o que zera tudo antes do último degrau.
+  const primeiraNormal = rows.find(r => r.tipo === 'normal');
+  const startM = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+  const mesesDescartados = primeiraNormal
+    ? diffMonths(startM, new Date(primeiraNormal.ano, primeiraNormal.mes, 1)) : 0;
+  const alertaMesesZerados = !refAtualDesde && mesesDescartados > 0;
+
   return { rows, erros, totalDiff, totalCorrigido, nMeses, numProgressoesAtraso, refInicial, refDevida,
     area, nome, matricula, cargo, classe, posseDate, startDate, endDate, incluirExtras,
-    municipio, pctLocalidade: pctLoc, incluirRegencia, refAtual, dataCalculo: new Date() };
+    municipio, pctLocalidade: pctLoc, incluirRegencia, refAtual, refAtualDesde,
+    alertaMesesZerados, mesesDescartados,
+    primeiraCompetencia: primeiraNormal ? primeiraNormal.competencia : null,
+    dataCalculo: new Date() };
 }
 
 // ─────────────────────────────────────────
@@ -3370,6 +3405,7 @@ function _coletarEduc(area) {
   const jornada      = isSemedDoc ? (v('jornada') || '20') : null; // 20h ou 40h
   const refAtual     = isSemedAdmin ? v('padrao-atual-admin')   : v('ref');
   const refInicStr   = isSemedAdmin ? v('padrao-inicial-admin') : v('ref-inicial');
+  const refDesdeStr  = v('ref-desde');
   const inicioStr    = v('inicio');
   const fimStr       = v('fim');
   const extras       = r(area === 'seduc' ? 'extras' : 'extras_m') === 'sim';
@@ -3463,8 +3499,18 @@ function _coletarEduc(area) {
   cincoAnos.setFullYear(cincoAnos.getFullYear() - 5);
   const alertaPrescricao = startDate < cincoAnos;
 
+  // Data da última progressão concedida (opcional). Sem ela o motor presume concessão em dia.
+  const refAtualDesde = refDesdeStr ? parseDate(refDesdeStr) : null;
+  if (refAtualDesde && refAtualDesde < posseDate) throw new Error(
+    'A data da última progressão concedida não pode ser anterior à posse.'
+  );
+  if (refAtualDesde && idxIni === idxAtual) throw new Error(
+    `A referência no ingresso e a do contracheque são a mesma (${refAtual}). ` +
+    `Nesse caso não houve progressão concedida — deixe a data em branco.`
+  );
+
   const resultado = gerarDemonstrativoEduc({ area: areaCalc, nome, matricula, cargo, posseDate, classe,
-    refInicial, refAtual, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
+    refInicial, refAtual, refAtualDesde, startDate, endDate, incluirExtras: extras, municipio, pctLocalidade,
     incluirRegencia: regencia, categoria, pctGAA_admin, jornada, cargoAdmin });
 
   resultado.alertaPrescricao = alertaPrescricao;
@@ -3770,6 +3816,10 @@ function renderizarResultados(res) {
 
   // Alerta de prescrição quinquenal
   const errEl = document.getElementById('alert-form-error');
+  // Os avisos abaixo são inseridos no DOM a cada cálculo e nunca eram retirados: ao
+  // recalcular, o aviso do cálculo ANTERIOR continuava na tela dizendo que meses foram
+  // descartados depois de o operador já ter corrigido o formulário. Limpa antes de inserir.
+  document.querySelectorAll('.alerta-calculo').forEach(el => el.remove());
   if (res.alertaPrescricao && res.cincoAnos) {
     errEl.innerHTML = `⚠️ <strong>Atenção — Prescrição Quinquenal (Dec. Fed. n.º 20.910/1932):</strong> `
       + `A data de início (${fmtData(startDate)}) está além de 5 anos antes do fim do período. `
@@ -3782,7 +3832,7 @@ function renderizarResultados(res) {
   // Alerta de linhas descartadas (PMAM/PCAM): startDate anterior ao primeiro interstício calculado
   if (res.alertaLinhasDescartadas && res.dataCalculadaPrimeiraProgressao) {
     const alertaDesc = document.createElement('div');
-    alertaDesc.className = 'alert alert-warn';
+    alertaDesc.className = 'alert alert-warn alerta-calculo';
     alertaDesc.innerHTML = `⚠️ <strong>Atenção — Período parcialmente calculado:</strong> `
       + `O sistema calculou o primeiro interstício a partir de <strong>${fmtData(res.dataReferenciaIntersticio)}</strong> `
       + `(data de referência informada). A primeira progressão devida só foi identificada a partir de `
@@ -3792,6 +3842,21 @@ function renderizarResultados(res) {
       + `<strong>"Data da Última Promoção ao Posto Atual"</strong> com a data correta `
       + `ou use o campo <strong>"Posto que Deveria Estar"</strong> para forçar o posto devida.`;
     errEl.parentNode.insertBefore(alertaDesc, errEl.nextSibling);
+  }
+
+  // Alerta de meses zerados (educação): o retroativo informado é maior que o calculado
+  if (res.alertaMesesZerados) {
+    const alertaZerado = document.createElement('div');
+    alertaZerado.className = 'alert alert-warn alerta-calculo';
+    alertaZerado.innerHTML = `⚠️ <strong>Atenção — ${res.mesesDescartados} mês(es) do período não entraram no cálculo:</strong> `
+      + `o retroativo começa em <strong>${fmtData(res.startDate)}</strong>, mas o demonstrativo só abre em `
+      + `<strong>${escH(res.primeiraCompetencia)}</strong>. `
+      + `<br>O sistema presumiu que as progressões até a referência do contracheque `
+      + `(<strong>${escH(res.refAtual)}</strong>) foram concedidas na data legal — por isso os meses anteriores ficam sem diferença. `
+      + `<br>Se elas saíram <strong>com atraso</strong>, preencha o campo `
+      + `<strong>"Data da Última Progressão Concedida"</strong> com a data em que o contracheque passou a pagar `
+      + `${escH(res.refAtual)}. Os meses entre o direito e a concessão passam a ser contados.`;
+    errEl.parentNode.insertBefore(alertaZerado, errEl.nextSibling);
   }
 
   // Labels e fundamento por área
@@ -3841,7 +3906,7 @@ function renderizarResultados(res) {
   // Banner informativo quando modo auto-detectado foi ativado
   if (res.autoDetectado && res.postoAnteriorAutoDetect) {
     const bannerAuto = document.createElement('div');
-    bannerAuto.className = 'alert alert-info';
+    bannerAuto.className = 'alert alert-info alerta-calculo';
     bannerAuto.style.marginBottom = '1rem';
     bannerAuto.innerHTML = `ℹ️ <strong>Cálculo automático de retroativo de promoção:</strong> `
       + `O sistema identificou que o servidor já está no posto <strong>${escH(res.postoAtual)}</strong> (posto devida), `
@@ -3858,7 +3923,11 @@ function renderizarResultados(res) {
     `<strong>${escH(areaLabel[areaKeyDisp] || areaKeyDisp.toUpperCase())}</strong> — Servidor: <strong>${escH(nome)}</strong> (${escH(matricula)}).` +
     (res.classe ? ` Classe: <strong>${escH(res.classe)}</strong>.` : '') +
     (res.nivel  ? ` Nível: <strong>${escH(String(res.nivel))}</strong>.` : '') +
-    ` Referência recebida: <strong>${escH(refInicial)}</strong> → Referência devida: <strong>${escH(refDevida)}</strong>.` +
+    // "Referência recebida" era refInicial — a do INGRESSO. A tabela, na coluna "Ref. receb.",
+    // mostra outra coisa (a do mês). O relatório se contradizia: cabeçalho A, tabela C.
+    ` Referência no ingresso: <strong>${escH(refInicial)}</strong>` +
+    (res.refAtual && res.refAtual !== refInicial ? ` → contracheque atual: <strong>${escH(res.refAtual)}</strong>` : '') +
+    ` → Referência devida: <strong>${escH(refDevida)}</strong>.` +
     ` Progressões em atraso: <strong>${numProgressoesAtraso}</strong>.` +
     ` Período: <strong>${fmtData(startDate)}</strong> a <strong>${fmtData(endDate)}</strong>.` +
     (addInfo ? `<br><span style="font-size:0.73rem;color:var(--gold-dark);">⚙️ Verbas: ${addInfo}</span>` : '') +
@@ -4000,7 +4069,13 @@ function gerarAuditoria() {
   params.push(['Órgão / carreira', areaLabel[areaKey] || areaKey]);
   if (res.classe) params.push(['Classe', res.classe]);
   if (res.nivel)  params.push(['Nível', res.nivel]);
-  params.push(['Referência recebida (inicial)', res.refInicial]);
+  params.push(['Referência no ingresso', res.refInicial]);
+  if (res.refAtual && res.refAtual !== res.refInicial) {
+    params.push(['Referência do contracheque atual', res.refAtual]);
+    // Premissa do cálculo: sem a data, o motor trata a progressão como concedida em dia.
+    params.push(['Última progressão concedida em',
+      res.refAtualDesde ? d(res.refAtualDesde) : 'não informado — presumida na data legal']);
+  }
   params.push(['Referência devida (final)', res.refDevida]);
   params.push(['Progressões em atraso', res.numProgressoesAtraso]);
   params.push(['Período do retroativo', `${d(res.startDate)} a ${d(res.endDate)}`]);
@@ -4678,8 +4753,8 @@ function bindPreviewListeners() {
   }
 
   const allIds = [
-    's-nome','s-matricula','s-cargo','s-posse','s-classe','s-ref','s-ref-inicial','s-inicio','s-fim','s-municipio','s-categoria',
-    'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-padrao','m-jornada','m-inicio','m-fim','m-categoria',
+    's-nome','s-matricula','s-cargo','s-posse','s-classe','s-ref','s-ref-inicial','s-ref-desde','s-inicio','s-fim','s-municipio','s-categoria',
+    'm-nome','m-matricula','m-cargo','m-posse','m-ref','m-ref-inicial','m-ref-desde','m-padrao','m-jornada','m-inicio','m-fim','m-categoria',
     'se-nome','se-matricula','se-cargo','se-posse','se-nivel','se-classe','se-classe-inicial','se-gts','se-gaa','se-quinquenio','se-inicio','se-fim',
     'sa-nome','sa-matricula','sa-cargo','sa-posse','sa-nivel','sa-ref','sa-ref-inicial','sa-inicio','sa-fim',
     'pm-nome','pm-matricula','pm-cargo','pm-posse','pm-data-promocao','pm-posto','pm-posto-inicial','pm-posto-devida','pm-inicio','pm-fim',
